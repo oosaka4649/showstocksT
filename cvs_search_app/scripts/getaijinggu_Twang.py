@@ -27,7 +27,8 @@ from selenium.webdriver.support import expected_conditions as EC
 # 获取T王的当日数据，或多日数据，长期 监控他参与的个股，并分析其进场出场及买卖行为
 # 适当参与
 #url = 'https://example.com'
-url = 'https://www.aijingu.com/youzi/13.html?page=1'
+#url = 'https://www.aijingu.com/youzi/13.html?page=1'
+url = 'https://www.aijingu.com/youzi/13.html?page='
 
 '''
 response = requests.get(url)
@@ -56,46 +57,41 @@ driver = webdriver.Chrome(service=service)
 # 初始化WebDriver
 driver = webdriver.Chrome(executable_path=driver_path)
 '''
-# 打开网页
-#url = 'https://example.com'
-driver.get(url)
-
-# 等待JavaScript加载完成
-wait = WebDriverWait(driver, 10)
-element = wait.until(EC.presence_of_element_located((By.CLASS_NAME, 'tc')))
-
-# 获取页面内容
-page_content = driver.page_source
-
-# 关闭浏览器
-driver.quit()
-
-# 处理页面内容
-#print(page_content)
-
-
-# 使用BeautifulSoup解析网页内容
-soup = BeautifulSoup(page_content, 'html.parser')
-
-# 提取指定内容，例如所有的标题
-#titles = soup.find_all('h1')
-titles = soup.findChild('tbody')
-tm_txt = ''
 detail_txt = ''
 tailal_txt = '上榜日期,证券号码,证券简称,今日涨幅,买入额（万）,卖出额（万）,净买入（万）, 所属营业部'
-for title in titles:
-    if title != '\n': 
-        subtb = title
-        #print(subtb)
-        subtr = subtb.findAll('td')
-        #print(subtr)
-        tm_txt = str(subtr[0]) + ',' + str(subtr[1]) + ','+ str(subtr[2]) + ','+ str(subtr[4]) + ','+ str(subtr[5]) + ','+ str(subtr[6]) + ','+ str(subtr[7]) + ','+ str(subtr[8])
-        #print(tm_txt)
-        substrings_to_remove = ["<td class=\"tc nowrap\">", "<td class=\"tc\">","<td class=\"tl\">","</td>","<font color=\"#ff0000\">","<font color=\"#5EBC35\">","<font color=\"#D9383E\">","</font>", '<a href=\"[^"]+\" target=\"_blank\">',"</a>","\n"] # 使用正则表达式删除特定子字符串 
-        pattern = "|".join(substrings_to_remove) 
-        modified_string = re.sub(pattern, "", tm_txt)
-        #print(modified_string)
-        detail_txt = detail_txt + modified_string + '\n'
+for i in range(1,100):
+    print('第',i,'页')
+    # 打开网页
+    driver.get(url + str(i))
+
+    # 等待JavaScript加载完成
+    wait = WebDriverWait(driver, 10)
+    element = wait.until(EC.presence_of_element_located((By.CLASS_NAME, 'tc')))
+
+    # 获取页面内容
+    page_content = driver.page_source
+
+    # 使用BeautifulSoup解析网页内容
+    soup = BeautifulSoup(page_content, 'html.parser')
+
+    # 提取指定内容，例如所有的标题
+    #titles = soup.find_all('h1')
+    titles = soup.findChild('tbody')
+    tm_txt = ''
+    for title in titles:
+        if title != '\n': 
+            subtb = title
+            #print(subtb)
+            subtr = subtb.findAll('td')
+            #print(subtr)
+            tm_txt = str(subtr[0]) + ',' + str(subtr[1]) + ','+ str(subtr[2]) + ','+ str(subtr[4]) + ','+ str(subtr[5]) + ','+ str(subtr[6]) + ','+ str(subtr[7]) + ','+ str(subtr[8])
+            #print(tm_txt)
+            substrings_to_remove = ["<td class=\"tc nowrap\">", "<td class=\"tc\">","<td class=\"tl\">","</td>","<font color=\"#ff0000\">","<font color=\"#5EBC35\">","<font color=\"#D9383E\">","</font>", '<a href=\"[^"]+\" target=\"_blank\">',"</a>","\n"] # 使用正则表达式删除特定子字符串 
+            pattern = "|".join(substrings_to_remove)
+
+            modified_string = re.sub(pattern, "", tm_txt)
+            #print(modified_string)
+            detail_txt = detail_txt + modified_string + '\n'
 '''        
 上榜日期
 证券号码
@@ -116,7 +112,7 @@ print(df)
 
 '''
 all_txt = tailal_txt + '\n' + detail_txt
-df = pd.read_csv(StringIO(all_txt))
+df = pd.read_csv(StringIO(all_txt), dtype=str)
 #print(df)
 df.to_csv('D:\\python\\showstocksT\\cvs_search_app\\aijinggu_Twang.csv', index=False, encoding='utf-8-sig')
 

@@ -1,19 +1,65 @@
-# app.py
 from flask import Flask, request, render_template
 import pandas as pd
+import subprocess  # 用于调用外部Python脚本
 
+'''
+project/
+├── app.py                # 主程序
+├── data.csv              # CSV数据文件
+├── scripts/              # 存放可调用的Python脚本
+│   ├── script1.py        # 示例脚本1
+│   ├── script2.py        # 示例脚本2
+│   └── script3.py        # 示例脚本3
+└── templates/
+    ├── index.html        # 主页面
+    └── results.html      # CSV查询结果页
+
+'''
 app = Flask(__name__)
 
-# 读取CSV文件（确保data.csv在同一目录）
-df = pd.read_csv("D:\\python\\showstocksT\\cvs_search_app\\aijinggu_Twang.csv")
+# 示例元组数据（可替换为你的实际数据）
+options_data = (
+    ("getaijinggu_Twang", "T 王"),
+    ("getaijinggu_all", "多个游资"),
+    ("script3", "执行脚本3")
+)
 
 @app.route("/", methods=["GET", "POST"])
-def search():
+def index():
+    selected_script = None
     if request.method == "POST":
-        search_key = request.form.get("search_key")
-        results = df[df.apply(lambda row: str(search_key).lower() in str(row).lower(), axis=1)]
-        return render_template("results.html", results=results.to_html(classes="table"), search_key=search_key)
-    return render_template("index.html")
+        # 处理CSV查询
+        if "search_key" in request.form:
+            search_key = request.form.get("search_key")
+            df = pd.read_csv("D:\\python\\showstocksT\\cvs_search_app\\aijinggu_all.csv", dtype=str)
+            '''
+            if selected_script is not None and selected_script =='getaijinggu_all':
+                # 读取CSV文件（示例）
+                df = pd.read_csv("D:\\python\\showstocksT\\cvs_search_app\\aijinggu_all.csv", dtype=str)
+            else:
+                df = pd.read_csv("D:\\python\\showstocksT\\cvs_search_app\\aijinggu_Twang.csv", dtype=str)     
+            '''         
+            results = df[df.apply(lambda row: str(search_key).lower() in str(row).lower(), axis=1)]
+            return render_template("results.html", results=results.to_html(classes="table"), search_key=search_key)
+        
+        # 处理脚本执行
+        elif "script_name" in request.form:
+            selected_script = request.form.get("script_name")          
+            try:
+                # 调用外部Python脚本（例如：scripts/selected_script.py）
+                result = subprocess.run(
+                    ["python", f"D:\\python\\showstocksT\\cvs_search_app\\scripts/{selected_script}.py"], 
+                    capture_output=True, 
+                    text=True
+                )
+                output = result.stdout if result.returncode == 0 else f"错误: {result.stderr}"
+                return render_template("index.html", options=options_data, script_output=output)
+            except Exception as e:
+                return render_template("index.html", options=options_data, script_output=f"执行失败: {str(e)}")
+
+    return render_template("index.html", options=options_data)
 
 if __name__ == "__main__":
+    import os
+    os.makedirs("scripts", exist_ok=True)  # 确保scripts目录存在
     app.run(debug=True)
