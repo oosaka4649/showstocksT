@@ -5,7 +5,7 @@ import pandas as pd
 app = Flask(__name__)
 
 # 读取CSV文件（确保data.csv在同一目录）
-df = pd.read_csv("data.csv")
+df = pd.read_csv("D:\\python\\showstocksT\\cvs_search_app\\aijinggu_Twang.csv")
 
 @app.route("/", methods=["GET", "POST"])
 def search():

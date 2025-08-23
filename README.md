@@ -21,3 +21,11 @@ python app.py
 • 后端：Python + Flask
 • 前端：HTML + Bootstrap 5
 • 数据处理：pandas
+
+功能说明
+1. 读取 CSV：使用 `pandas` 加载 CSV 文件。
+2. 模糊查询：不区分大小写，支持部分匹配（如 `张` 能匹配 `张三`）。
+3. Web 界面：
+• 首页（`index.html`）：输入查询关键字。
+• 结果页（`results.html`）：以表格形式显示查询结果。
+4. Bootstrap 美化：使用 Bootstrap 5 优化界面。
