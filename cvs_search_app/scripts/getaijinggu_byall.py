@@ -29,7 +29,7 @@ from selenium.webdriver.support import expected_conditions as EC
 url = 'https://www.aijingu.com/youzi/'
 url_2 = '.html?page='
 
-t_name = {'13':'T王','6':'苏南帮','56':'N周二'}
+t_name = {'13':'T王','6':'苏南帮','56':'N周二','52':'竞价抢筹','23':'孙哥'}
   
 # 设置ChromeDriver路径
 driver_path = 'c:\\tmp\\chromedriver\\chromedriver.exe'
@@ -50,7 +50,7 @@ T王
 https://www.aijingu.com/youzi/13.html
 '''
 
-tailal_txt = '上榜日期,证券号码,证券简称,今日涨幅,买入额（万）,卖出额（万）,净买入（万）, 所属营业部'
+tailal_txt = '上榜日期,证券号码,证券简称,上榜涨幅,买入额（万）,卖出额（万）,净买入（万）,所属营业部,游资名称'
 
 data_lines = []
 
@@ -126,7 +126,7 @@ def read_web_page(i, j):
             subtr = subtb.findAll('td')
             if subtr is None or len(subtr) < 9: break
             #print(subtr)
-            tm_txt = str(subtr[0]) + ',' + str(subtr[1]) + ','+ str(subtr[2]) + ','+ str(subtr[4]) + ','+ str(subtr[5]) + ','+ str(subtr[6]) + ','+ str(subtr[7]) + ','+ str(subtr[8]) + ','+ str(t_name[j])
+            tm_txt = str(subtr[0]) + ',' + str(subtr[1]) + ','+ str(subtr[2]) + ','+ str(subtr[3]) + ','+ str(subtr[5]) + ','+ str(subtr[6]) + ','+ str(subtr[7]) + ','+ str(subtr[8]) + ','+ str(t_name[j])
             #print(tm_txt)
             substrings_to_remove = ["<td class=\"tc nowrap\">", "<td class=\"tc\">","<td class=\"tl\">","</td>","<font color=\"#ff0000\">","<font color=\"#5EBC35\">","<font color=\"#D9383E\">","</font>", '<a href=\"[^"]+\" target=\"_blank\">',"</a>","\n"] # 使用正则表达式删除特定子字符串 
             pattern = "|".join(substrings_to_remove)
@@ -218,7 +218,7 @@ def get_main():
     # 读取已有CSV文件内容到内存
     csv_file_path = 'D:\\python\\showstocksT\\cvs_search_app\\aijinggu_all.csv'
     add_string_to_csv_memory(csv_file_path)
-    for j in {'13','6','56'}:
+    for j in t_name.keys():
         for i in range(1,25):
             if read_web_page(i, j) == 0:
                 print('没有新数据，结束')

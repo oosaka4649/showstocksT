@@ -19,8 +19,8 @@ app = Flask(__name__)
 
 # 示例元组数据（可替换为你的实际数据）
 options_data = (
-    ("getaijinggu_byname", "T 王"),
-    ("getaijinggu_byall", "多个游资"),
+    ("getaijinggu_Twang", "T 王"),
+    ("getaijinggu_all", "多个游资"),
     ("script3", "执行脚本3")
 )
 
@@ -32,13 +32,14 @@ def index():
         if "search_key" in request.form:
             search_key = request.form.get("search_key")
             df = pd.read_csv("D:\\python\\showstocksT\\cvs_search_app\\aijinggu_all.csv", dtype=str)
-            if search_key:
-                # 在多个列中搜索（Name和City列）
-                columns_to_search = ['上榜日期', '证券号码', '游资名称']
-                results = df[df[columns_to_search].apply(lambda row: any(str(search_key).lower() in str(cell).lower() for cell in row), 
-                    axis=1)]
+            '''
+            if selected_script is not None and selected_script =='getaijinggu_all':
+                # 读取CSV文件（示例）
+                df = pd.read_csv("D:\\python\\showstocksT\\cvs_search_app\\aijinggu_all.csv", dtype=str)
             else:
-                results = df  # all结果
+                df = pd.read_csv("D:\\python\\showstocksT\\cvs_search_app\\aijinggu_Twang.csv", dtype=str)     
+            '''         
+            results = df[df.apply(lambda row: str(search_key).lower() in str(row).lower(), axis=1)]
             return render_template("results.html", results=results.to_html(classes="table"), search_key=search_key)
         
         # 处理脚本执行

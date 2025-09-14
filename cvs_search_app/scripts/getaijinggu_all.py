@@ -55,7 +55,7 @@ T王
 https://www.aijingu.com/youzi/13.html
 '''
 detail_txt = ''
-tailal_txt = '上榜日期,证券号码,证券简称,今日涨幅,买入额（万）,卖出额（万）,净买入（万）, 所属营业部, 游资名称'
+tailal_txt = '上榜日期,证券号码,证券简称,今日涨幅,买入额（万）,卖出额（万）,净买入（万）,所属营业部,游资名称'
 for j in {'13','6'}:
     for i in range(1,5):
         print('第',i,'页')
