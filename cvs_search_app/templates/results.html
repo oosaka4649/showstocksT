@@ -7,6 +7,10 @@
 <body>
     <div class="container mt-5">
         <a href="/">Back</a>
+        <form action="{{ url_for('sortbydateandcode') }}" method="POST">
+            <input type="text" id="search_key" name="search_key" value={{ search_key }}>
+            <button type="submit">sortbydateandcode</button>
+        </form>        
         <h1>Results for: {{ search_key }}</h1>
         {{ results | safe }}
         <a href="/">Back</a>

@@ -58,6 +58,29 @@ def index():
 
     return render_template("index.html", options=options_data)
 
+@app.route("/sortbydateandcode", methods=["GET", "POST"])
+def sortbydateandcode():
+    try:
+        search_key = None
+        df = pd.read_csv("D:\\python\\showstocksT\\cvs_search_app\\aijinggu_all.csv", dtype=str)
+        results = df
+        # 处理CSV查询
+        if "search_key" in request.form:
+            search_key = request.form.get("search_key")
+            # 保留过滤结果
+            if search_key:
+                # 在多个列中搜索（Name和City列）
+                columns_to_search = ['上榜日期', '证券号码', '游资名称']
+                results = df[df[columns_to_search].apply(lambda row: any(str(search_key).lower() in str(cell).lower() for cell in row), 
+                    axis=1)]
+        #按请求排序
+        sort_by = '上榜日期'  # 你可以根据需要更改排序列'
+        if sort_by in df.columns:
+            results = results.sort_values(by=['上榜日期', '证券号码'], ascending=[False, False]) # 你可以根据需要更改排序列'
+        return render_template("results.html", results=results.to_html(classes="table"), search_key=search_key)
+    except Exception as e:
+        return render_template("index.html", options=options_data, script_output=f"执行失败: {str(e)}")
+
 if __name__ == "__main__":
     import os
     os.makedirs("scripts", exist_ok=True)  # 确保scripts目录存在
