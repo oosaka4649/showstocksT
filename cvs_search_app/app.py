@@ -19,8 +19,8 @@ app = Flask(__name__)
 
 # 示例元组数据（可替换为你的实际数据）
 options_data = (
-    ("getaijinggu_byname", "T 王"),
     ("getaijinggu_byall", "多个游资"),
+    ("getaijinggu_byname", "T 王"),
     ("script3", "执行脚本3")
 )
 

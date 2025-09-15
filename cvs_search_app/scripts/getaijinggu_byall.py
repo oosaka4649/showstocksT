@@ -29,7 +29,7 @@ from selenium.webdriver.support import expected_conditions as EC
 url = 'https://www.aijingu.com/youzi/'
 url_2 = '.html?page='
 
-t_name = {'13':'T王','6':'苏南帮','56':'N周二','52':'竞价抢筹','23':'孙哥'}
+t_name = {'13':'T王','6':'苏南帮','56':'N周二','52':'竞价抢筹','23':'孙哥','21':'炒股养家'}
   
 # 设置ChromeDriver路径
 driver_path = 'c:\\tmp\\chromedriver\\chromedriver.exe'
@@ -48,6 +48,11 @@ https://www.aijingu.com/youzi/6.html
 T王
 此席位每天做T，其乐无穷。
 https://www.aijingu.com/youzi/13.html
+
+炒股养家
+目前资金量极大，对市场和个股都有很独到的理解力，通道优势较强，
+常常利用通道使个股一字涨停，隔日高位逐步离场。善于挖掘题材龙头，
+近期开始有波段锁仓操作，较有名的就是在雄安龙头青龙管业上的底部介入锁仓，被他挖掘的个股值得关注
 '''
 
 tailal_txt = '上榜日期,证券号码,证券简称,上榜涨幅,买入额（万）,卖出额（万）,净买入（万）,所属营业部,游资名称'
