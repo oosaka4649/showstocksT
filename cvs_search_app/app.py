@@ -1,5 +1,6 @@
 from flask import Flask, request, render_template
 import pandas as pd
+import re
 import subprocess  # 用于调用外部Python脚本
 
 '''
@@ -77,9 +78,42 @@ def sortbydateandcode():
         sort_by = '上榜日期'  # 你可以根据需要更改排序列'
         if sort_by in df.columns:
             results = results.sort_values(by=['上榜日期', '证券号码'], ascending=[False, False]) # 你可以根据需要更改排序列'
-        return render_template("results.html", results=results.to_html(classes="table"), search_key=search_key)
+            
+            
+        # 按分组列分组并计算指定列
+        group_column=['游资名称']
+        calc_column='净买入（万）'
+        # 清洗计算列中的汉字字符
+        results[calc_column] = results[calc_column].apply(clean_numeric_string)
+        sum_result = results.groupby(group_column)[calc_column].sum().reset_index()
+        sum_result_date = results.groupby(['上榜日期'])[calc_column].sum().reset_index()
+        sum_result_date = sum_result_date.sort_values(by=['上榜日期'], ascending=[False]) # 你可以根据需要更改排序列'
+        
+        return render_template("results.html", results=results.to_html(classes="table"), search_key=search_key,
+                               script_output=f"按游资名称统计结果: {str(sum_result)}", script_output_date=f"按日期统计结果: {str(sum_result_date)}")
     except Exception as e:
         return render_template("index.html", options=options_data, script_output=f"执行失败: {str(e)}")
+
+@app.route("/help", methods=["GET", "POST"])
+def help():
+    return render_template("help.html")
+    
+def clean_numeric_string(value):
+    """
+    清洗包含汉字的数值字符串，转换为浮点数，保留负号
+    
+    参数:
+    value (str): 可能包含汉字的数值字符串
+    
+    返回:
+    float: 转换后的数值
+    """
+    # 使用正则表达式提取数字部分（包括负号和小数点）
+    match = re.search(r'-?\d+\.?\d*', str(value))
+    if match:
+        return float(match.group())
+    return 0.0
+
 
 if __name__ == "__main__":
     import os
