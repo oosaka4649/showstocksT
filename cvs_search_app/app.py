@@ -1,6 +1,9 @@
 from flask import Flask, request, render_template
 import pandas as pd
 import re
+import os
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 import subprocess  # 用于调用外部Python脚本
 
 '''
@@ -9,8 +12,6 @@ project/
 ├── data.csv              # CSV数据文件
 ├── scripts/              # 存放可调用的Python脚本
 │   ├── script1.py        # 示例脚本1
-│   ├── script2.py        # 示例脚本2
-│   └── script3.py        # 示例脚本3
 └── templates/
     ├── index.html        # 主页面
     └── results.html      # CSV查询结果页
@@ -18,12 +19,11 @@ project/
 '''
 app = Flask(__name__)
 
-# 示例元组数据（可替换为你的实际数据）
-options_data = (
-    ("getaijinggu_byall", "多个游资"),
-    ("getaijinggu_byname", "T 王"),
-    ("script3", "执行脚本3")
-)
+# 脚本常量
+current_dir = os.path.dirname(os.path.abspath(__file__))
+aijinggu_csv_path = os.path.join(current_dir, 'data', 'aijinggu.csv')
+scripts_path = os.path.join(current_dir, 'scripts', 'getaijinggu_byall.py')
+stocks_csv_dir = os.path.join(current_dir, 'stockscsv')
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -32,7 +32,7 @@ def index():
         # 处理CSV查询
         if "search_key" in request.form:
             search_key = request.form.get("search_key")
-            df = pd.read_csv("D:\\python\\showstocksT\\cvs_search_app\\aijinggu_all.csv", dtype=str)
+            df = pd.read_csv(aijinggu_csv_path, dtype=str)
             if search_key:
                 # 在多个列中搜索（Name和City列）
                 columns_to_search = ['上榜日期', '证券号码', '游资名称']
@@ -48,22 +48,24 @@ def index():
             try:
                 # 调用外部Python脚本（例如：scripts/selected_script.py）
                 result = subprocess.run(
-                    ["python", f"D:\\python\\showstocksT\\cvs_search_app\\scripts/{selected_script}.py"], 
+                    ["python", scripts_path], 
                     capture_output=True, 
                     text=True
                 )
                 output = result.stdout if result.returncode == 0 else f"错误: {result.stderr}"
-                return render_template("index.html", options=options_data, script_output=output)
+                if output == None or output.strip() == '':
+                    output = '游资信息已经更新，请在上面输入查询内容或直接点击上面查询按钮。'
+                return render_template("index.html", script_output=output)
             except Exception as e:
-                return render_template("index.html", options=options_data, script_output=f"执行失败: {str(e)}")
+                return render_template("index.html", script_output=f"执行失败: {str(e)}")
 
-    return render_template("index.html", options=options_data)
+    return render_template("index.html")
 
 @app.route("/sortbydateandcode", methods=["GET", "POST"])
 def sortbydateandcode():
     try:
         search_key = None
-        df = pd.read_csv("D:\\python\\showstocksT\\cvs_search_app\\aijinggu_all.csv", dtype=str)
+        df = pd.read_csv(aijinggu_csv_path, dtype=str)
         results = df
         # 处理CSV查询
         if "search_key" in request.form:
@@ -74,6 +76,11 @@ def sortbydateandcode():
                 columns_to_search = ['上榜日期', '证券号码', '游资名称']
                 results = df[df[columns_to_search].apply(lambda row: any(str(search_key).lower() in str(cell).lower() for cell in row), 
                     axis=1)]
+                
+                #显示该股票的k line图
+                stock_code = '000008'   
+                stock_dashboard_div = stock_dashboard(stock_code)
+                
         #按请求排序
         sort_by = '上榜日期'  # 你可以根据需要更改排序列'
         if sort_by in df.columns:
@@ -89,10 +96,10 @@ def sortbydateandcode():
         sum_result_date = results.groupby(['上榜日期'])[calc_column].sum().reset_index()
         sum_result_date = sum_result_date.sort_values(by=['上榜日期'], ascending=[False]) # 你可以根据需要更改排序列'
         
-        return render_template("results.html", results=results.to_html(classes="table"), search_key=search_key,
+        return render_template("results.html", results=results.to_html(classes="table"), search_key=search_key, kline_div=stock_dashboard_div,
                                script_output=f"按游资名称统计结果: {str(sum_result)}", script_output_date=f"按日期统计结果: {str(sum_result_date)}")
     except Exception as e:
-        return render_template("index.html", options=options_data, script_output=f"执行失败: {str(e)}")
+        return render_template("index.html", script_output=f"执行失败: {str(e)}")
 
 @app.route("/help", methods=["GET", "POST"])
 def help():
@@ -115,7 +122,77 @@ def clean_numeric_string(value):
     return 0.0
 
 
+
+'''
+将生成的 Plotly K线图嵌入到现有 HTML 文件的 div 中，而不是生成完整的 HTML 文件。
+'''
+# 读取股票CSV文件（示例路径，请替换为实际文件路径）
+def load_stock_data(file_path):
+    """
+    读取股票CSV文件并处理为适合绘图的格式
+    要求CSV包含列：Date, Open, High, Low, Close, Volume (大小写不敏感)
+    """
+    df = pd.read_csv(file_path)
+    # 统一列名大小写
+    df.columns = df.columns.str.lower()
+    # 转换日期格式
+    if 'date' in df.columns:
+        df['date'] = pd.to_datetime(df['date'])
+        df.set_index('date', inplace=True)
+    return df
+
+def stock_dashboard(stock_code):
+    """生成股票K线图的HTML div字符串"""
+    t_csv_path = stocks_csv_dir + '\\' + stock_code + '.csv'
+    print(f"读取股票数据文件: {t_csv_path}")
+    stock_df = load_stock_data(t_csv_path)
+    kline_div = get_kline_div_string(stock_df)
+    return kline_div
+
+def get_kline_div_string(df):
+    """
+    生成K线图的HTML div字符串（不包含完整HTML结构）
+    """
+    fig = make_subplots(
+        rows=2, cols=1,
+        shared_xaxes=True,
+        vertical_spacing=0.05,
+        row_heights=[0.7, 0.3],
+        specs=[[{"type": "scatter"}], [{"type": "bar"}]]
+    )
+    
+    fig.add_trace(go.Candlestick(
+        x=df.index,
+        open=df['open'],
+        high=df['high'],
+        low=df['low'],
+        close=df['close'],
+        name='K线'
+    ), row=1, col=1)
+    
+    fig.add_trace(go.Bar(
+        x=df.index,
+        y=df['volume'],
+        name='成交量',
+        marker_color='rgba(100, 100, 200, 0.6)'
+    ), row=2, col=1)
+    
+    fig.update_layout(
+        title=f'股票 K 线图',
+        xaxis_title='日期',
+        yaxis_title='价格',
+        template='plotly_dark',
+        hovermode='x unified',
+        xaxis_rangeslider_visible=False
+    )
+    
+    fig.update_yaxes(title_text="价格", row=1, col=1)
+    fig.update_yaxes(title_text="成交量", row=2, col=1)
+    
+    # 返回div字符串（不包含完整HTML结构）
+    return fig.to_html(full_html=False, include_plotlyjs='cdn')
+
+
 if __name__ == "__main__":
-    import os
     os.makedirs("scripts", exist_ok=True)  # 确保scripts目录存在
     app.run(debug=True)

@@ -3,11 +3,14 @@ from io import StringIO
 from bs4 import BeautifulSoup
 import re
 import csv
+import os
 from datetime import datetime
 
 '''
 当机器上安装的Chrome浏览器自动升级时，使用Selenium会报错，原因是ChromeDriver版本与Chrome浏览器版本不匹配。
 解决方法是下载与当前Chrome浏览器版本匹配的ChromeDriver，并替换掉原有的ChromeDriver。exe文件。
+
+https://googlechromelabs.github.io/chrome-for-testing/#stable
 
 ChromeバージョンアップによるSeleniumエラーのトラブルシューティング
 https://zenn.dev/ykesamaru/articles/a1a4fd5eae8563
@@ -36,13 +39,14 @@ t_name = {'13':'T王','23':'孙哥','21':'炒股养家','52':'竞价抢筹',
           '56':'N周二','43':'山东帮','9':'瑞鹤仙','14':'一花一残忆','2':'杭州帮','57':'上塘路'
           ,'74':'屠文斌','20':'章盟主','34':'葵花宝典','53':'玉兰路','54':'成都系','24':'方新侠','70':'六一路','39':'量化基金','49':'红岭路'}
 
-#t_name = {'13':'T王','39':'量化基金','56':'N周二','52':'竞价抢筹','23':'孙哥','21':'炒股养家','72':'南京帮','74':'屠文斌','31':'宁波桑田路'}
+current_dir = os.path.dirname(os.path.abspath(__file__))
+chrome_driver_path = os.path.join(current_dir, 'chromedriver.exe')
+# 上一级目录（父目录）
+parent_dir = os.path.dirname(current_dir)
+aijinggu_csv_path = os.path.join(parent_dir, 'data', 'aijinggu.csv')
   
 # 设置ChromeDriver路径
-driver_path = 'c:\\tmp\\chromedriver\\chromedriver.exe'
-
-
-service = Service(driver_path)
+service = Service(chrome_driver_path)
 
 
 # 初始化WebDriver
@@ -240,7 +244,7 @@ def save_to_csv(file_path, data_lines):
     
 def get_main():
     # 读取已有CSV文件内容到内存
-    csv_file_path = 'D:\\python\\showstocksT\\cvs_search_app\\aijinggu_all.csv'
+    csv_file_path = aijinggu_csv_path
     add_string_to_csv_memory(csv_file_path)
     for j in t_name.keys():
         for i in range(1,25):

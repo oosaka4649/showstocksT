@@ -19,14 +19,10 @@
         </form>
 
         <!-- 脚本执行部分 -->
-        <h2>选择脚本执行</h2>
+        <h2>获取最新游资信息</h2>
         <form method="POST">
             <div class="mb-3">
-                <select name="script_name" class="form-select">
-                    {% for value, label in options %}
-                        <option value="{{ value }}">{{ label }}</option>
-                    {% endfor %}
-                </select>
+                <input type="text" name="script_name" value="run_script" class="form-control" hidden>
             </div>
             <button type="submit" name="action" value="run_script" class="btn btn-success">执行脚本</button>
         </form>
