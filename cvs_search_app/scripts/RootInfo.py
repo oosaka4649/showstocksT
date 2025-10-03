@@ -7,6 +7,8 @@ Created on Wed Jul  6 13:59:46 2022
 
 import os
 
+stock_code_num = {'6':'sh','3':'sz','0':'sz','9':'bj'}  # 股票代码前缀
+
 class MainUtile:
     def __init__(self):
         pass
@@ -21,24 +23,7 @@ class MainUtile:
         base_dir = os.path.dirname(os.path.abspath(file_full_path))
         return base_dir
     
-    
-    
-    '''
-    
-    print(__file__)
-    print(sys.argv[0])
-    print(os.path.dirname(__file__))
-    print(os.path.split(__file__)[-1])
-    print(os.path.split(__file__)[-1].split('.')[0])
-    对应的返回结果：
-    
-    D:/office3/python/python_py/compare/test.py
-    D:/office3/python/python_py/compare/test.py
-    D:/office3/python/python_py/compare
-    test.py
-    test  
-    '''
-    
+    @staticmethod
     def get_file_dir_name(self, file_full_path):
         base_dir = os.path.dirname(os.path.abspath(file_full_path))
         file_name = os.path.split(file_full_path)[-1]
@@ -51,3 +36,10 @@ class MainUtile:
         # 去掉后缀
         filename_without_extension = os.path.splitext(filename_with_extension)[0]
         return filename_without_extension
+    
+    def get_stock_prefix(stock_code):
+        """根据股票代码获取前缀 第一位数字 6=sh 0,3=sz 9=bj"""
+        if len(stock_code) != 6 or not stock_code.isdigit():
+            raise ValueError("股票代码应为6位数字")
+        prefix = stock_code_num.get(stock_code[0], 'unknown')
+        return prefix

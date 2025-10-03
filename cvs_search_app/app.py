@@ -5,6 +5,13 @@ import os
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import subprocess  # 用于调用外部Python脚本
+import sys
+from pathlib import Path
+
+# 添加项目根目录到sys.path
+project_root = Path(__file__).parent
+sys.path.append(str(project_root))
+from scripts.RootInfo import MainUtile as utile
 
 '''
 project/
@@ -78,8 +85,7 @@ def sortbydateandcode():
                     axis=1)]
                 
                 #显示该股票的k line图
-                stock_code = '000008'   
-                stock_dashboard_div = stock_dashboard(stock_code)
+                stock_dashboard_div = stock_dashboard(search_key)
                 
         #按请求排序
         sort_by = '上榜日期'  # 你可以根据需要更改排序列'
@@ -142,8 +148,11 @@ def load_stock_data(file_path):
     return df
 
 def stock_dashboard(stock_code):
+    if len(stock_code) != 6 or not stock_code.isdigit():
+        return None
+    stock_prefix = utile.get_stock_prefix(stock_code)
     """生成股票K线图的HTML div字符串"""
-    t_csv_path = stocks_csv_dir + '\\' + stock_code + '.csv'
+    t_csv_path = stocks_csv_dir + '\\' + stock_prefix + stock_code + '.csv'
     print(f"读取股票数据文件: {t_csv_path}")
     stock_df = load_stock_data(t_csv_path)
     kline_div = get_kline_div_string(stock_df)
