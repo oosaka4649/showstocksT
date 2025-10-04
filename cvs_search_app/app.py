@@ -12,7 +12,7 @@ from pathlib import Path
 project_root = Path(__file__).parent
 sys.path.append(str(project_root))
 from scripts.RootInfo import MainUtile as utile
-
+from scripts.ReadTDXDayFileToCSV import DayFileToCsv as DayToCsv
 '''
 project/
 ├── app.py                # 主程序
@@ -31,6 +31,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 aijinggu_csv_path = os.path.join(current_dir, 'data', 'aijinggu.csv')
 scripts_path = os.path.join(current_dir, 'scripts', 'getaijinggu_byall.py')
 stocks_csv_dir = os.path.join(current_dir, 'stockscsv')
+tdx_day_file_path = 'C:\\zd_zsone\\vipdoc\\'  # tdx路径
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -130,6 +131,19 @@ def clean_numeric_string(value):
 
 
 '''
+根据股票代码，读取通达信day文件，转换成csv文件，并生成K线图的HTML
+'''
+def convert_day_to_csv(stock_prefix, stock_code):
+    # 这里可以添加转换逻辑，将TDX文件转换为CSV格式
+    # 例如，读取TDX文件并将其转换为DataFrame，然后保存为CSV
+    t_day_file = f"{tdx_day_file_path}\\{stock_prefix}\\lday\\{stock_prefix}{stock_code}.day"  # 示例路径，{0}为市场前缀，{1}为股票代码 'C:\\zd_zsone\\vipdoc\\sh\\lday\\sh600475.day'
+    tocsv = DayToCsv(t_day_file)
+    tocsv.transform_data_one(tocsv.day_file, tocsv.target_dir)
+    csv_file_full_path = tocsv.getCsvFilePath()
+    return csv_file_full_path
+
+
+'''
 将生成的 Plotly K线图嵌入到现有 HTML 文件的 div 中，而不是生成完整的 HTML 文件。
 '''
 # 读取股票CSV文件（示例路径，请替换为实际文件路径）
@@ -151,8 +165,10 @@ def stock_dashboard(stock_code):
     if len(stock_code) != 6 or not stock_code.isdigit():
         return None
     stock_prefix = utile.get_stock_prefix(stock_code)
+    
+    # 转换day文件到csv文件
+    t_csv_path = convert_day_to_csv(stock_prefix, stock_code)
     """生成股票K线图的HTML div字符串"""
-    t_csv_path = stocks_csv_dir + '\\' + stock_prefix + stock_code + '.csv'
     print(f"读取股票数据文件: {t_csv_path}")
     stock_df = load_stock_data(t_csv_path)
     kline_div = get_kline_div_string(stock_df)
@@ -183,11 +199,14 @@ def get_kline_div_string(df):
         x=df.index,
         y=df['volume'],
         name='成交量',
-        marker_color='rgba(100, 100, 200, 0.6)'
+        marker_color=[
+                        f'rgba(255,0,0,0.6)' if close < open else f'rgba(0,255,0,0.6)'
+                        for open, close in zip(df['open'], df['close'])
+                    ]
     ), row=2, col=1)
     
     fig.update_layout(
-        title=f'股票 K 线图',
+        title=f'股票K线图',
         xaxis_title='日期',
         yaxis_title='价格',
         template='plotly_dark',

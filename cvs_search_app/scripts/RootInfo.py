@@ -7,7 +7,7 @@ Created on Wed Jul  6 13:59:46 2022
 
 import os
 
-stock_code_num = {'6':'sh','3':'sz','0':'sz','9':'bj'}  # 股票代码前缀
+stock_code_num = {'6':'sh','3':'sz','0':'sz','4':'bj','8':'bj','9':'bj'}  # 股票代码前缀
 
 class MainUtile:
     def __init__(self):

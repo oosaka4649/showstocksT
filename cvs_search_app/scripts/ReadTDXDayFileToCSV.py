@@ -8,8 +8,7 @@ Created on Sat Jun 25 20:12:07 2022
 import os
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import constant as constant
-from RootInfo import MainUtile as utile
+from scripts.RootInfo import MainUtile as utile
 
 #直接对通达信下载的数据 二进制day文件进行转换成csv文件
 import time
@@ -21,10 +20,11 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 # 上一级目录（父目录）
 parent_dir = os.path.dirname(current_dir)
 stocks_csv_path = os.path.join(parent_dir, 'stockscsv')
+CSV_HEADER_INFO = ['date','open','high','low','close','amount','volume']
 
 class DayFileToCsv:
-    def __init__(self, day_file='', target_dir=''):
-        self.target_dir = target_dir
+    def __init__(self, day_file=''):
+        self.target_dir = stocks_csv_path
         self.day_file = day_file
         self.csv_file = ''
         self.target_csv_file = ''
@@ -42,13 +42,13 @@ class DayFileToCsv:
         rec_count = int(buf_size / 32)
         begin = 0
         end = 32
-        header = str(constant.CSV_HEADER_INFO[0]) + ','\
-                 + str(constant.CSV_HEADER_INFO[1]) + ','\
-                 + str(constant.CSV_HEADER_INFO[2]) + ','\
-                 + str(constant.CSV_HEADER_INFO[3]) + ',' \
-                    + str(constant.CSV_HEADER_INFO[4]) + ','\
-                        + str(constant.CSV_HEADER_INFO[5]) + ',' \
-                        + str(constant.CSV_HEADER_INFO[6]) + '\n'
+        header = str(CSV_HEADER_INFO[0]) + ','\
+                 + str(CSV_HEADER_INFO[1]) + ','\
+                 + str(CSV_HEADER_INFO[2]) + ','\
+                 + str(CSV_HEADER_INFO[3]) + ',' \
+                    + str(CSV_HEADER_INFO[4]) + ','\
+                        + str(CSV_HEADER_INFO[5]) + ',' \
+                        + str(CSV_HEADER_INFO[6]) + '\n'
         target_file.write(header)
         for i in range(rec_count):
             # 将字节流转换成Python数据格式
@@ -99,8 +99,7 @@ class DayFileToCsv:
         
 if __name__ == '__main__':
     t_day_file = 'C:\\zd_zsone\\vipdoc\\sh\\lday\\sh600475.day'
-    t_csv_path = stocks_csv_path
-    tocsv = DayFileToCsv(t_day_file, t_csv_path)
+    tocsv = DayFileToCsv(t_day_file)
     # 程序开始时的时间
     time_start = time.time()
 
