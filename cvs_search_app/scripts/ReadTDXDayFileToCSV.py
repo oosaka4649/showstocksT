@@ -20,7 +20,6 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 # 上一级目录（父目录）
 parent_dir = os.path.dirname(current_dir)
 stocks_csv_path = os.path.join(parent_dir, 'stockscsv')
-CSV_HEADER_INFO = ['date','open','high','low','close','amount','volume']
 
 class DayFileToCsv:
     def __init__(self, day_file=''):
@@ -42,13 +41,13 @@ class DayFileToCsv:
         rec_count = int(buf_size / 32)
         begin = 0
         end = 32
-        header = str(CSV_HEADER_INFO[0]) + ','\
-                 + str(CSV_HEADER_INFO[1]) + ','\
-                 + str(CSV_HEADER_INFO[2]) + ','\
-                 + str(CSV_HEADER_INFO[3]) + ',' \
-                    + str(CSV_HEADER_INFO[4]) + ','\
-                        + str(CSV_HEADER_INFO[5]) + ',' \
-                        + str(CSV_HEADER_INFO[6]) + '\n'
+        header = str(utile.CSV_HEADER_INFO[0]) + ','\
+                 + str(utile.CSV_HEADER_INFO[1]) + ','\
+                 + str(utile.CSV_HEADER_INFO[2]) + ','\
+                 + str(utile.CSV_HEADER_INFO[3]) + ',' \
+                    + str(utile.CSV_HEADER_INFO[4]) + ','\
+                        + str(utile.CSV_HEADER_INFO[5]) + ',' \
+                        + str(utile.CSV_HEADER_INFO[6]) + '\n'
         target_file.write(header)
         for i in range(rec_count):
             # 将字节流转换成Python数据格式

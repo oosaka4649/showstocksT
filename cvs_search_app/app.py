@@ -154,11 +154,11 @@ def load_stock_data(file_path):
     """
     df = pd.read_csv(file_path)
     # 统一列名大小写
-    df.columns = df.columns.str.lower()
+    #df.columns = df.columns.str.lower()
     # 转换日期格式
-    if 'date' in df.columns:
-        df['date'] = pd.to_datetime(df['date'])
-        df.set_index('date', inplace=True)
+    #if 'date' in df.columns:
+    df[utile.CSV_HEADER_INFO[0]] = pd.to_datetime(df[utile.CSV_HEADER_INFO[0]])
+    df.set_index(utile.CSV_HEADER_INFO[0], inplace=True)
     return df
 
 def stock_dashboard(stock_code):
@@ -188,20 +188,20 @@ def get_kline_div_string(df):
     
     fig.add_trace(go.Candlestick(
         x=df.index,
-        open=df['open'],
-        high=df['high'],
-        low=df['low'],
-        close=df['close'],
+        open=df[utile.CSV_HEADER_INFO[1]],
+        high=df[utile.CSV_HEADER_INFO[2]],
+        low=df[utile.CSV_HEADER_INFO[3]],
+        close=df[utile.CSV_HEADER_INFO[4]],
         name='K线'
     ), row=1, col=1)
     
     fig.add_trace(go.Bar(
         x=df.index,
-        y=df['volume'],
+        y=df[utile.CSV_HEADER_INFO[6]],
         name='成交量',
         marker_color=[
                         f'rgba(255,0,0,0.6)' if close < open else f'rgba(0,255,0,0.6)'
-                        for open, close in zip(df['open'], df['close'])
+                        for open, close in zip(df[utile.CSV_HEADER_INFO[1]], df[utile.CSV_HEADER_INFO[4]])
                     ]
     ), row=2, col=1)
     

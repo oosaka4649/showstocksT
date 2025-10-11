@@ -7,9 +7,10 @@ Created on Wed Jul  6 13:59:46 2022
 
 import os
 
-stock_code_num = {'6':'sh','3':'sz','0':'sz','4':'bj','8':'bj','9':'bj'}  # 股票代码前缀
-
 class MainUtile:
+    STOCK_CODE_NUM = {'6':'sh','3':'sz','0':'sz','4':'bj','8':'bj','9':'bj'}  # 股票代码前缀
+    CSV_HEADER_INFO = ['Date','Open','High','Low','Close','Amount','Volume']
+
     def __init__(self):
         pass
 
@@ -41,5 +42,5 @@ class MainUtile:
         """根据股票代码获取前缀 第一位数字 6=sh 0,3=sz 9=bj"""
         if len(stock_code) != 6 or not stock_code.isdigit():
             raise ValueError("股票代码应为6位数字")
-        prefix = stock_code_num.get(stock_code[0], 'unknown')
+        prefix = MainUtile.STOCK_CODE_NUM.get(stock_code[0], 'unknown')
         return prefix
