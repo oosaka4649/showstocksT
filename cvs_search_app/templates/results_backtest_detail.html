@@ -22,9 +22,48 @@
     <!-- 脚本执行结果输出 -->
     <div class="container mt-3 display: flex">
         {% if script_output %}
-        <div class="padding: 20px background-color: #50b178ff">
-            <h4>执行结果：</h4>
-            <pre>{{ script_output }}</pre>
+        <div class="padding: 20px background-color: #50b178ff" style="overflow: hidden;">
+            <div style="float: left; width: 50%;">
+               <pre>{{ script_output }}</pre>
+            </div>
+            <div style="float: left; width: 50%;">
+                <p>一些关键指标&#xff1a;</p> 
+                <ul>
+
+                    <li><strong>Sharpe Ratio:</strong> 夏普比率&#xff0c;衡量经风险调整后的回报&#xff08;越高越好&#xff09;。</li>
+                    <li><strong>Sortino Ratio:</strong> 索提诺比率&#xff0c;类似于夏普&#xff0c;但只考虑下行风险。</li>
+                    <li><strong>Profit Factor:</strong> 总盈利 / 总亏损。大于 1 表示盈利。</li>
+
+
+                    <li><strong>Start                         </strong> 起始时间</li></ul> 
+                    <li><strong>End                           </strong> 结束时间</li></ul> 
+                    <li><strong>Period                        </strong> 周期</li></ul> 
+                    <li><strong>Start Value                   </strong> 起始值</li></ul> 
+                    <li><strong>End Value                     </strong> 终值</li></ul> 
+                    <li><strong>Total Return [%]:             </strong> 策略期间的总回报率[%]</li>
+
+
+                    <li><strong>Benchmark Return [%]         </strong> 基准回报率[%]</li></ul> 
+                    <li><strong>Max Gross Exposure [%]       </strong> 最大总风险敞口 [%] </li></ul> 
+                    <li><strong>Total Fees Paid              </strong> 总支付费用</li></ul> 
+                    <li><strong>Max Drawdown [%]             </strong> 峰值到谷底的最大回撤幅度&#xff0c;衡量风险。</li></ul> 
+                    <li><strong>Max Drawdown Duration        </strong> 最大回撤持续时间 </li></ul> 
+                    <li><strong>Total Trades                 </strong> 总交易次数</li></ul> 
+                    <li><strong>Total Closed Trades          </strong> 已平仓交易总数</li></ul> 
+                    
+                    <li><strong>Total Open Trades            </strong> 未平仓交易总数</li></ul> 
+                    <li><strong>Open Trade PnL               </strong> 未平仓交易盈亏</li></ul> 
+                    <li><strong>Win Rate [%]                 </strong> 盈利交易次数占总交易次数的比例</li></ul> 
+                    <li><strong>Best Trade [%]               </strong> 最佳交易 [%]</li></ul> 
+                    <li><strong>Worst Trade [%]              </strong> 最差交易 [%]</li></ul> 
+                    <li><strong>Avg Winning Trade [%]        </strong> 平均每次盈利交易的回报率。</li></ul> 
+                    <li><strong>Avg Losing Trade [%]:        </strong> 平均每次亏损交易的回报率。</li></ul> 
+                    
+                    <li><strong>Avg Winning Trade Duration   </strong> 平均盈利交易持续时间</li></ul>
+                    <li><strong>Avg Losing Trade Duration    </strong> 平均亏损交易持续时间</li></ul>
+                    <li><strong>Profit Factor                </strong> 盈利因子</li></ul>
+                    <li><strong>Expectancy                   </strong> 预期值</li></ul>
+            </div>
         </div>
         {% endif %}    
         {% if results_detail %}

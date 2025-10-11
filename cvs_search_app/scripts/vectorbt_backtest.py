@@ -1,9 +1,15 @@
 import vectorbt as vbt
 import pandas as pd
+import os
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from scripts.RootInfo import MainUtile as utile
 '''
 https://github.com/polakowo/vectorbt/tree/master/apps/candlestick-patterns
 
 https://www.marketcalls.in/python/mastering-vectorbt-backtesting-and-optimization-part-1-python-tutorial.html
+
+https://blog.csdn.net/zhangyunchou2015/article/details/147185207
 
 '''
 # 加载股票数据
@@ -32,9 +38,6 @@ def simple_backtest(file_path):
     简单的均线交叉策略回测示例
     """
     return_info = ''
-    # 文件路径
-    #file_path = 'D:\\python\\showstocksT\\cvs_search_app\\stockscsv\\sh600475.csv'
-
     # 加载数据
     close = load_stock_data(file_path)
 
@@ -59,30 +62,11 @@ def simple_backtest(file_path):
         # 打印最新指标值
         print(f"最新收盘价: {close.iloc[-1]}")
         return_info += f"最新收盘价: {close.iloc[-1]}\n"
-        print(f"最新RSI值: {rsi.rsi.iloc[-1]:.2f}")
-        return_info += f"最新RSI值: {rsi.rsi.iloc[-1]:.2f}\n"
-        print(f"5日均线: {fast_ma.ma.iloc[-1]:.2f}")
-        return_info += f"5日均线: {fast_ma.ma.iloc[-1]:.2f}\n"
-        print(f"10日均线: {slow_ma.ma.iloc[-1]:.2f}")
-        return_info += f"10日均线: {slow_ma.ma.iloc[-1]:.2f}\n"
         try:
             entries = fast_ma.ma_crossed_above(slow_ma_60)
             exits = fast_ma.ma_crossed_below(slow_ma)
             pf = vbt.Portfolio.from_signals(close, entries, exits, init_cash=100000)
-
-            '''
-            #        打印回测结果
-                    print('1---输出总收益')
-                    print(pf.total_profit())
-                    print('2---输出总收益率')
-                    print(pf.total_return())
-                    #pf.stats().to_csv('D:\\python\\showstocksT\\cvs_search_app\\stockscsv\\backtest_results.csv')
-                    # Accessing trade details
-                    trades = pf.trades.records_readable
-                    #print("\n交易详细清单:")
-                    trades.to_csv('D:\\python\\showstocksT\\cvs_search_app\\stockscsv\\trade_details.csv')
-                    pf.plot().show()
-            '''
+            return_info = utile.generate_report(utile.BACK_TEST_1, pf.total_return(), pf.total_profit(), pf.stats(), return_info)
             return return_info, pf
         except Exception as e:
             print(f"加载数据失败: {e}")

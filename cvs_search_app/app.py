@@ -147,17 +147,13 @@ def vectorbt_backtest():
             sum_result, pf = simple_backtest(file_path)
             if pf is None:
                 return render_template("index.html", script_output=f"回测失败: {str(sum_result)}")  
-            
-            
+     
             #显示该股票的回测结果图
-            stock_back_test_div = pf.plot().to_html(default_width='1700px',include_plotlyjs='cdn')
+            stock_back_test_div = pf.plot().to_html(include_plotlyjs='cdn')
             # 读取回测结果详细
-            sum_result += '\n总收益:' + str(pf.total_profit())
-            sum_result += '\n总收益率:' + str(pf.total_return())
-            sum_result += '\n汇总:' + pf.stats().to_string()  
             backtest_detail = pf.trades.records_readable
         return render_template("results_backtest_detail.html", results_detail=backtest_detail.to_html(classes="table"), search_key=search_key, back_test_div=stock_back_test_div,
-                               script_output=f"回测统计结果: {str(sum_result)}")
+                               script_output=f"{str(sum_result)}")
     except Exception as e:
         return render_template("index.html", script_output=f"执行失败: {str(e)}")
     
