@@ -7,27 +7,17 @@
 <body>
     <div class="container mt-3">
         <div>
-            <h1>游资进入场详细</h1>
+            <h1>回测详细</h1>
             <a href="/help">帮助</a>
             <a href="/">返回首页</a>
         </div>
-        <div>
-            {% if kline_div %}
+        <div >
+            {% if back_test_div %}
                 <h1>{{ search_key }}K线图</h1>
-                <div id="kline-container">
-                        {{ kline_div | safe }}
-                </div>
+                    {{ back_test_div | safe }}
+                
             {% endif %}
         </div>
-    </div>
-    <div class="container mt-5">
-        <form action="{{ url_for('sortbydateandcode') }}" method="POST">
-            <input type="text" id="search_key" name="search_key" value={{ search_key }}>
-            <button type="submit">查看个股进场详细</button>
-        </form>        
-        <h1>Results for: <a href="/backtest?search_key={{ search_key }}">{{ search_key }}</a></h1>
-        {{ results | safe }}
-        <a href="/">Back</a>
     </div>
     <!-- 脚本执行结果输出 -->
     <div class="container mt-3 display: flex">
@@ -37,10 +27,10 @@
             <pre>{{ script_output }}</pre>
         </div>
         {% endif %}    
-        {% if script_output_date %}
+        {% if results_detail %}
         <div class="padding: 20px background-color: #279960ff">
-            <h4>执行结果：</h4>
-            <pre>{{ script_output_date }}</pre>
+            <h4>进出场详细：</h4>
+            {{ results_detail | safe }}
         </div>
         {% endif %}  
     </div>    

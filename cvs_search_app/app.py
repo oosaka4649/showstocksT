@@ -13,6 +13,7 @@ project_root = Path(__file__).parent
 sys.path.append(str(project_root))
 from scripts.RootInfo import MainUtile as utile
 from scripts.ReadTDXDayFileToCSV import DayFileToCsv as DayToCsv
+from scripts.vectorbt_backtest import simple_backtest as simple_backtest
 '''
 project/
 ├── app.py                # 主程序
@@ -128,8 +129,39 @@ def clean_numeric_string(value):
         return float(match.group())
     return 0.0
 
+#################################### back test detail ##################################################
+@app.route("/backtest", methods=["GET", "POST"])
+def vectorbt_backtest():
+    try:
+        if request.args['search_key'] is not None and request.args['search_key'] != '':
+            search_key = request.args['search_key']
+            if len(search_key) != 6 or not search_key.isdigit():
+                return render_template("index.html", script_output="请输入正确的6位股票代码，例如：600475")
+            
+            stock_prefix = utile.get_stock_prefix(search_key)
 
-
+            # 调用 backtest 脚本
+            file_path = os.path.join(stocks_csv_dir, f'{stock_prefix}{search_key}.csv')  # 假设文件名格式为 sh600475.csv
+            if not os.path.exists(file_path):
+                return render_template("index.html", script_output=f"股票数据文件不存在: {file_path}")
+            sum_result, pf = simple_backtest(file_path)
+            if pf is None:
+                return render_template("index.html", script_output=f"回测失败: {str(sum_result)}")  
+            
+            
+            #显示该股票的回测结果图
+            stock_back_test_div = pf.plot().to_html(default_width='1700px',include_plotlyjs='cdn')
+            # 读取回测结果详细
+            sum_result += '\n总收益:' + str(pf.total_profit())
+            sum_result += '\n总收益率:' + str(pf.total_return())
+            sum_result += '\n汇总:' + pf.stats().to_string()  
+            backtest_detail = pf.trades.records_readable
+        return render_template("results_backtest_detail.html", results_detail=backtest_detail.to_html(classes="table"), search_key=search_key, back_test_div=stock_back_test_div,
+                               script_output=f"回测统计结果: {str(sum_result)}")
+    except Exception as e:
+        return render_template("index.html", script_output=f"执行失败: {str(e)}")
+    
+#################################### back test detail ##################################################
 '''
 根据股票代码，读取通达信day文件，转换成csv文件，并生成K线图的HTML
 '''
