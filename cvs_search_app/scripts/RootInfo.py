@@ -17,6 +17,9 @@ class MainUtile:
         股价高于60日均线时，5日均线上穿60日均线买入，5日均线下穿10日均线卖出。    
     """
 
+    BACK_TEST_ALL_1 = """
+        股价高于10日均线时，5日均线上穿10日均线买入，5日均线下穿10日均线卖出。    
+    """
 
     def __init__(self):
         pass
@@ -52,6 +55,16 @@ class MainUtile:
         prefix = MainUtile.STOCK_CODE_NUM.get(stock_code[0], 'unknown')
         return prefix
     
+    def get_backtest_info(back_type):
+        if back_type == 1:
+            return MainUtile.BACK_TEST_ALL_1
+        elif back_type == 2:
+            return "均线策略二"
+        elif back_type == 3:
+            return "均线策略三"
+        else:
+            return "未知策略"
+        
     def generate_report(back_test_info, total_return, total_profit, pf_stats, stack_info):
         
         """生成报告字符串"""

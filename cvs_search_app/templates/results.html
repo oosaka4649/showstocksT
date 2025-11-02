@@ -24,7 +24,14 @@
         <form action="{{ url_for('sortbydateandcode') }}" method="POST">
             <input type="text" id="search_key" name="search_key" value={{ search_key }}>
             <button type="submit">查看个股进场详细</button>
-        </form>        
+        </form> 
+        {% if search_key %}      
+        <form action="{{ url_for('backtestall') }}" method="POST">
+            <input type="text" id="search_key" name="search_key" value={{ search_key }} hidden>
+            <input type="text" id="back_type" name="back_type" value=1 hidden>
+            <button type="submit">均线策略一</button>
+        </form>  
+        {% endif %}             
         <h1>Results for: <a href="/backtest?search_key={{ search_key }}">{{ search_key }}</a></h1>
         {{ results | safe }}
         <a href="/">Back</a>
