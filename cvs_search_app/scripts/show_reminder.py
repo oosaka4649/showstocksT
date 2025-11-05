@@ -129,14 +129,14 @@ def calculate_monthly_weekday(input_str, year=None, month=None):
 def get_out_day():
     """计算每个月的期权到期日（每个月的第三个星期五）"""
     #print("=== 日期计算函数测试 ===\n")
-    
+    teday = datetime.now().date().strftime('%Y-%m-%d')
     # 测试用例
     test_cases = [
         "每个月第三周的星期五",  # 股指期货交割日
         "每个月第四周的星期三",  # 股指期权最后交易日
     ]
     result_info = "-" * 50
-    result_info += "\n A50指数期货交割日 每个月倒数第二个工作日， 遇节假日顺延\n 股指期权交易日\n"
+    result_info += f'\n A50指数期货交割日 每个月倒数第二个工作日， \n遇节假日顺延  今天是 {teday}  \n  股指期权交易日\n'
     for test_case in test_cases:
         #print(f"输入: {test_case}")
         
@@ -145,7 +145,7 @@ def get_out_day():
             current_result = calculate_monthly_weekday(test_case)
             if current_result['success']:
                 #print(f"结果: {current_result['chinese_date']} ({current_result['date_str']})")
-                result_info += f"\n {test_case}: ({current_result['date_str']})\n"
+                result_info += f" {test_case}: ({current_result['date_str']})\n"
             else:
                 print(f"结果: {current_result['message']}")
         except Exception as e:
