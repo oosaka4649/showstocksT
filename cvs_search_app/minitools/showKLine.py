@@ -40,17 +40,18 @@ def calculate_ma(day_count: int, data):
         result.append(abs(float("%.3f" % (sum_total / day_count))))
     return result
 
-def draw_charts():
+def draw_charts(stock_code=''):
     kline_data = [data[1:-1] for data in chart_data["values"]]
     kline = (
         Kline()
         .add_xaxis(xaxis_data=chart_data["categoryData"])
         .add_yaxis(
-            series_name="Dow-Jones index",
+            series_name=stock_code,
             y_axis=kline_data,
             itemstyle_opts=opts.ItemStyleOpts(color="#ec0000", color0="#00da3c"),
         )
         .set_global_opts(
+            title_opts=opts.TitleOpts(title=f'{stock_code}_K线周期图表', pos_left="500"),
             legend_opts=opts.LegendOpts(
                 is_show=False, pos_bottom=10, pos_left="center"
             ),
@@ -205,7 +206,7 @@ def draw_charts():
             pos_left="10%", pos_right="8%", pos_top="63%", height="16%"
         ),
     )
-    grid_chart.render("tdx_kline_brush.html")
+    grid_chart.render(f'{stock_code}_kline.html')
 
 
 if __name__ == "__main__":
@@ -213,4 +214,4 @@ if __name__ == "__main__":
     tdx_datas.getStockDayFile()
     tdx_datas.creatstocKDataList()
     chart_data = split_data(tdx_datas.getTDXStockKDatas())
-    draw_charts()
+    draw_charts('600312')
