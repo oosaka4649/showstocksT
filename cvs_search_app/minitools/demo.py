@@ -18,4 +18,9 @@ https://blog.csdn.net/qiuxiaodu/article/details/145389009   将浏览器中的�
 macro 文件里面的 第 二行  width:100% 修改成下面一样
     <div id="{{ c.chart_id }}" class="chart-container" style="width:100%; height:{{ c.height }}; {{ c.horizontal_center }}"></div>
 
+
+
+https://ta-lib-python.transdocs.org/
+https://zxdd.com/TA-Lib
+https://zhuanlan.zhihu.com/p/683857187
 '''
