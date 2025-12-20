@@ -4,7 +4,7 @@ https://juejin.cn/post/7281089570375893053
 1 根据csv，显示 k线图，可以显示均线，后续，根据周，月均线等 看能否显示到一个图里面
 2 结合均线，指标，等
 
-3 这tools文件夹，后面作为我小工具的文件夹
+3 这tools文件夹，后面作为我小工具的文件夹  talib and pyecharts stock analysis tools
 
 https://pyecharts.org/#/zh-cn/donate   中文文档
 https://gallery.pyecharts.org/#/Candlestick/professional_kline_chart  代码示例
@@ -35,4 +35,9 @@ oosaka4649 (not editable)
 Your account number
 31407199
 https://www.kaggle.com/
+
+
+学习网站
+http://python.86x.net/pandas13/index.html
+https://docs.python.org/zh-cn/3/tutorial/datastructures.html#sets
 '''

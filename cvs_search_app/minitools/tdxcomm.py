@@ -3,7 +3,9 @@
 '''
 
 import os
+import pandas as pd
 from struct import unpack
+import user_config as ucfg
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 # 上一级目录（父目录）
@@ -24,6 +26,8 @@ class TDXData:
         self.day_file_path = '' 
         self.stock_code = stock_code
         self.day_datas = []
+        self.stock_code_list = {}
+        self.stock_name = ''
 
     '''
      通过股票代码，获取 TDX 中该股票的 day文件路径
@@ -48,6 +52,7 @@ class TDXData:
     # 将通达信的日线文件转换成list[list]格式
     def creatstocKDataList(self):
         if self.day_file_path is not None and len(self.day_file_path) > 1:
+            self.stock_name = self.get_stock_names()
             # 以二进制方式打开源文件
             source_file = open(self.day_file_path, 'rb')
             buf = source_file.read()
@@ -92,6 +97,24 @@ class TDXData:
 
     def getTDXStockKDatas(self):
         return self.day_datas
+    
+    def read_stock_names(self) -> dict:
+        stock_list = {}
+        # 读取通达信正常交易状态的股票列表。infoharbor_spec.cfg退市文件不齐全，放弃使用
+        tdx_stocks = pd.read_csv(ucfg.tdx['tdx_path'] + '/T0002/hq_cache/infoharbor_ex.code',
+                                sep='|', header=None, index_col=None, encoding='gbk', dtype={0: str})
+        '''
+                        0      1                  2
+            0     000001   平安银行       平安保险,谢永林,冀光恒
+            1     000002  万  科Ａ          VANKE,黄力平
+        '''
+        # 只取 代码 和 名称 两列
+        df1 = pd.DataFrame(tdx_stocks, columns = [0, 1])
+        self.stock_code_list = pd.Series(df1[1].values,index=df1[0]).to_dict()
+        return self.stock_code_list
+    
+    def get_stock_names(self):
+        return self.read_stock_names().get(self.stock_code, '')
     '''
     utile end
     '''

@@ -16,6 +16,13 @@ parent_dir = os.path.dirname(current_dir)
 show_html_path = os.path.join(parent_dir, 'stockhtml')
 
 
+'''
+使用 pyecharts 绘制 k线图 
+使用 talib 计算均线 
+
+标准的 k线数据格式  用作后面扩展base
+'''
+
 def split_data(data):
     category_data = []
     values = []
@@ -44,22 +51,25 @@ def split_data(data):
   我修改了原来单纯的计算方法，改用 talib 库来计算均线，这样后面要计算其他指标也方便
 '''
 def calculate_ma(day_count: int, data):
+    '''
+      ta lib 使用 np.array 作为输入，但 pyecharts 需要 list 作为输出，所以这里做了转换，而且 数据类型为 double
+    '''
     
     result = talib.SMA(np.array(data["closes"], dtype='double'), timeperiod=day_count)
     return result
 
-def draw_charts(stock_code=''):
+def draw_charts(stock_code='', stock_name=''):
     kline_data = [data[1:-1] for data in chart_data["values"]]
     kline = (
         Kline()
         .add_xaxis(xaxis_data=chart_data["categoryData"])
         .add_yaxis(
-            series_name=stock_code,
+            series_name=stock_name,
             y_axis=kline_data,
             itemstyle_opts=opts.ItemStyleOpts(color="#ec0000", color0="#00da3c"),
         )
         .set_global_opts(
-            title_opts=opts.TitleOpts(title=f'{stock_code}_K线周期图表', pos_left="500"),
+            title_opts=opts.TitleOpts(title=f'{stock_name}_{stock_code}_K线周期图表', pos_left="500"),
             legend_opts=opts.LegendOpts(
                 is_show=False, pos_bottom=10, pos_left="center"
             ),
@@ -223,4 +233,4 @@ if __name__ == "__main__":
     tdx_datas.getStockDayFile()
     tdx_datas.creatstocKDataList()
     chart_data = split_data(tdx_datas.getTDXStockKDatas())
-    draw_charts('600312')
+    draw_charts('600312', tdx_datas.stock_name)
