@@ -4,11 +4,23 @@ from typing import List, Union
 from pyecharts import options as opts
 from pyecharts.charts import Kline, Line, Bar, Grid
 
+import talib
+import numpy as np
+from datetime import datetime
+import os
+
+# 脚本常量
+current_dir = os.path.dirname(os.path.abspath(__file__))
+# 上一级目录（父目录）
+parent_dir = os.path.dirname(current_dir)
+show_html_path = os.path.join(parent_dir, 'stockhtml')
+
 
 def split_data(data):
     category_data = []
     values = []
     volumes = []
+    closes = []
 
     '''
         date         开        收        最低       最高       量
@@ -20,24 +32,20 @@ def split_data(data):
     for i, tick in enumerate(data):
         category_data.append(tick[0]) # 日期
         values.append(tick) # 全部内容
+        closes.append(tick[2]) # 收盘价
         # 元代码 是 tick 4 错了，应该是 tick 5 因为 4是 最高价，5才是量
         volumes.append([i, tick[5], 1 if tick[1] > tick[2] else -1])  # i 是序号 从 0 开始，如果 开始大于收盘 1 ，反之 -1 估计是标 量线颜色用 红 绿
-    return {"categoryData": category_data, "values": values, "volumes": volumes}
+    return {"categoryData": category_data, "values": values, "volumes": volumes, "closes": closes}
 
 
 '''
   手动算出 均线， day count是输入要算的几日均线 tudo 后面要搞搞 其他macd，rsi，cci，bolling什么的
+
+  我修改了原来单纯的计算方法，改用 talib 库来计算均线，这样后面要计算其他指标也方便
 '''
 def calculate_ma(day_count: int, data):
-    result: List[Union[float, str]] = []
-    for i in range(len(data["values"])):
-        if i < day_count:
-            result.append("-")
-            continue
-        sum_total = 0.0
-        for j in range(day_count):
-            sum_total += float(data["values"][i - j][1])
-        result.append(abs(float("%.3f" % (sum_total / day_count))))
+    
+    result = talib.SMA(np.array(data["closes"], dtype='double'), timeperiod=day_count)
     return result
 
 def draw_charts(stock_code=''):
@@ -206,7 +214,8 @@ def draw_charts(stock_code=''):
             pos_left="10%", pos_right="8%", pos_top="63%", height="16%"
         ),
     )
-    grid_chart.render(f'{stock_code}_kline.html')
+    create_date = datetime.today().strftime("%Y%m%d%H%M%S")
+    grid_chart.render(f'{show_html_path}/{stock_code}_kline_{create_date}.html')
 
 
 if __name__ == "__main__":

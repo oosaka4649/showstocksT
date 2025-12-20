@@ -20,7 +20,19 @@ macro 文件里面的 第 二行  width:100% 修改成下面一样
 
 
 
-https://ta-lib-python.transdocs.org/
+https://ta-lib-python.transdocs.org/  指标库
 https://zxdd.com/TA-Lib
 https://zhuanlan.zhihu.com/p/683857187
+
+
+
+这网站kaggle提供，浏览器登陆后，可以在这网站远程训练ai模型
+bowu3394@gmail.com  我使用了默认的gmail邮箱登录
+
+Your username
+oosaka4649 (not editable)
+
+Your account number
+31407199
+https://www.kaggle.com/
 '''

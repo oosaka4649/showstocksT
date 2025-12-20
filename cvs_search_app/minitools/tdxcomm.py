@@ -10,10 +10,9 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 
 # 脚本常量
-current_dir = os.path.dirname(os.path.abspath(__file__))
-aijinggu_csv_path = os.path.join(current_dir, 'data', 'aijinggu.csv')
-scripts_path = os.path.join(current_dir, 'scripts', 'getaijinggu_byall.py')
-stocks_csv_dir = os.path.join(current_dir, 'stockscsv')
+aijinggu_csv_path = os.path.join(parent_dir, 'data', 'aijinggu.csv')
+scripts_path = os.path.join(parent_dir, 'scripts', 'getaijinggu_byall.py')
+stocks_csv_dir = os.path.join(parent_dir, 'stockscsv')
 tdx_day_file_path = 'C:\\zd_zsone\\vipdoc\\'  # tdx路径
 
 class TDXData:
