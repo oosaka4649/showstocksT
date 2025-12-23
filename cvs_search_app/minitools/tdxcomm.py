@@ -20,7 +20,7 @@ tdx_day_file_path = 'C:\\zd_zsone\\vipdoc\\'  # tdx路径
 class TDXData:
 
     STOCK_CODE_NUM = {'6':'sh','3':'sz','0':'sz','4':'bj','8':'bj','9':'bj'}  # 股票代码前缀
-    CSV_HEADER_INFO = ['Date','Open','High','Low','Close','Amount','Volume']
+    CSV_HEADER_INFO = ['Date','Open','Close','Low','High','Volume','Amount']
 
     def __init__(self, stock_code = None):
         self.day_file_path = '' 
@@ -47,7 +47,7 @@ class TDXData:
     '''
     '''
       由于 py echart绘图需要输入数据是 list[list],暂时写这一个函数，后续需要其他格式再添加
-      'Date','Open','High','Low','Close','Amount','Volume'
+      'Date','Open','Close','Low','High','Volume','Amount'
     '''
     # 将通达信的日线文件转换成list[list]格式
     def creatstocKDataList(self):
@@ -66,7 +66,7 @@ class TDXData:
                 # 将字节流转换成Python数据格式
                 # I: unsigned int
                 # f: float
-                # input 'Date','Open','High','Low','Close','Amount','Volume'
+                # input 'Date','Open','High','Low','Close','Volume','Amount'
                 a = unpack('IIIIIfII', buf[begin:end])
                 # 处理date数据
                 year = a[0] // 10000
@@ -95,9 +95,34 @@ class TDXData:
         return f"{tdx_day_file_path}\\{stock_prefix}\\lday\\{stock_prefix}{self.stock_code}.day"  # 示例路径，{0}为市场前缀，{1}为股票代码 'C:\\zd_zsone\\vipdoc\\sh\\lday\\sh600475.day'
 
 
+    #获取日线数据的list格式
     def getTDXStockKDatas(self):
         return self.day_datas
     
+    #获取日线数据的DataFrame格式
+    def getTDXStockKDataFrame(self):
+        data = pd.DataFrame(self.day_datas, columns=self.CSV_HEADER_INFO)
+        data["Date"] = pd.to_datetime(data["Date"])
+        data = data.set_index(["Date"])
+        return data
+    
+    #获取日线 list，周线 list数据
+    def getTDXStockDWDatas(self):
+        w_datas = self.tdx_weekly_data()
+        dwdatas = w_datas.reset_index().values.tolist()
+        return {"Day_Data": self.day_datas, "Week_Data": dwdatas}
+
+    #将日线数据转换成周线数据的DataFrame格式
+    def tdx_weekly_data(self) -> pd.DataFrame :
+            weekly_df = self.getTDXStockKDataFrame().resample('W').apply({
+                'Open': 'first',
+                'High': 'max',
+                'Low': 'min',
+                'Close': 'last',
+                'Volume': 'sum'
+            })
+            return weekly_df
+
     def read_stock_names(self) -> dict:
         stock_list = {}
         # 读取通达信正常交易状态的股票列表。infoharbor_spec.cfg退市文件不齐全，放弃使用
