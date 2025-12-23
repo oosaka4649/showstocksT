@@ -246,10 +246,11 @@ def draw_charts(stock_code='', stock_name=''):
 
 
 if __name__ == "__main__":
-    stock_code = '600745'
-    tdx_datas = tdx(stock_code)
-    tdx_datas.getStockDayFile()
-    tdx_datas.creatstocKDataList()
-    all_data = tdx_datas.getTDXStockDWDatas()
-    chart_data = split_data(tdx_datas.getTDXStockKDatas())
-    draw_charts(stock_code, tdx_datas.stock_name)
+    s_codes = ['300215', '301246', '000686', '600526', '600158','600233', '300251', '002303', '002852']
+    for stock_code in s_codes:
+        tdx_datas = tdx(stock_code)
+        tdx_datas.getStockDayFile()
+        tdx_datas.creatstocKDataList()
+        all_data = tdx_datas.getTDXStockDWDatas()
+        chart_data = split_data(tdx_datas.getTDXStockKDatas())
+        draw_charts(stock_code, tdx_datas.stock_name)
