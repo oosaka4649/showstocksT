@@ -6,7 +6,7 @@ https://juejin.cn/post/7281089570375893053
 
 3 这tools文件夹，后面作为我小工具的文件夹  talib and pyecharts stock analysis tools
 
-https://pyecharts.org/#/zh-cn/donate   中文文档
+https://pyecharts.org/#/zh-cn/donate   中文文档  pip install pyecharts
 https://gallery.pyecharts.org/#/Candlestick/professional_kline_chart  代码示例
 https://github.com/pyecharts/pyecharts  代码库
 https://bbs.huaweicloud.com/blogs/421186   一个实例
@@ -20,7 +20,7 @@ macro 文件里面的 第 二行  width:100% 修改成下面一样
 
 
 
-https://ta-lib-python.transdocs.org/  指标库
+https://ta-lib-python.transdocs.org/  指标库  python -m pip install TA-Lib
 https://zxdd.com/TA-Lib
 https://zhuanlan.zhihu.com/p/683857187
 

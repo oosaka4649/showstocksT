@@ -242,7 +242,7 @@ def draw_charts(stock_code='', stock_name=''):
     )
     create_date = datetime.today().strftime("%Y%m%d%H%M%S")
     #grid_chart.render(f'{show_html_path}/{stock_code}_kline_{create_date}.html')
-    grid_chart.render(f'{show_html_path}/{stock_code}_kline.html')
+    grid_chart.render(f'{show_html_path}/{stock_name}_{stock_code}_kline.html')
 
 
 if __name__ == "__main__":
