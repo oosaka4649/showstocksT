@@ -32,6 +32,7 @@ app = Flask(__name__)
 current_dir = os.path.dirname(os.path.abspath(__file__))
 aijinggu_csv_path = os.path.join(current_dir, 'data', 'aijinggu.csv')
 scripts_path = os.path.join(current_dir, 'scripts', 'getaijinggu_byall.py')
+scripts_k_line_path = os.path.join(current_dir, 'minitools', 'showKLine.py')
 stocks_csv_dir = os.path.join(current_dir, 'stockscsv')
 tdx_day_file_path = 'C:\\zd_zsone\\vipdoc\\'  # tdx路径
 
@@ -88,6 +89,14 @@ def sortbydateandcode():
                     axis=1)]
                 
                 #显示该股票的k line图
+                # 调用外部Python脚本（例如：scripts/selected_script.py）
+                result = subprocess.run(
+                    ["python", scripts_k_line_path, search_key], 
+                    capture_output=True, 
+                    text=True
+                )
+                output = result.stdout if result.returncode == 0 else f"错误: {result.stderr}"
+                print(f"showKLine.py output: {output}")
                 stock_dashboard_div = stock_dashboard(search_key)
                 
         #按请求排序
@@ -228,16 +237,21 @@ def load_stock_data(file_path):
 def stock_dashboard(stock_code):
     if len(stock_code) != 6 or not stock_code.isdigit():
         return None
-    stock_prefix = utile.get_stock_prefix(stock_code)
+    print(f"读取股票数据文件: kline.html")
+
+    kline_div = os.path.join(current_dir, 'templates'), 'kline.html'
+            
+    #stock_prefix = utile.get_stock_prefix(stock_code)
     
     # 转换day文件到csv文件
-    t_csv_path = convert_day_to_csv(stock_prefix, stock_code)
+    #t_csv_path = convert_day_to_csv(stock_prefix, stock_code)
     """生成股票K线图的HTML div字符串"""
-    print(f"读取股票数据文件: {t_csv_path}")
-    stock_df = load_stock_data(t_csv_path)
-    kline_div = get_kline_div_string(stock_df)
+    #print(f"读取股票数据文件: {t_csv_path}")
+    #stock_df = load_stock_data(t_csv_path)
+    #kline_div = get_kline_div_string(stock_df)
     return kline_div
 
+#不用了
 def get_kline_div_string(df):
     """
     生成K线图的HTML div字符串（不包含完整HTML结构）

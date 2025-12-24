@@ -8,12 +8,14 @@ import talib
 import numpy as np
 from datetime import datetime
 import os
+import sys
 
 # 脚本常量
 current_dir = os.path.dirname(os.path.abspath(__file__))
 # 上一级目录（父目录）
 parent_dir = os.path.dirname(current_dir)
 show_html_path = os.path.join(parent_dir, 'stockhtml')
+show_templates_html_path = os.path.join(parent_dir, 'templates')
 
 
 '''
@@ -58,7 +60,14 @@ def calculate_ma(day_count: int, data):
     result = talib.SMA(np.array(data["closes"], dtype='double'), timeperiod=day_count)
     return result
 
-def draw_charts(stock_code='', stock_name=''):
+def draw_charts(stock_code=''):
+    tdx_datas = tdx(stock_code)
+    tdx_datas.getStockDayFile()
+    tdx_datas.creatstocKDataList()
+    chart_data = split_data(tdx_datas.getTDXStockKDatas())
+
+    stock_name = tdx_datas.stock_name
+
     kline_data = [data[1:-1] for data in chart_data["values"]]
     kline = (
         Kline()
@@ -226,11 +235,24 @@ def draw_charts(stock_code='', stock_name=''):
     )
     create_date = datetime.today().strftime("%Y%m%d%H%M%S")
     grid_chart.render(f'{show_html_path}/{stock_code}_kline_{create_date}.html')
+    grid_chart.render(f'{show_templates_html_path}/kline.html')
 
+'''
+import subprocess
 
+# 1. 不带参数调用
+subprocess.run(['python', 'your_script.py'])
+
+# 2. 传递参数调用
+subprocess.run(['python', 'your_script.py', 'hello', 'world', '123'])
+
+import sys
+print(f"脚本名称: {sys.argv[0]}")
+print(f"接收到的参数数量: {len(sys.argv) - 1}")
+print(f"所有参数: {sys.argv}")
+'''
+#draw_charts({sys.argv[0]})
+
+print("Executing showKLine.py with arguments:", sys.argv)
 if __name__ == "__main__":
-    tdx_datas = tdx('600312')
-    tdx_datas.getStockDayFile()
-    tdx_datas.creatstocKDataList()
-    chart_data = split_data(tdx_datas.getTDXStockKDatas())
-    draw_charts('600312', tdx_datas.stock_name)
+    draw_charts(sys.argv[1])

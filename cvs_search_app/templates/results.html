@@ -28,10 +28,7 @@
         </div>
         <div>
             {% if kline_div %}
-                <h1>{{ search_key }}K线图</h1>
-                <div id="kline-container">
-                        {{ kline_div | safe }}
-                </div>
+                {% include kline_div %}
             {% endif %}
         </div>
     </div>
