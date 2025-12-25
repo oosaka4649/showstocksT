@@ -106,11 +106,14 @@ class TDXData:
         data = data.set_index(["Date"])
         return data
     
-    #获取日线 list，周线 list数据
-    def getTDXStockDWDatas(self):
+    #获取日线 list，周线 list数据，月线 list数据
+    def getTDXStockDWMDatas(self):
         w_datas = self.tdx_weekly_data()
         dwdatas = w_datas.reset_index().values.tolist()
-        return {"Day_Data": self.day_datas, "Week_Data": dwdatas}
+
+        m_datas = self.tdx_monthly_data()
+        m_datas = m_datas.reset_index().values.tolist() 
+        return {"Day_Data": self.day_datas, "Week_Data": dwdatas, "Month_Data": m_datas}
 
     #将日线数据转换成周线数据的DataFrame格式
     def tdx_weekly_data(self) -> pd.DataFrame :
@@ -122,6 +125,16 @@ class TDXData:
                 'Volume': 'sum'
             })
             return weekly_df
+
+    #将日线数据转换成月线数据的DataFrame格式
+    def tdx_monthly_data(self) -> pd.DataFrame :
+            monthly_df = self.getTDXStockKDataFrame().resample('ME').apply({
+                'Open': 'first',
+                'High': 'max',
+                'Low': 'min',
+                'Close': 'last'
+            })
+            return monthly_df
 
     def read_stock_names(self) -> dict:
         stock_list = {}

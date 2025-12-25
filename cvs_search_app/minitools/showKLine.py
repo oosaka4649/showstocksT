@@ -8,8 +8,8 @@ import talib
 import numpy as np
 from datetime import datetime
 import os
+import pandas as pd
 import sys
-
 # 脚本常量
 current_dir = os.path.dirname(os.path.abspath(__file__))
 # 上一级目录（父目录）
@@ -17,12 +17,15 @@ parent_dir = os.path.dirname(current_dir)
 show_html_path = os.path.join(parent_dir, 'stockhtml')
 show_templates_html_path = os.path.join(parent_dir, 'templates')
 
-
 '''
 使用 pyecharts 绘制 k线图 
 使用 talib 计算均线 
 
 标准的 k线数据格式  用作后面扩展base
+
+已经实现，将周线数据也绘制在图表上ma5上面
+
+用作app，调用，显示html上面
 '''
 
 def split_data(data):
@@ -46,7 +49,6 @@ def split_data(data):
         volumes.append([i, tick[5], 1 if tick[1] > tick[2] else -1])  # i 是序号 从 0 开始，如果 开始大于收盘 1 ，反之 -1 估计是标 量线颜色用 红 绿
     return {"categoryData": category_data, "values": values, "volumes": volumes, "closes": closes}
 
-
 '''
   手动算出 均线， day count是输入要算的几日均线 tudo 后面要搞搞 其他macd，rsi，cci，bolling什么的
 
@@ -60,14 +62,49 @@ def calculate_ma(day_count: int, data):
     result = talib.SMA(np.array(data["closes"], dtype='double'), timeperiod=day_count)
     return result
 
-def draw_charts(stock_code=''):
-    tdx_datas = tdx(stock_code)
-    tdx_datas.getStockDayFile()
-    tdx_datas.creatstocKDataList()
-    chart_data = split_data(tdx_datas.getTDXStockKDatas())
+def calculate_ma_list(day_count: int, w_data, chart_all_data):
+    '''
+      ta lib 使用 np.array 作为输入，但 pyecharts 需要 list 作为输出，所以这里做了转换，而且 数据类型为 double
+    '''
+    temp_closes = [row[4] for row in w_data if row[4] is not None]
+    temp_date = [(row[0] - + pd.Timedelta(days=2)).strftime("%Y-%m-%d") for row in w_data if row[4] is not None]
+    temp_w_ma = talib.SMA(np.array(temp_closes, dtype='double'), timeperiod=day_count)
 
-    stock_name = tdx_datas.stock_name
+    week_ma_dataes = []
+    for dt in chart_all_data['categoryData']:
+        if dt in temp_date:
+            idx = temp_date.index(dt)
+            if not np.isnan(temp_w_ma[idx]):
+                week_ma_dataes.append(temp_w_ma[idx])
+            else:
+                week_ma_dataes.append(np.float64(np.nan))
+        else:
+            week_ma_dataes.append(np.float64(np.nan))
+    return week_ma_dataes
 
+def calculate_ma_month_list(day_count: int, m_data, chart_all_data):
+    '''
+      ta lib 使用 np.array 作为输入，但 pyecharts 需要 list 作为输出，所以这里做了转换，而且 数据类型为 double
+    '''
+    temp_closes = [row[4] for row in m_data if row[4] is not None]
+    temp_date = [(row[0] - + pd.Timedelta(days=2)).strftime("%Y-%m-%d") for row in m_data if row[4] is not None]
+    temp_month_ma = talib.SMA(np.array(temp_closes, dtype='double'), timeperiod=day_count)
+
+    month_ma_dataes = []
+    for dt in chart_all_data['categoryData']:
+        if dt in temp_date:
+            idx = temp_date.index(dt)
+            if not np.isnan(temp_month_ma[idx]):
+                month_ma_dataes.append(temp_month_ma[idx])
+            else:
+                month_ma_dataes.append(np.float64(np.nan))
+        else:
+            month_ma_dataes.append(np.float64(np.nan))
+    return month_ma_dataes
+
+def draw_charts(stock_code='', stock_name=''):
+    weekly_MA_data = calculate_ma_list(5, all_data['Week_Data'], chart_data)
+    monthly_MA_data = calculate_ma_month_list(5, all_data['Month_Data'], chart_data)
     kline_data = [data[1:-1] for data in chart_data["values"]]
     kline = (
         Kline()
@@ -156,22 +193,27 @@ def draw_charts(stock_code=''):
             linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
             label_opts=opts.LabelOpts(is_show=False),
         )
+        #tdx_weekly_data
         .add_yaxis(
-            series_name="MA20",
-            y_axis=calculate_ma(day_count=20, data=chart_data),
+            series_name="Weekly Close",
+            y_axis=weekly_MA_data,
             is_smooth=True,
             is_hover_animation=False,
+            is_connect_nones=True,
             linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
             label_opts=opts.LabelOpts(is_show=False),
         )
+        #tdx_monthly_data
         .add_yaxis(
-            series_name="MA30",
-            y_axis=calculate_ma(day_count=30, data=chart_data),
+            series_name="Monthly Close",
+            y_axis=monthly_MA_data,
             is_smooth=True,
             is_hover_animation=False,
+            is_connect_nones=True,
             linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
             label_opts=opts.LabelOpts(is_show=False),
-        )
+        )        
+        #
         .set_global_opts(xaxis_opts=opts.AxisOpts(type_="category"))
     )
 
@@ -234,8 +276,24 @@ def draw_charts(stock_code=''):
         ),
     )
     create_date = datetime.today().strftime("%Y%m%d%H%M%S")
-    grid_chart.render(f'{show_html_path}/{stock_code}_kline_{create_date}.html')
+    #grid_chart.render(f'{show_html_path}/{stock_code}_kline_{create_date}.html')
+    grid_chart.render(f'{show_html_path}/{stock_name}_{stock_code}_kline.html')
     grid_chart.render(f'{show_templates_html_path}/kline.html')
+
+if __name__ == "__main__":
+    '''
+    
+    print("Executing showKLine.py with arguments:", sys.argv)
+    s_codes = sys.argv[1]
+    '''
+    s_codes = '002303'
+    tdx_datas = tdx(s_codes)
+    tdx_datas.getStockDayFile()
+    tdx_datas.creatstocKDataList()
+    all_data = tdx_datas.getTDXStockDWMDatas()
+    chart_data = split_data(tdx_datas.getTDXStockKDatas())
+    draw_charts(s_codes, tdx_datas.stock_name)
+
 
 '''
 import subprocess
@@ -251,8 +309,3 @@ print(f"脚本名称: {sys.argv[0]}")
 print(f"接收到的参数数量: {len(sys.argv) - 1}")
 print(f"所有参数: {sys.argv}")
 '''
-#draw_charts({sys.argv[0]})
-
-print("Executing showKLine.py with arguments:", sys.argv)
-if __name__ == "__main__":
-    draw_charts(sys.argv[1])

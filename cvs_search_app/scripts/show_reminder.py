@@ -11,7 +11,10 @@ def show_reminder(getout_day):
     root.geometry("800x600")  # 设置窗口大小为400x300像素
     root.withdraw()  # 隐藏主窗口
     root.attributes("-topmost", True)  # 设置窗口总在最前
-    messagebox.showinfo("提醒", getout_day + "\n 快起来运动 时间到了！\n 市场中钱是赚不完的，但钱是可以亏完的！")
+    messagebox.showinfo("提醒", getout_day + "\n 快起来运动 时间到了！\n "
+                          "市场中钱是赚不完的，但钱是可以亏完的！\n "
+                          "交易不要勉强，交易的感觉应该是自己最舒服的情况下成交的，所以买卖后就不纠结了！\n "
+                          "买入条件是一定要起浪，震荡幅度，方向斜率，运动趋势最重要！")
     root.destroy()
 
 def set_timer(hour, minute):
