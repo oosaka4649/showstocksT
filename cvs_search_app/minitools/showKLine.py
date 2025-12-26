@@ -284,9 +284,10 @@ if __name__ == "__main__":
     '''
     
     print("Executing showKLine.py with arguments:", sys.argv)
-    s_codes = sys.argv[1]
-    '''
+    s_codes = sys.argv[1] 
     s_codes = '002303'
+    '''
+    s_codes = sys.argv[1]
     tdx_datas = tdx(s_codes)
     tdx_datas.getStockDayFile()
     tdx_datas.creatstocKDataList()

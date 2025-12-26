@@ -152,7 +152,7 @@ class TDXData:
         return self.stock_code_list
     
     def get_stock_names(self):
-        return self.read_stock_names().get(self.stock_code, '')
+        return self.read_stock_names().get(self.stock_code, 'xx')
     '''
     utile end
     '''
