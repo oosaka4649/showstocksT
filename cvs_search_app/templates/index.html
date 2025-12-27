@@ -31,10 +31,19 @@
         <h2>显示多个股票html</h2>
         <!-- action 指定提交到的路由，method 指定请求方式 -->
         <form action="{{ url_for('showhtml') }}" method="POST">
-            <button type="submit">显示html</button>
+            <button type="submit">test显示html</button>
         </form>
-        <form action="{{ url_for('showmyhtml') }}" method="POST">
-            <button type="submit">显示我关注的股票html</button>
+        <form action="{{ url_for('showmyhtml') }}" method="POST">   
+            {% for item in items %}
+                <div>
+                    <input type="checkbox" 
+                        name="item_checkbox" 
+                        value="{{ item.id }}" 
+                        id="check_{{ item.id }}">
+                    <label for="check_{{ item.id }}">{{ item.name }}</label>
+                </div>
+            {% endfor %}                     
+            <button type="submit" class="btn btn-primary">显示多股K线图</button>
         </form>        
 
         <!-- 脚本执行结果输出 -->

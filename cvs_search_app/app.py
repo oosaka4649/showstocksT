@@ -41,6 +41,14 @@ tdx_day_file_path = 'C:\\zd_zsone\\vipdoc\\'  # tdx路径
 my_stocks_list = ucfg.my_stocks_list
 my_stocks_html_folder_name = ucfg.my_stocks_html_folder_name
 
+#在画面显示一个个check box，返回选择的（和配置的config 文件对应的 list key），并生成k线html，并显示
+#后面可以添加项目
+checkbox_items = [
+    {'id': 'my_stocks_list', 'name': '我的自选'},
+    {'id': 'neng_yuan_list', 'name': '能源金属'},
+    {'id': 'you_se_list', 'name': '有色金属'},
+    {'id': 'ban_dao_ti_list', 'name': '半导体'}
+]
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -72,11 +80,11 @@ def index():
                 output = result.stdout if result.returncode == 0 else f"错误: {result.stderr}"
                 if output == None or output.strip() == '':
                     output = '游资信息已经更新，请在上面输入查询内容或直接点击上面查询按钮。'
-                return render_template("index.html", script_output=output)
+                return render_template("index.html", items=checkbox_items, script_output=output)
             except Exception as e:
-                return render_template("index.html", script_output=f"执行失败: {str(e)}")
+                return render_template("index.html", items=checkbox_items, script_output=f"执行失败: {str(e)}")
 
-    return render_template("index.html")
+    return render_template("index.html", items=checkbox_items)
 
 @app.route("/sortbydateandcode", methods=["GET", "POST"])
 def sortbydateandcode():
@@ -132,10 +140,16 @@ def help():
 
 #####  ################################ show multiple stock html ##################################################
 # 将批处理生成的html，读取 templates/stockhtml 文件夹下的所有 HTML 文件，并显示在一个页面中
+# todo 下步，添加一个 爬虫 script，生成各种 股票的 代码 list 集中生成html文件
 @app.route("/showhtml", methods=["GET", "POST"])
 def showhtml():
+    selected_ids = request.form.getlist('item_checkbox')
     folder_path = os.path.join(current_dir, 'templates', 'stockhtml') # 目标文件夹路径
     extension = '.html'            # 指定后缀名
+    # 清空获取文件名列表
+    html_files = [f'{f}' for f in os.listdir(folder_path) if f.endswith(extension)]
+    for f in html_files:
+        os.remove(os.path.join(folder_path, f))       
     # 获取文件名列表
     html_files = [f'stockhtml/{f}' for f in os.listdir(folder_path) if f.endswith(extension)]    
     return render_template('showhtmllist.html', files_list=html_files)
@@ -144,6 +158,16 @@ def showhtml():
 # 调用 showkline_week.py 生成我关注的股票的html，然后显示在一个页面中
 @app.route("/showmyhtml", methods=["GET", "POST"])
 def showmyhtml():
+    selected_ids = request.form.getlist('item_checkbox')
+
+    show_list = my_stocks_list
+
+    if selected_ids and len(selected_ids) > 0:
+        show_list = []
+        for list_id in selected_ids:
+            if hasattr(ucfg, list_id):
+                show_list.extend(getattr(ucfg, list_id))
+
     folder_path = os.path.join(current_dir, 'templates', my_stocks_html_folder_name) # 目标文件夹路径
     extension = '.html'            # 指定后缀名
     # 清空获取文件名列表
@@ -152,7 +176,7 @@ def showmyhtml():
         os.remove(os.path.join(folder_path, f))    
     # 调用 showKLine_week.py 生成我关注的股票的html
     try: 
-        for file_name in my_stocks_list :
+        for file_name in show_list :
             result = subprocess.run(
                 ["python", scripts_mystocks_k_line_path , file_name], 
                 capture_output=True, 
@@ -163,7 +187,7 @@ def showmyhtml():
     except Exception as e:
         return render_template("showhtmllist.html", script_output=f"执行失败: {str(e)}")
     html_files = [f'{my_stocks_html_folder_name}/{f}' for f in os.listdir(folder_path) if f.endswith(extension)]
-    return render_template('showhtmllist.html', files_list=html_files, script_output=f"执行结果: {str(output)}")
+    return render_template('showhtmllist.html', files_list=html_files, script_output=f"执行股票数：{len(show_list)} \n执行结果: {str(output)}")
     
 def clean_numeric_string(value):
     """
