@@ -15,8 +15,7 @@ import sys
 current_dir = os.path.dirname(os.path.abspath(__file__))
 # 上一级目录（父目录）
 parent_dir = os.path.dirname(current_dir)
-show_html_path = os.path.join(parent_dir, 'stockhtml')
-show_templates_html_path = os.path.join(parent_dir, 'templates')
+show_templates_html_path = os.path.join(parent_dir, 'templates', ucfg.my_stocks_html_folder_name)
 
 '''
 使用 pyecharts 绘制 k线图 
@@ -278,16 +277,14 @@ def draw_charts(stock_code='', stock_name=''):
     )
     create_date = datetime.today().strftime("%Y%m%d%H%M%S")
     #grid_chart.render(f'{show_html_path}/{stock_code}_kline_{create_date}.html')
-    print(f"Rendering K-line chart for {stock_name} {stock_code}")
-    grid_chart.render(f'{show_html_path}/{stock_name}_{stock_code}_kline.html')
-    #grid_chart.render(f'{show_templates_html_path}/kline.html')
+    grid_chart.render(f'{show_templates_html_path}/{stock_name}_{stock_code}_kline.html')
 
 if __name__ == "__main__":
-    #s_codes = ['300215', '301246', '000686', '600526', '600158','600233', '300251', '002303', '002852']
-    s_codes = ucfg.my_stocks_list
-    print("Executing showKLine_week.py with arguments:", sys.argv)
-    #s_codes = [sys.argv[1]]
+    #s_codes = ucfg.my_stocks_list
     #s_codes = ['002303']
+    print("Executing showKLine_week.py with arguments:", sys.argv)
+    s_codes = [sys.argv[1]]
+
     for stock_code in s_codes:
         tdx_datas = tdx(stock_code)
         tdx_datas.getStockDayFile()

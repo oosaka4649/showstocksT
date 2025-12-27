@@ -11,6 +11,7 @@ from pathlib import Path
 # 添加项目根目录到sys.path
 project_root = Path(__file__).parent
 sys.path.append(str(project_root))
+import minitools.user_config as ucfg
 from scripts.RootInfo import MainUtile as utile
 from scripts.ReadTDXDayFileToCSV import DayFileToCsv as DayToCsv
 from scripts.vectorbt_backtest import simple_backtest as simple_backtest
@@ -33,8 +34,13 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 aijinggu_csv_path = os.path.join(current_dir, 'data', 'aijinggu.csv')
 scripts_path = os.path.join(current_dir, 'scripts', 'getaijinggu_byall.py')
 scripts_k_line_path = os.path.join(current_dir, 'minitools', 'showKLine.py')
+scripts_mystocks_k_line_path = os.path.join(current_dir, 'minitools', 'showKLine_week.py')
 stocks_csv_dir = os.path.join(current_dir, 'stockscsv')
 tdx_day_file_path = 'C:\\zd_zsone\\vipdoc\\'  # tdx路径
+
+my_stocks_list = ucfg.my_stocks_list
+my_stocks_html_folder_name = ucfg.my_stocks_html_folder_name
+
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -122,6 +128,42 @@ def sortbydateandcode():
 @app.route("/help", methods=["GET", "POST"])
 def help():
     return render_template("help.html")
+
+
+#####  ################################ show multiple stock html ##################################################
+# 将批处理生成的html，读取 templates/stockhtml 文件夹下的所有 HTML 文件，并显示在一个页面中
+@app.route("/showhtml", methods=["GET", "POST"])
+def showhtml():
+    folder_path = os.path.join(current_dir, 'templates', 'stockhtml') # 目标文件夹路径
+    extension = '.html'            # 指定后缀名
+    # 获取文件名列表
+    html_files = [f'stockhtml/{f}' for f in os.listdir(folder_path) if f.endswith(extension)]    
+    return render_template('showhtmllist.html', files_list=html_files)
+
+#####  ################################ show multiple stock html ##################################################
+# 调用 showkline_week.py 生成我关注的股票的html，然后显示在一个页面中
+@app.route("/showmyhtml", methods=["GET", "POST"])
+def showmyhtml():
+    folder_path = os.path.join(current_dir, 'templates', my_stocks_html_folder_name) # 目标文件夹路径
+    extension = '.html'            # 指定后缀名
+    # 清空获取文件名列表
+    html_files = [f'{f}' for f in os.listdir(folder_path) if f.endswith(extension)]
+    for f in html_files:
+        os.remove(os.path.join(folder_path, f))    
+    # 调用 showKLine_week.py 生成我关注的股票的html
+    try: 
+        for file_name in my_stocks_list :
+            result = subprocess.run(
+                ["python", scripts_mystocks_k_line_path , file_name], 
+                capture_output=True, 
+                text=True
+            )
+        output = result.stdout if result.returncode == 0 else f"错误: {result.stderr}"
+        print(f"showKLine_week.py output: {output}")
+    except Exception as e:
+        return render_template("showhtmllist.html", script_output=f"执行失败: {str(e)}")
+    html_files = [f'{my_stocks_html_folder_name}/{f}' for f in os.listdir(folder_path) if f.endswith(extension)]
+    return render_template('showhtmllist.html', files_list=html_files, script_output=f"执行结果: {str(output)}")
     
 def clean_numeric_string(value):
     """

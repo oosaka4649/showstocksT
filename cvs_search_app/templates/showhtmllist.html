@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Results</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <!-- <style>
+        /* 基础样式重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            width: 100vw;/* 视口宽度 */
+            height: 100vh;/* 视口高度 */
+            font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
+        }
+    </style> -->
+</head>
+<body>
+    <div>
+        <div>
+            <h1>游资进入场详细</h1>
+            <a href="/help">帮助</a>
+            <a href="/">返回首页</a>
+        </div>
+        <div>
+            <!-- 循环渲染列表中的每一个 HTML 文件 -->
+            {% for file_name in files_list %}
+                <div class="content-block">
+                    <!-- 关键点：include 后面可以直接跟变量名 -->
+                    {% include file_name %}
+                </div>
+            {% endfor %}
+        </div>
+        <!-- 脚本执行结果输出 -->
+        {% if script_output %}
+        <div class="mt-4 p-3 bg-light rounded">
+            <h4>执行结果：</h4>
+            <pre>{{ script_output }}</pre>
+        </div>
+        {% endif %}        
+    </div>
+</body>
+</html>
