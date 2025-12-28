@@ -72,7 +72,9 @@ def calculate_ma_list(day_count: int, w_data, chart_all_data):
     temp_w_ma = talib.SMA(np.array(temp_closes, dtype='double'), timeperiod=day_count)
 
     week_ma_dataes = []
+    count = 0
     for dt in chart_all_data['categoryData']:
+        count += 1
         if dt in temp_date:
             idx = temp_date.index(dt)
             if not np.isnan(temp_w_ma[idx]):
@@ -80,7 +82,10 @@ def calculate_ma_list(day_count: int, w_data, chart_all_data):
             else:
                 week_ma_dataes.append(np.float64(np.nan))
         else:
-            week_ma_dataes.append(np.float64(np.nan))
+            if count >= len(chart_all_data['categoryData']):
+                week_ma_dataes.append(temp_w_ma[-1]) # 最后一个值 为了不是周末，导致没有值，线没有画到最后
+            else :
+                week_ma_dataes.append(np.float64(np.nan))
     return week_ma_dataes
 
 def calculate_ma_month_list(day_count: int, m_data, chart_all_data):
@@ -88,11 +93,20 @@ def calculate_ma_month_list(day_count: int, m_data, chart_all_data):
       ta lib 使用 np.array 作为输入，但 pyecharts 需要 list 作为输出，所以这里做了转换，而且 数据类型为 double
     '''
     temp_closes = [row[4] for row in m_data if row[4] is not None]
-    temp_date = [(row[0] - + pd.Timedelta(days=2)).strftime("%Y-%m-%d") for row in m_data if row[4] is not None]
+    temp_date = []
+    for row in m_data:
+        if row[4] is not None :
+            if row[0].weekday() <= 4:  # 只取每月的最后一个交易日（假设为周五）
+                temp_date.append(row[0].strftime("%Y-%m-%d"))
+            elif row[0].weekday() == 5:  # 如果是周六，取前一天（周五）
+                temp_date.append((row[0] - pd.Timedelta(days=1)).strftime("%Y-%m-%d"))
+            elif row[0].weekday() == 6:  # 如果是周日，取前两天（周五）
+                temp_date.append((row[0] - pd.Timedelta(days=2)).strftime("%Y-%m-%d"))
     temp_month_ma = talib.SMA(np.array(temp_closes, dtype='double'), timeperiod=day_count)
-
     month_ma_dataes = []
+    count = 0
     for dt in chart_all_data['categoryData']:
+        count += 1
         if dt in temp_date:
             idx = temp_date.index(dt)
             if not np.isnan(temp_month_ma[idx]):
@@ -100,8 +114,11 @@ def calculate_ma_month_list(day_count: int, m_data, chart_all_data):
             else:
                 month_ma_dataes.append(np.float64(np.nan))
         else:
-            month_ma_dataes.append(np.float64(np.nan))
-    return month_ma_dataes
+            if count >= len(chart_all_data['categoryData']):
+                month_ma_dataes.append(temp_month_ma[-1]) # 最后一个值 为了不是月末，导致没有值，线没有画到最后
+            else :
+                month_ma_dataes.append(np.float64(np.nan))
+    return month_ma_dataes 
 
 def draw_charts(stock_code='', stock_name=''):
     weekly_MA_data = calculate_ma_list(5, all_data['Week_Data'], chart_data)
