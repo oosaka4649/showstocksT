@@ -16,6 +16,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 # 上一级目录（父目录）
 parent_dir = os.path.dirname(current_dir)
 show_templates_html_path = os.path.join(parent_dir, 'templates', ucfg.my_stocks_html_folder_name)
+show_templates_comm_html_path = os.path.join(parent_dir, 'templates', ucfg.common_html_folder_name)
 
 '''
 使用 pyecharts 绘制 k线图 
@@ -278,6 +279,7 @@ def draw_charts(stock_code='', stock_name=''):
     create_date = datetime.today().strftime("%Y%m%d%H%M%S")
     #grid_chart.render(f'{show_html_path}/{stock_code}_kline_{create_date}.html')
     grid_chart.render(f'{show_templates_html_path}/{stock_name}_{stock_code}_kline.html')
+    grid_chart.render(f'{show_templates_comm_html_path}/{stock_name}_{stock_code}_kline.html')
 
 if __name__ == "__main__":
     #s_codes = ucfg.my_stocks_list

@@ -48,6 +48,7 @@ my_stocks_list = [  # 通达信需要转换的指数文件。通达信按998查�
 ]
 
 my_stocks_html_folder_name = 'mystockshtml'
+common_html_folder_name = 'stockhtml'
 
 #行业板块 > 能源金属 https://quote.eastmoney.com/center/gridlist.html#boards2-90.BK1015
 neng_yuan_list = [

@@ -140,18 +140,15 @@ def help():
 
 #####  ################################ show multiple stock html ##################################################
 # 将批处理生成的html，读取 templates/stockhtml 文件夹下的所有 HTML 文件，并显示在一个页面中
-# todo 下步，添加一个 爬虫 script，生成各种 股票的 代码 list 集中生成html文件
+# 这函数，目前，就作为读取 stockhtml 文件夹下的html文件显示用
+# html 文件，是通过 minitools/showKLine_week.py 生成的 并且，在执行showmyhtml函数前，先清空该文件夹下的html文件，转移过来的，免得后面重新生成节约时间
 @app.route("/showhtml", methods=["GET", "POST"])
 def showhtml():
     selected_ids = request.form.getlist('item_checkbox')
-    folder_path = os.path.join(current_dir, 'templates', 'stockhtml') # 目标文件夹路径
+    folder_path = os.path.join(current_dir, 'templates', ucfg.common_html_folder_name) # 目标文件夹路径
     extension = '.html'            # 指定后缀名
-    # 清空获取文件名列表
-    html_files = [f'{f}' for f in os.listdir(folder_path) if f.endswith(extension)]
-    for f in html_files:
-        os.remove(os.path.join(folder_path, f))       
     # 获取文件名列表
-    html_files = [f'stockhtml/{f}' for f in os.listdir(folder_path) if f.endswith(extension)]    
+    html_files = [f'{ucfg.common_html_folder_name}/{f}' for f in os.listdir(folder_path) if f.endswith(extension)]    
     return render_template('showhtmllist.html', files_list=html_files)
 
 #####  ################################ show multiple stock html ##################################################

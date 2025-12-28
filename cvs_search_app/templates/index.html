@@ -31,7 +31,7 @@
         <h2>显示多个股票html</h2>
         <!-- action 指定提交到的路由，method 指定请求方式 -->
         <form action="{{ url_for('showhtml') }}" method="POST">
-            <button type="submit">test显示html</button>
+            <button type="submit">显示已经生成过的html</button>
         </form>
         <form action="{{ url_for('showmyhtml') }}" method="POST">   
             {% for item in items %}
