@@ -1,3 +1,11 @@
+import os
+import pandas as pd
+import sys
+# 脚本常量
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.append(current_dir)
+
 from tdxcomm import TDXData as tdx
 from typing import List, Union
 import user_config as ucfg
@@ -8,11 +16,8 @@ from pyecharts.charts import Kline, Line, Bar, Grid
 import talib
 import numpy as np
 from datetime import datetime
-import os
-import pandas as pd
-import sys
-# 脚本常量
-current_dir = os.path.dirname(os.path.abspath(__file__))
+
+
 # 上一级目录（父目录）
 parent_dir = os.path.dirname(current_dir)
 show_templates_html_path = os.path.join(parent_dir, 'templates', ucfg.my_stocks_html_folder_name)
@@ -34,6 +39,7 @@ class StockMA_Strategy:
         self.tdx_data.creatstocKDataList()
         self.all_data = self.tdx_data.getTDXStockDWMDatas()
         self.chart_data = self.split_data(self.tdx_data.getTDXStockKDatas())
+        self.stock_name = self.tdx_data.stock_name
 
     def evaluate_strategy(self) -> bool:
         close_prices = self.chart_data["closes"]

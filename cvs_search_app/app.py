@@ -12,6 +12,7 @@ from pathlib import Path
 project_root = Path(__file__).parent
 sys.path.append(str(project_root))
 import minitools.user_config as ucfg
+from minitools.strategy_ma import StockMA_Strategy
 from scripts.RootInfo import MainUtile as utile
 from scripts.ReadTDXDayFileToCSV import DayFileToCsv as DayToCsv
 from scripts.vectorbt_backtest import simple_backtest as simple_backtest
@@ -137,6 +138,30 @@ def sortbydateandcode():
 def help():
     return render_template("help.html")
 
+#####  ################################ 使用策略 从配置文件中 筛选出符合条件的股票 ##################################################
+#####  ################################ 使用策略 1 strategy_ma.py  股价上冲 5日，10日，周，月     ##################################################
+@app.route("/strategy_ma", methods=["GET", "POST"])
+def strategy_ma():
+    stocks_list = ucfg.stocks_group_list
+    code_list = []
+    for list_id in stocks_list:
+        if hasattr(ucfg, list_id):
+            code_list.extend(getattr(ucfg, list_id))
+    checkbox_items = []
+    #{'id': '00000', 'name': '我的自选'},
+    #{'id': '000004', 'name': '半导体'}
+    for stock_code in code_list:
+        s_items = {}
+        # 添加一个元素：键为 'item1'，值为 True
+        strategy_instance = StockMA_Strategy(stock_code)
+        strategy_result = strategy_instance.evaluate_strategy()
+        if strategy_result:
+            s_items['id'] = stock_code
+            s_items['name'] = strategy_instance.stock_name
+            checkbox_items.append(s_items)
+            print(f"股票代码 {stock_code} 符合均线策略要求: {strategy_result}")
+
+    return render_template("showstrategyresult.html", items=checkbox_items,script_output=f"全部股票数: {len(code_list)} 符合策略股票数: {len(checkbox_items)}")
 
 #####  ################################ show multiple stock html ##################################################
 # 将批处理生成的html，读取 templates/stockhtml 文件夹下的所有 HTML 文件，并显示在一个页面中
@@ -144,19 +169,45 @@ def help():
 # html 文件，是通过 minitools/showKLine_week.py 生成的 并且，在执行showmyhtml函数前，先清空该文件夹下的html文件，转移过来的，免得后面重新生成节约时间
 @app.route("/showhtml", methods=["GET", "POST"])
 def showhtml():
-    selected_ids = request.form.getlist('item_checkbox')
+    selected_ids = request.form.getlist('a_checkbox')
     folder_path = os.path.join(current_dir, 'templates', ucfg.common_html_folder_name) # 目标文件夹路径
-    extension = '.html'            # 指定后缀名
-    # 获取文件名列表
-    html_files = [f'{ucfg.common_html_folder_name}/{f}' for f in os.listdir(folder_path) if f.endswith(extension)]    
-    return render_template('showhtmllist.html', files_list=html_files)
+    extension = '.html' # 指定后缀名
+    output = ''
+  
+    show_code = request.form.get("search_key")
+
+    if selected_ids and len(selected_ids) > 0:
+        if '1' in selected_ids:
+            # 清空获取文件名列表
+            html_files = [f'{f}' for f in os.listdir(folder_path) if f.endswith(extension)]    
+            for f in html_files:
+                os.remove(os.path.join(folder_path, f))            
+        
+        if show_code is not None and show_code != '':
+            selected_ids.append(show_code)
+        # 调用 showKLine_week.py 生成我关注的股票的html
+        try: 
+            for list_id in selected_ids:
+                if list_id == '1':
+                    continue
+                result = subprocess.run(
+                    ["python", scripts_mystocks_k_line_path , list_id], 
+                    capture_output=True, 
+                    text=True
+                )
+                output = result.stdout if result.returncode == 0 else f"错误: {result.stderr}"
+            print(f"showKLine_week.py output: {output}")
+        except Exception as e:
+            return render_template("showhtmllist.html", script_output=f"执行失败: {str(e)}")
+    html_files = [f'{ucfg.common_html_folder_name}/{f}' for f in os.listdir(folder_path) if f.endswith(extension)]
+    return render_template('showhtmllist.html', files_list=html_files, script_output=f"执行股票数：{len(selected_ids)} \n执行结果: {str(output)}")
 
 #####  ################################ show multiple stock html ##################################################
 # 调用 showkline_week.py 生成我关注的股票的html，然后显示在一个页面中
 @app.route("/showmyhtml", methods=["GET", "POST"])
 def showmyhtml():
     selected_ids = request.form.getlist('item_checkbox')
-
+    #默认显示我关注的股票
     show_list = my_stocks_list
 
     if selected_ids and len(selected_ids) > 0:
@@ -179,8 +230,8 @@ def showmyhtml():
                 capture_output=True, 
                 text=True
             )
-        output = result.stdout if result.returncode == 0 else f"错误: {result.stderr}"
-        print(f"showKLine_week.py output: {output}")
+            output = result.stdout if result.returncode == 0 else f"错误: {result.stderr}"
+            print(f"showKLine_week.py output: {output}")
     except Exception as e:
         return render_template("showhtmllist.html", script_output=f"执行失败: {str(e)}")
     html_files = [f'{my_stocks_html_folder_name}/{f}' for f in os.listdir(folder_path) if f.endswith(extension)]
@@ -301,66 +352,8 @@ def stock_dashboard(stock_code):
     if len(stock_code) != 6 or not stock_code.isdigit():
         return None
     print(f"读取股票数据文件: kline.html")
-
     kline_div = os.path.join(current_dir, 'templates'), 'kline.html'
-            
-    #stock_prefix = utile.get_stock_prefix(stock_code)
-    
-    # 转换day文件到csv文件
-    #t_csv_path = convert_day_to_csv(stock_prefix, stock_code)
-    """生成股票K线图的HTML div字符串"""
-    #print(f"读取股票数据文件: {t_csv_path}")
-    #stock_df = load_stock_data(t_csv_path)
-    #kline_div = get_kline_div_string(stock_df)
     return kline_div
-
-#不用了
-def get_kline_div_string(df):
-    """
-    生成K线图的HTML div字符串（不包含完整HTML结构）
-    """
-    fig = make_subplots(
-        rows=2, cols=1,
-        shared_xaxes=True,
-        vertical_spacing=0.05,
-        row_heights=[0.7, 0.3],
-        specs=[[{"type": "scatter"}], [{"type": "bar"}]]
-    )
-    
-    fig.add_trace(go.Candlestick(
-        x=df.index,
-        open=df[utile.CSV_HEADER_INFO[1]],
-        high=df[utile.CSV_HEADER_INFO[2]],
-        low=df[utile.CSV_HEADER_INFO[3]],
-        close=df[utile.CSV_HEADER_INFO[4]],
-        name='K线'
-    ), row=1, col=1)
-    
-    fig.add_trace(go.Bar(
-        x=df.index,
-        y=df[utile.CSV_HEADER_INFO[6]],
-        name='成交量',
-        marker_color=[
-                        f'rgba(255,0,0,0.6)' if close < open else f'rgba(0,255,0,0.6)'
-                        for open, close in zip(df[utile.CSV_HEADER_INFO[1]], df[utile.CSV_HEADER_INFO[4]])
-                    ]
-    ), row=2, col=1)
-    
-    fig.update_layout(
-        title=f'股票K线图',
-        xaxis_title='日期',
-        yaxis_title='价格',
-        template='plotly_dark',
-        hovermode='x unified',
-        xaxis_rangeslider_visible=False
-    )
-    
-    fig.update_yaxes(title_text="价格", row=1, col=1)
-    fig.update_yaxes(title_text="成交量", row=2, col=1)
-    
-    # 返回div字符串（不包含完整HTML结构）
-    return fig.to_html(full_html=False, include_plotlyjs='cdn')
-
 
 if __name__ == "__main__":
     os.makedirs("scripts", exist_ok=True)  # 确保scripts目录存在
