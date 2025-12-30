@@ -31,12 +31,12 @@
         </div>
         <div style="display: flex;">
             <!-- 脚本执行部分 -->
-            <h2>最新游资信息</h2>
+            <h2>最新信息</h2>
             <div style="width: 200px;">   
                 <form method="POST">
                     <div class="my-div">
                         <input type="text" name="script_name" value="run_script" class="form-control" hidden>
-                        <button type="submit" name="action" value="run_script" class="btn btn-success">执行脚本</button>
+                        <button type="submit" name="action" value="run_script" class="btn btn-success">市场龙虎榜</button>
                     </div>
                 </form>
             </div>
@@ -58,15 +58,17 @@
         </div>
         <!-- 脚本执行部分 -->
         <h2>显示多个股票html</h2>
-        <div style="width: 300px;">
+        <div style="width: 700px;">
             <div  class="my-div">
             <!-- action 指定提交到的路由，method 指定请求方式 -->
             <form action="{{ url_for('showhtml') }}" method="POST">
-                <div>
-                <input type="checkbox" name="a_checkbox" value="1" id="check_1">
-                <label for="check_1">仅清空生成过的html</label><br>
+                <div class="input-group" style="width: 600px; margin-top: 20px;">
+                    <input type="text" name="search_key" placeholder="输入股票代码..." class="form-control">
+                
+                    <button type="submit" class="btn btn-primary" style="margin-left: 30px;">显示选中股票的K线图</button>
                 </div>
-                <button type="submit">显示已经生成过的html</button>
+                 <input type="checkbox" name="a_checkbox" value="1" id="check_1">
+                 <label for="check_1">仅清空生成过的html</label><br>              
             </form>
             </div>
             <div class="my-div">

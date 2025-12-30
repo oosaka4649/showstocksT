@@ -175,7 +175,8 @@ def showhtml():
     output = ''
   
     show_code = request.form.get("search_key")
-
+    if show_code is not None and show_code != '':
+        selected_ids.append(show_code)
     if selected_ids and len(selected_ids) > 0:
         if '1' in selected_ids:
             # 清空获取文件名列表
@@ -183,8 +184,6 @@ def showhtml():
             for f in html_files:
                 os.remove(os.path.join(folder_path, f))            
         
-        if show_code is not None and show_code != '':
-            selected_ids.append(show_code)
         # 调用 showKLine_week.py 生成我关注的股票的html
         try: 
             for list_id in selected_ids:
