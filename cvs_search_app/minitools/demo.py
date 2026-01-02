@@ -40,4 +40,11 @@ https://www.kaggle.com/
 学习网站
 http://python.86x.net/pandas13/index.html
 https://docs.python.org/zh-cn/3/tutorial/datastructures.html#sets
+
+
+
+
+WorldQuant101
+预测股票市场的101个alpha因子的解读与总结
+http://www.qianshancapital.com/h-nd-329.html
 '''

@@ -154,10 +154,13 @@ def strategy_ma():
         s_items = {}
         # 添加一个元素：键为 'item1'，值为 True
         strategy_instance = StockMA_Strategy(stock_code)
-        strategy_result = strategy_instance.evaluate_strategy()
+        # returns: bool, float 收盘价, float 涨幅
+        strategy_result, last_close_price, price_change = strategy_instance.evaluate_strategy()
         if strategy_result:
             s_items['id'] = stock_code
             s_items['name'] = strategy_instance.stock_name
+            s_items['close_price'] = f"{last_close_price:.2f}"
+            s_items['price_change'] = f"{price_change:.2f}" #%在画面添加
             checkbox_items.append(s_items)
             print(f"股票代码 {stock_code} 符合均线策略要求: {strategy_result}")
 

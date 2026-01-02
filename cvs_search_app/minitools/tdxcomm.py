@@ -79,7 +79,7 @@ class TDXData:
                 tmp_close = str(a[4] / 100.0)
                 tmp_amount = str(a[5] / 100.0)
                 tmp_volume = str(a[6] / 100.0)
-                # output 'Date','Open','Close','Low','High','Volume','Volume'
+                # output 'Date','Open','Close','Low','High','Volume','Amount'
                 day_line = [date, tmp_open, tmp_close, tmp_low, tmp_high, tmp_volume, tmp_amount]
                 self.day_datas.append(day_line)
                 begin += 32
