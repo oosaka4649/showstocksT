@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Results</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <!-- 画面分两个部分，上部为 K线图，有日，周，月均线  -->
+    <!-- 下部为 vbt计算后的 回测总结图  -->
+    <!-- <style>
+        /* 基础样式重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            width: 100vw;/* 视口宽度 */
+            height: 100vh;/* 视口高度 */
+            font-family: 'Segoe UI', 'Microsoft YaHei', Arial, sans-serif;
+        }
+    </style> -->
+</head>
+<body>
+    <div>
+        <div>
+            <h1>游资进入场详细</h1>
+            <a href="/help">帮助</a>
+            <a href="/">返回首页</a>
+        </div>
+        <div>
+            <!-- 循环渲染列表中的每一个 HTML 文件 -->
+            {% for file_name in files_list %}
+                <div class="content-block">
+                    <!-- 关键点：include 后面可以直接跟变量名 -->
+                    {% include file_name %}
+                </div>
+            {% endfor %}
+        </div>
+    <!-- 脚本执行结果输出 -->
+    <div>
+        <!-- div >
+            {% if back_test_div %}
+                <h1>{{ search_key }}K线图</h1>
+                    {{ back_test_div | safe }}
+                
+            {% endif %}
+        </div -->
+        {% if results_detail %}
+        <div style="width: 90%; height: 200px; margin-left: 100px; overflow-y: auto;">
+            <h4>进出场详细：</h4>
+            {{ results_detail | safe }}
+        </div>
+        {% endif %}          
+        {% if script_output %}
+        <div style="margin-top: 20px; margin-left: 130px;">
+            <div style="float: left; width: 50%;">
+               <pre>{{ script_output }}</pre>
+            </div>
+            <div style="float: left; width: 50%;">
+                <p>一些关键指标&#xff1a;</p> 
+                <ul>
+
+                    <li><strong>Sharpe Ratio:</strong> 夏普比率&#xff0c;衡量经风险调整后的回报&#xff08;越高越好&#xff09;。</li>
+                    <li><strong>Sortino Ratio:</strong> 索提诺比率&#xff0c;类似于夏普&#xff0c;但只考虑下行风险。</li>
+                    <li><strong>Profit Factor:</strong> 总盈利 / 总亏损。大于 1 表示盈利。</li>
+
+
+                    <li><strong>Start                         </strong> 起始时间</li></ul> 
+                    <li><strong>End                           </strong> 结束时间</li></ul> 
+                    <li><strong>Period                        </strong> 周期</li></ul> 
+                    <li><strong>Start Value                   </strong> 起始值</li></ul> 
+                    <li><strong>End Value                     </strong> 终值</li></ul> 
+                    <li><strong>Total Return [%]:             </strong> 策略期间的总回报率[%]</li>
+
+
+                    <li><strong>Benchmark Return [%]         </strong> 基准回报率[%]</li></ul> 
+                    <li><strong>Max Gross Exposure [%]       </strong> 最大总风险敞口 [%] </li></ul> 
+                    <li><strong>Total Fees Paid              </strong> 总支付费用</li></ul> 
+                    <li><strong>Max Drawdown [%]             </strong> 峰值到谷底的最大回撤幅度&#xff0c;衡量风险。</li></ul> 
+                    <li><strong>Max Drawdown Duration        </strong> 最大回撤持续时间 </li></ul> 
+                    <li><strong>Total Trades                 </strong> 总交易次数</li></ul> 
+                    <li><strong>Total Closed Trades          </strong> 已平仓交易总数</li></ul> 
+                    
+                    <li><strong>Total Open Trades            </strong> 未平仓交易总数</li></ul> 
+                    <li><strong>Open Trade PnL               </strong> 未平仓交易盈亏</li></ul> 
+                    <li><strong>Win Rate [%]                 </strong> 盈利交易次数占总交易次数的比例</li></ul> 
+                    <li><strong>Best Trade [%]               </strong> 最佳交易 [%]</li></ul> 
+                    <li><strong>Worst Trade [%]              </strong> 最差交易 [%]</li></ul> 
+                    <li><strong>Avg Winning Trade [%]        </strong> 平均每次盈利交易的回报率。</li></ul> 
+                    <li><strong>Avg Losing Trade [%]:        </strong> 平均每次亏损交易的回报率。</li></ul> 
+                    
+                    <li><strong>Avg Winning Trade Duration   </strong> 平均盈利交易持续时间</li></ul>
+                    <li><strong>Avg Losing Trade Duration    </strong> 平均亏损交易持续时间</li></ul>
+                    <li><strong>Profit Factor                </strong> 盈利因子</li></ul>
+                    <li><strong>Expectancy                   </strong> 预期值</li></ul>
+            </div>
+        </div>
+        {% endif %}
+    </div>         
+    </div>
+</body>
+</html>

@@ -6,6 +6,8 @@ import os
 import pandas as pd
 from struct import unpack
 import user_config as ucfg
+import talib
+import numpy as np
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 # 上一级目录（父目录）
@@ -156,6 +158,157 @@ class TDXData:
     '''
     utile end
     '''
+
+################################# common utile ##############################
+
+    '''
+        # 分割数据，返回绘图需要的格式
+        # input data 结构
+            date         开        收        最低       最高       量  价
+
+        # output 格式
+        {   "categoryData": category_data,  #全部日期
+            "values": values,               #全部日线数据 时间，开 收，低，高， 量，金额
+            "volumes": volumes,            #成交量数据
+            "closes": closes              #收盘价数据
+        }
+
+    '''
+    def split_data(self, data):
+        category_data = []
+        values = []
+        volumes = []
+        closes = []
+
+        '''
+            date         开        收        最低       最高       量
+        ["2004-01-02", 10452.74, 10409.85, 10367.41, 10554.96, 168890000],
+        data 结构
+        
+        '''
+
+        for i, tick in enumerate(data):
+            category_data.append(tick[0]) # 日期
+            values.append(tick) # 全部内容
+            closes.append(tick[2]) # 收盘价
+            # 元代码 是 tick 4 错了，应该是 tick 5 因为 4是 最高价，5才是量
+            volumes.append([i, tick[5], 1 if tick[1] > tick[2] else -1])  # i 是序号 从 0 开始，如果 开始大于收盘 1 ，反之 -1 估计是标 量线颜色用 红 绿
+        return {"categoryData": category_data, "values": values, "volumes": volumes, "closes": closes}
+    
+    '''
+    计算周线均线数据,返回 list 格式
+    w_data 周线数据  一周只有一个（默认是 周日的日期）
+    chart_all_data['categoryData'] 用于对齐日期
+    先用 talib 计算均线，然后对齐日期（将一周一个数据的list，补齐全日期，非周末填np.nan空值
+
+    input:
+        day_count: 5, 10, 20 ...
+        w_data = [
+            [date, open, close, low, high, volume],  # 一周只有一个数据 当周的开，收，低，高，量
+            ...
+        ]
+        #{"categoryData": category_data, "values": values, "volumes": volumes, "closes": closes}
+        chart_all_data = {'categoryData': [... all dates ...], ...}
+    output:
+        week_ma_dataes = [ma1, ma2, ma3, ...]
+    '''
+    def calculate_W_ma_list(self, day_count: int, w_data, chart_all_data):
+        '''
+        ta lib 使用 np.array 作为输入，但 pyecharts 需要 list 作为输出，所以这里做了转换，而且 数据类型为 double
+        '''
+        temp_closes = [row[4] for row in w_data if row[4] is not None]
+        #将周线日期调整为周五日期（如果使用周线日期，则和日线的日期不对齐，导致均线画不出来，因为日线没有周末数据，划线都以日线的日期为准）
+        temp_date = self.change_Wday_to_workday(w_data)
+        #先用 talib 计算均线
+        temp_w_ma = talib.SMA(np.array(temp_closes, dtype='double'), timeperiod=day_count)
+        #对齐日期，补齐非周末日期为 np.nan
+        week_ma_dataes = self.add_workday_to_Wday(chart_all_data, temp_date, temp_w_ma)
+        return week_ma_dataes
+
+
+    # 将周线日期调整为周五日期,因为日线没有周末数据，划线都以日线的日期为准
+    def change_Wday_to_workday(self, w_data):
+        temp_date = [(row[0] - + pd.Timedelta(days=2)).strftime("%Y-%m-%d") for row in w_data if row[4] is not None]
+        return temp_date
+    
+    # 对齐日期，将只有周数据的list，填充np.nan，补全非周末日期为 np.nan，使其长度和日线数据长度一致
+    def add_workday_to_Wday(self, chart_all_data, temp_date, temp_w_ma):
+        week_ma_dataes = []
+        count = 0
+        for dt in chart_all_data['categoryData']:
+            count += 1
+            if dt in temp_date:
+                idx = temp_date.index(dt)
+                if not np.isnan(temp_w_ma[idx]):
+                    week_ma_dataes.append(temp_w_ma[idx])
+                else:
+                    week_ma_dataes.append(np.float64(np.nan))
+            else:
+                if count >= len(chart_all_data['categoryData']):
+                    week_ma_dataes.append(temp_w_ma[-1]) # 最后一个值 为了不是周末，导致没有值，线没有画到最后
+                else :
+                    week_ma_dataes.append(np.float64(np.nan))
+        return week_ma_dataes
+
+
+    '''
+    计算月线均线数据,返回 list 格式
+    m_data 月线数据  一月只有一个（默认是 月末的日期）
+    chart_all_data['categoryData'] 用于对齐日期
+    先用 talib 计算均线，然后对齐日期（将一月一个数据的list，补齐全日期，非月末填np.nan空值
+    input:
+        day_count: 5, 10, 20 ...
+        m_data = [
+            [date, open, close, low, high, volume],  # 一月只有一个数据 当月的开，收，低，高，量
+            ...
+        ]
+        #{"categoryData": category_data, "values": values, "volumes": volumes, "closes": closes}
+        chart_all_data = {'categoryData': [... all dates ...], ...}
+    '''
+    def calculate_M_ma_list(self,day_count: int, m_data, chart_all_data):
+        '''
+        ta lib 使用 np.array 作为输入，但 pyecharts 需要 list 作为输出，所以这里做了转换，而且 数据类型为 double
+        '''
+        temp_closes = [row[4] for row in m_data if row[4] is not None]
+        #将月线日期调整为每月的最后一个交易日（如果使用月线日期，则有可能月末是周末或节假日，因为日线没有这些日期的数据，划线都以日线的日期为准）
+        temp_date = self.change_Mday_to_workday(m_data)
+        temp_month_ma = talib.SMA(np.array(temp_closes, dtype='double'), timeperiod=day_count)
+        month_ma_dataes = self.add_workday_to_Mday(chart_all_data, temp_date, temp_month_ma)
+        return month_ma_dataes 
+    
+    # 将月线日期调整为每月的最后一个交易日
+    def change_Mday_to_workday(self, m_data):
+        temp_date = []
+        for row in m_data:
+            if row[4] is not None :
+                if row[0].weekday() <= 4:  # 只取每月的最后一个交易日（假设为周五）
+                    temp_date.append(row[0].strftime("%Y-%m-%d"))
+                elif row[0].weekday() == 5:  # 如果是周六，取前一天（周五）
+                    temp_date.append((row[0] - pd.Timedelta(days=1)).strftime("%Y-%m-%d"))
+                elif row[0].weekday() == 6:  # 如果是周日，取前两天（周五）
+                    temp_date.append((row[0] - pd.Timedelta(days=2)).strftime("%Y-%m-%d"))
+        return temp_date 
+    
+    # 对齐日期，将只有月数据的list，填充np.nan，补全非月末日期为 np.nan，使其长度和日线数据长度一致
+    def add_workday_to_Mday(self, chart_all_data, temp_date, temp_month_ma):
+        month_ma_dataes = []
+        count = 0
+        for dt in chart_all_data['categoryData']:
+            count += 1
+            if dt in temp_date:
+                idx = temp_date.index(dt)
+                if not np.isnan(temp_month_ma[idx]):
+                    month_ma_dataes.append(temp_month_ma[idx])
+                else:
+                    month_ma_dataes.append(np.float64(np.nan))
+            else:
+                if count >= len(chart_all_data['categoryData']):
+                    month_ma_dataes.append(temp_month_ma[-1]) # 最后一个值 为了不是月末，导致没有值，线没有画到最后
+                else :
+                    month_ma_dataes.append(np.float64(np.nan))
+        return month_ma_dataes
+
+  
 
 if __name__ == "__main__":
     data = TDXData()

@@ -47,12 +47,12 @@
                     </div>
                 </form>
             </div>
-            <div style="width: 200px;">   
-                <form method="POST">
-                    <div class="my-div">
-                        <input type="text" name="script_name" value="run_script" class="form-control" hidden>
-                        <button type="submit" name="action" value="run_script" class="btn btn-success">执行脚本</button>
-                    </div>
+            <div>   
+                <form action="{{ url_for('vectorbt_bt_strategy_D_W') }}" method="POST">
+                    <div class="my-div" style="width: 280px; margin-top: 20px; margin-left: 10px;">
+                        <input type="text" name="stock_key" placeholder="输入股票代码，点击回测..." class="form-control">
+                        <button type="submit" class="btn btn-primary" style="margin-left: 30px;">执行回测</button>
+                    </div>                    
                 </form>
             </div>                        
         </div>

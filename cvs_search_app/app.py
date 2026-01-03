@@ -13,6 +13,7 @@ project_root = Path(__file__).parent
 sys.path.append(str(project_root))
 import minitools.user_config as ucfg
 from minitools.strategy_ma import StockMA_Strategy
+from minitools.vbt_backtest_Day_Week import VectorbtBacktest_DayWeek
 from scripts.RootInfo import MainUtile as utile
 from scripts.ReadTDXDayFileToCSV import DayFileToCsv as DayToCsv
 from scripts.vectorbt_backtest import simple_backtest as simple_backtest
@@ -165,6 +166,37 @@ def strategy_ma():
             print(f"股票代码 {stock_code} 符合均线策略要求: {strategy_result}")
 
     return render_template("showstrategyresult.html", items=checkbox_items,script_output=f"全部股票数: {len(code_list)} 符合策略股票数: {len(checkbox_items)}")
+
+# 上面画面选出符合策略的股票后，点击回测按钮，调用 backtest 脚本，显示回测结果
+#####  ################################ 使用策略 股价均线多头排列，且过 周，5日线买入，跌5日线卖出 ##################################################
+@app.route("/vectorbt_bt_strategy_D_W", methods=["GET", "POST"])
+def vectorbt_bt_strategy_D_W():
+
+    folder_path = os.path.join(current_dir, 'templates', ucfg.common_html_folder_name) # 目标文件夹路径
+    extension = '.html' # 指定后缀名
+    try:
+        selected_ids = []
+        stock_code = request.form.get("stock_key")
+        if stock_code is not None and stock_code != '':
+            selected_ids.append(stock_code)
+
+        strategy_instance = VectorbtBacktest_DayWeek(stock_code)
+        sum_result, pf = strategy_instance.simple_backtest()
+        if pf is None:
+            return render_template("index.html", script_output=f"回测失败: {str(sum_result)}")  
+    
+        #显示该股票的回测结果图
+        stock_back_test_div = pf.plot().to_html(include_plotlyjs='cdn')
+        # 读取回测结果详细
+        backtest_detail = pf.trades.records_readable
+
+        #html_files = [f'{folder_path}\{strategy_instance.stock_code}_kline.html']
+        html_file_name = f'{strategy_instance.stock_name}_{strategy_instance.stock_code}_kline.html'
+        html_files = [f'{ucfg.common_html_folder_name}/{f}' for f in os.listdir(folder_path) if f == html_file_name]
+        return render_template("vbt_bt_result.html", files_list=html_files, results_detail=backtest_detail.to_html(classes="table"), back_test_div=stock_back_test_div,
+                               script_output=f"{str(sum_result)}")
+    except Exception as e:
+        return render_template("index.html", script_output=f"执行失败: {str(e)}")
 
 #####  ################################ show multiple stock html ##################################################
 # 将批处理生成的html，读取 templates/stockhtml 文件夹下的所有 HTML 文件，并显示在一个页面中
