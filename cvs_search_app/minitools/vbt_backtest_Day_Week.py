@@ -74,12 +74,6 @@ class VectorbtBacktest_DayWeek(StockMA_Strategy):
             
             # 计算RSI
             rsi = vbt.RSI.run(vbt_df)
-            
-            # 绘制图表
-            #fig = float_close_list.vbt.plot()
-            #fast_ma.ma.vbt.plot(fig=fig, trace_kwargs=dict(name='5日均线'))
-            #slow_ma.ma.vbt.plot(fig=fig, trace_kwargs=dict(name='10日均线'))
-            #fig.show()
 
             try:
                 entries = fast_ma.ma_crossed_above(slow_ma_60)

@@ -180,6 +180,15 @@ def vectorbt_bt_strategy_D_W():
         if stock_code is not None and stock_code != '':
             selected_ids.append(stock_code)
 
+        # 调用 showKLine_week.py 生成我关注的股票的html
+        result = subprocess.run(
+            ["python", scripts_mystocks_k_line_path , stock_code], 
+            capture_output=True, 
+            text=True
+        )
+        output = result.stdout if result.returncode == 0 else f"错误: {result.stderr}"
+        print(f"showKLine_week.py output: {output}")
+        
         strategy_instance = VectorbtBacktest_DayWeek(stock_code)
         sum_result, pf = strategy_instance.simple_backtest()
         if pf is None:
@@ -190,7 +199,6 @@ def vectorbt_bt_strategy_D_W():
         # 读取回测结果详细
         backtest_detail = pf.trades.records_readable
 
-        #html_files = [f'{folder_path}\{strategy_instance.stock_code}_kline.html']
         html_file_name = f'{strategy_instance.stock_name}_{strategy_instance.stock_code}_kline.html'
         html_files = [f'{ucfg.common_html_folder_name}/{f}' for f in os.listdir(folder_path) if f == html_file_name]
         return render_template("vbt_bt_result.html", files_list=html_files, results_detail=backtest_detail.to_html(classes="table"), back_test_div=stock_back_test_div,
