@@ -1,2 +1,15 @@
 cvs_search_app/templates/mystockshtml/*.html
 cvs_search_app/templates/stockhtml/*.html
+cvs_search_app/stockhtml/*.html
+cvs_search_app/stockscsv/*.csv
+cvs_search_app/minitools/__pycache__/strategy_ma.cpython-311.pyc
+cvs_search_app/minitools/__pycache__/tdxcomm.cpython-311.pyc
+cvs_search_app/minitools/__pycache__/user_config.cpython-311.pyc
+cvs_search_app/minitools/__pycache__/vbt_backtest_Day_Week.cpython-311.pyc
+.gitignore
+.gitignore
+cvs_search_app/scripts/__pycache__/RootInfo.cpython-311.pyc
+cvs_search_app/scripts/__pycache__/vectorbt_backtest_all.cpython-311.pyc
+cvs_search_app/scripts/__pycache__/vectorbt_backtest.cpython-311.pyc
+scripts/__pycache__/user_config.cpython-311.pyc
+cvs_search_app/scripts/__pycache__/ReadTDXDayFileToCSV.cpython-311.pyc

@@ -46,44 +46,56 @@
                         <button type="submit" name="action" value="run_script" class="btn btn-success">策略1 筛选我关注的股票</button>
                     </div>
                 </form>
-            </div>
-            <div>   
-                <form action="{{ url_for('vectorbt_bt_strategy_D_W') }}" method="POST">
-                    <div class="my-div" style="width: 280px; margin-top: 20px; margin-left: 10px;">
-                        <input type="text" name="stock_key" placeholder="输入股票代码，点击回测..." class="form-control">
-                        <button type="submit" class="btn btn-primary" style="margin-left: 30px;">执行回测</button>
-                    </div>                    
-                </form>
-            </div>                        
+            </div>                
         </div>
         <!-- 脚本执行部分 -->
         <h2>显示股票K线图</h2>
         <div style="width: 700px;">
             <div  class="my-div">
-            <!-- action 指定提交到的路由，method 指定请求方式 -->
-            <form action="{{ url_for('showhtml') }}" method="POST">
-                <div class="input-group" style="width: 600px; margin-top: 20px;">
-                    <input type="text" name="search_key" placeholder="输入股票代码..." class="form-control">
-                
-                    <button type="submit" class="btn btn-primary" style="margin-left: 30px;">显示既存的K线图</button>
-                </div>
-                 <input type="checkbox" name="a_checkbox" value="1" id="check_1">
-                 <label for="check_1">仅清空生成过的K线图</label><br>              
-            </form>
-            </div>
-            <div class="my-div">
-            <form action="{{ url_for('showmyhtml') }}" method="POST">   
-                {% for item in items %}
-                    <div>
-                        <input type="checkbox" 
-                            name="item_checkbox" 
-                            value="{{ item.id }}" 
-                            id="check_{{ item.id }}">
-                        <label for="check_{{ item.id }}">{{ item.name }}</label>
+                <!-- action 指定提交到的路由，method 指定请求方式 -->
+                <form action="{{ url_for('showhtml') }}" method="POST">
+                    <div class="input-group" style="width: 600px; margin-top: 20px;">
+                        <input type="text" name="search_key" placeholder="输入股票代码..." class="form-control">
+                        <button type="submit" class="btn btn-primary" style="margin-left: 30px;">显示既存的K线图</button>
                     </div>
-                {% endfor %}                     
-                <button type="submit" class="btn btn-primary">生成K线图</button>
-            </form>        
+                    <input type="checkbox" name="a_checkbox" value="1" id="check_1">
+                    <label for="check_1">仅清空生成过的K线图</label><br>              
+                </form>
+            </div>
+
+            <div class="my-div">   
+                <form action="{{ url_for('vectorbt_bt_strategy_D_W') }}" method="POST">
+                    {% for item in vbtitems %}
+                        <div>
+                            <input type="checkbox" 
+                                name="vbt_checkbox" 
+                                value="{{ item.id }}" 
+                                id="check_{{ item.id }}">
+                            <label for="check_{{ item.id }}">{{ item.name }}</label>
+                        </div>
+                    {% endfor %}                    
+                    <div class="input-group" style="width: 600px; margin-top: 20px;">
+                        <input type="text" name="stock_key" placeholder="必须选策略并输入股票代码后，再点击回测..." class="form-control">
+                        <button type="submit" class="btn btn-primary" style="margin-left: 30px;">执行回测</button>
+                    </div>                    
+                </form>
+            </div>
+
+            <div class="my-div">
+                <!-- form action="{{ url_for('showmyhtml') }}" method="POST" -->
+                <form method="POST">
+                    {% for item in items %}
+                        <div>
+                            <input type="checkbox" 
+                                name="item_checkbox" 
+                                value="{{ item.id }}" 
+                                id="check_{{ item.id }}">
+                            <label for="check_{{ item.id }}">{{ item.name }}</label>
+                        </div>
+                    {% endfor %}                     
+                    <button type="submit" class="btn btn-primary" formaction="{{ url_for('showmyhtml') }}">生成K线图</button>
+                    <button type="submit" class="btn btn-primary" formaction="{{ url_for('showvbtbk') }}">执行回测</button>
+                </form>        
             </div>
         </div>
         <!-- 脚本执行结果输出 -->

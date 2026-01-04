@@ -14,6 +14,7 @@ sys.path.append(str(project_root))
 import minitools.user_config as ucfg
 from minitools.strategy_ma import StockMA_Strategy
 from minitools.vbt_backtest_Day_Week import VectorbtBacktest_DayWeek
+from minitools.vbt_backtest_Day_Ma import VectorbtBacktest_DayMa
 from scripts.RootInfo import MainUtile as utile
 from scripts.ReadTDXDayFileToCSV import DayFileToCsv as DayToCsv
 from scripts.vectorbt_backtest import simple_backtest as simple_backtest
@@ -52,6 +53,13 @@ checkbox_items = [
     {'id': 'ban_dao_ti_list', 'name': '半导体'}
 ]
 
+strategy_items = [
+    {'id': 'ma_5_10_60', 'name': '五日线上60日买，下10日卖'},
+    {'id': 'ma_5_W_M', 'name': '股价在多头五，周，月均线上买，下5日卖'},
+    {'id': 'other_test1', 'name': '策略1'},
+    {'id': 'other_test2', 'name': '策略2'}
+]
+
 @app.route("/", methods=["GET", "POST"])
 def index():
     selected_script = None
@@ -82,11 +90,11 @@ def index():
                 output = result.stdout if result.returncode == 0 else f"错误: {result.stderr}"
                 if output == None or output.strip() == '':
                     output = '游资信息已经更新，请在上面输入查询内容或直接点击上面查询按钮。'
-                return render_template("index.html", items=checkbox_items, script_output=output)
+                return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, script_output=output)
             except Exception as e:
-                return render_template("index.html", items=checkbox_items, script_output=f"执行失败: {str(e)}")
+                return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, script_output=f"执行失败: {str(e)}")
 
-    return render_template("index.html", items=checkbox_items)
+    return render_template("index.html", items=checkbox_items, vbtitems=strategy_items)
 
 @app.route("/sortbydateandcode", methods=["GET", "POST"])
 def sortbydateandcode():
@@ -176,23 +184,33 @@ def vectorbt_bt_strategy_D_W():
     extension = '.html' # 指定后缀名
     try:
         selected_ids = []
+        sum_result = None
+        pf = None
+        selected_ids = request.form.getlist('vbt_checkbox')
+        #取得输入的股票代码
         stock_code = request.form.get("stock_key")
-        if stock_code is not None and stock_code != '':
-            selected_ids.append(stock_code)
-
+        if (selected_ids and len(selected_ids) > 0)  and (stock_code is not None and stock_code != ''):
         # 调用 showKLine_week.py 生成我关注的股票的html
-        result = subprocess.run(
-            ["python", scripts_mystocks_k_line_path , stock_code], 
-            capture_output=True, 
-            text=True
-        )
-        output = result.stdout if result.returncode == 0 else f"错误: {result.stderr}"
-        print(f"showKLine_week.py output: {output}")
+            result = subprocess.run(
+                ["python", scripts_mystocks_k_line_path , stock_code], 
+                capture_output=True, 
+                text=True
+            )
+            output = result.stdout if result.returncode == 0 else f"错误: {result.stderr}"
+            print(f"showKLine_week.py output: {output}")
         
-        strategy_instance = VectorbtBacktest_DayWeek(stock_code)
-        sum_result, pf = strategy_instance.simple_backtest()
+            strategy_instance = None
+            for vbt_itme in selected_ids:
+                match vbt_itme:
+                    case 'ma_5_10_60' :
+                        strategy_instance = VectorbtBacktest_DayMa(stock_code)
+                    case 'ma_5_W_M' :
+                        strategy_instance = VectorbtBacktest_DayWeek(stock_code)                    
+
+            sum_result, pf = strategy_instance.simple_backtest()
+
         if pf is None:
-            return render_template("index.html", script_output=f"回测失败: {str(sum_result)}")  
+            return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, script_output=f"回测失败: {str(sum_result)}")  
     
         #显示该股票的回测结果图
         stock_back_test_div = pf.plot().to_html(include_plotlyjs='cdn')
@@ -204,7 +222,7 @@ def vectorbt_bt_strategy_D_W():
         return render_template("vbt_bt_result.html", files_list=html_files, results_detail=backtest_detail.to_html(classes="table"), back_test_div=stock_back_test_div,
                                script_output=f"{str(sum_result)}")
     except Exception as e:
-        return render_template("index.html", script_output=f"执行失败: {str(e)}")
+        return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, script_output=f"执行失败: {str(e)}")
 
 #####  ################################ show multiple stock html ##################################################
 # 将批处理生成的html，读取 templates/stockhtml 文件夹下的所有 HTML 文件，并显示在一个页面中
@@ -278,6 +296,34 @@ def showmyhtml():
         return render_template("showhtmllist.html", script_output=f"执行失败: {str(e)}")
     html_files = [f'{my_stocks_html_folder_name}/{f}' for f in os.listdir(folder_path) if f.endswith(extension)]
     return render_template('showhtmllist.html', files_list=html_files, script_output=f"执行股票数：{len(show_list)} \n执行结果: {str(output)}")
+
+@app.route("/showvbtbk", methods=["GET", "POST"])
+def showvbtbk():
+    selected_ids = request.form.getlist('item_checkbox')
+    #默认显示我关注的股票
+    show_list = my_stocks_list
+    all_output = '=================================================================================\n'
+    if selected_ids and len(selected_ids) > 0:
+        show_list = []
+        for list_id in selected_ids:
+            if hasattr(ucfg, list_id):
+                show_list.extend(getattr(ucfg, list_id))
+    # 调用 showKLine_week.py 生成我关注的股票的html
+    try: 
+        for stock_code in show_list :
+            all_output += f'\n==================================={stock_code}==============================================\n'
+            strategy_instance = VectorbtBacktest_DayWeek(stock_code)                    
+            sum_result, pf = strategy_instance.simple_backtest()
+            # 读取回测结果详细
+            backtest_detail = pf.trades.records_readable
+            print(f"vbt back test output: {sum_result}")
+            all_output += f'==================================={strategy_instance.stock_name}==============================================\n'
+            all_output += str(backtest_detail.values[-1])
+            all_output += f'\n==================================={strategy_instance.stock_name}==============================================\n'
+            all_output += sum_result
+    except Exception as e:
+        return render_template("showhtmllist.html", script_output=f"执行失败: {str(e)}")
+    return render_template('showhtmllist.html', script_output=f"执行股票数：{len(show_list)} \n执行结果: {str(all_output)}")
     
 def clean_numeric_string(value):
     """

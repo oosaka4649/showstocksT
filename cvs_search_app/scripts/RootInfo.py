@@ -8,6 +8,7 @@ Created on Wed Jul  6 13:59:46 2022
 import os
 import dateutil as du
 import time
+import numpy as np
 
 class MainUtile:
     STOCK_CODE_NUM = {'6':'sh','3':'sz','0':'sz','4':'bj','8':'bj','9':'bj'}  # 股票代码前缀
@@ -84,3 +85,62 @@ class MainUtile:
 """        
         report += "============================================"
         return report.strip()
+    
+
+    # 这是一个经典的线性插值（Linear Interpolation）问题。为了实现这个逻辑，我们需要找到每一段由 None 组成的“空洞”，获取空洞前后的边界值，然后计算步长进行填充。
+    @staticmethod
+    def fill_all_missing(data):
+        if not data or len(data) < 2:
+            return data
+
+        # 定义一个内部函数，统一判断 None 或 NaN
+        def is_missing(x):
+            if x is None:
+                return True
+            try:
+                return np.isnan(x)
+            except:
+                return False
+
+        # 1. 寻找第一个有效数字的索引
+        first_val_idx = -1
+        for k in range(len(data)):
+            if not is_missing(data[k]):
+                first_val_idx = k
+                break
+                
+        if first_val_idx == -1: # 全是空值
+            return data
+
+        # 2. 填充中间部分 (线性插值)
+        i = first_val_idx
+        while i < len(data) - 1:
+            if not is_missing(data[i]) and is_missing(data[i+1]):
+                left_idx = i
+                right_idx = i + 1
+                # 寻找右侧下一个有效值
+                while right_idx < len(data) and is_missing(data[right_idx]):
+                    right_idx += 1
+                
+                if right_idx < len(data): # 找到了右边界
+                    count = right_idx - left_idx
+                    step = (data[right_idx] - data[left_idx]) / count
+                    for j in range(1, count):
+                        data[left_idx + j] = round(float(data[left_idx] + step * j), 2)
+                    i = right_idx
+                else: # 后面全是空值，退出中间填充
+                    break
+            else:
+                i += 1
+
+        # 3. 处理开头部分的 None/NaN (根据第一段趋势逆推)
+        if first_val_idx > 0:
+            # 找到填充后的第二个有效值来确定步长
+            next_val_idx = first_val_idx + 1
+            if next_val_idx < len(data) and not is_missing(data[next_val_idx]):
+                step = data[next_val_idx] - data[first_val_idx]
+                # 向前逆推
+                for j in range(first_val_idx - 1, -1, -1):
+                    data[j] = round(float(data[j + 1] - step), 2)
+                    
+        return data
