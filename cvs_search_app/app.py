@@ -300,9 +300,9 @@ def showmyhtml():
 @app.route("/showvbtbk", methods=["GET", "POST"])
 def showvbtbk():
     selected_ids = request.form.getlist('item_checkbox')
+    all_result = []
     #默认显示我关注的股票
     show_list = my_stocks_list
-    all_output = '=================================================================================\n'
     if selected_ids and len(selected_ids) > 0:
         show_list = []
         for list_id in selected_ids:
@@ -311,19 +311,20 @@ def showvbtbk():
     # 调用 showKLine_week.py 生成我关注的股票的html
     try: 
         for stock_code in show_list :
-            all_output += f'\n==================================={stock_code}==============================================\n'
-            strategy_instance = VectorbtBacktest_DayWeek(stock_code)                    
+            strategy_instance = VectorbtBacktest_DayWeek(stock_code)
+            result_item = f'==================================={stock_code}={strategy_instance.stock_name}===============\n'
             sum_result, pf = strategy_instance.simple_backtest()
             # 读取回测结果详细
             backtest_detail = pf.trades.records_readable
             print(f"vbt back test output: {sum_result}")
-            all_output += f'==================================={strategy_instance.stock_name}==============================================\n'
-            all_output += str(backtest_detail.values[-1])
-            all_output += f'\n==================================={strategy_instance.stock_name}==============================================\n'
-            all_output += sum_result
+            result_item += f'==============最后的一次交易================================\n'
+            result_item += str(backtest_detail.values[-1])
+            result_item += f'\n============交易汇总======================================\n'
+            result_item += sum_result
+            all_result.append(result_item)
     except Exception as e:
         return render_template("showhtmllist.html", script_output=f"执行失败: {str(e)}")
-    return render_template('showhtmllist.html', script_output=f"执行股票数：{len(show_list)} \n执行结果: {str(all_output)}")
+    return render_template('showhtmllist.html',items=all_result, script_output=f"执行股票数：{len(show_list)}")
     
 def clean_numeric_string(value):
     """

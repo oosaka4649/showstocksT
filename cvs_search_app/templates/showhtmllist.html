@@ -35,6 +35,14 @@
                 </div>
             {% endfor %}
         </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; margin-left: 150px;">
+        <!-- 回测结果显示 -->
+            {% for item in items %}
+                <div style="width: 850px;margin: 20px;padding: 10px;border: 3px solid #007BFF;">
+                    {{ item }}
+                </div>
+            {% endfor %}  
+        </div>       
         <!-- 脚本执行结果输出 -->
         {% if script_output %}
         <div class="mt-4 p-3 bg-light rounded">
