@@ -319,7 +319,7 @@ def showvbtbk():
             print(f"vbt back test output: {sum_result}")
             result_item += f'==============最后的一次交易================================\n'
             result_item += str(backtest_detail.values[-1])
-            result_item += f'\n============交易汇总======================================\n'
+            result_item += f'\n===\n=========交易汇总=================================\n'
             result_item += sum_result
             all_result.append(result_item)
     except Exception as e:
