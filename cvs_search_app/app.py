@@ -47,6 +47,7 @@ my_stocks_html_folder_name = ucfg.my_stocks_html_folder_name
 #在画面显示一个个check box，返回选择的（和配置的config 文件对应的 list key），并生成k线html，并显示
 #后面可以添加项目
 checkbox_items = [
+    {'id': 'tmp_stocks_list', 'name': '临时短线'},
     {'id': 'my_stocks_list', 'name': '我的自选'},
     {'id': 'neng_yuan_list', 'name': '能源金属'},
     {'id': 'you_se_list', 'name': '有色金属'},
