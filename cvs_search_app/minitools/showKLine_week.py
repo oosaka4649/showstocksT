@@ -203,14 +203,15 @@ def draw_charts(stock_code='', stock_name=''):
             linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
             label_opts=opts.LabelOpts(is_show=False),
         )
-        .add_yaxis(
-            series_name="MA10",
-            y_axis=calculate_ma(day_count=10, data=chart_data),
-            is_smooth=True,
-            is_hover_animation=False,
-            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
-            label_opts=opts.LabelOpts(is_show=False),
-        )
+        #去掉 10日均线，只保留 5日，周，月，画面干净点
+        #.add_yaxis(
+        #    series_name="MA10",
+        #    y_axis=calculate_ma(day_count=10, data=chart_data),
+        #    is_smooth=True,
+        #    is_hover_animation=False,
+        #    linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
+        #    label_opts=opts.LabelOpts(is_show=False),
+        #)
         #tdx_weekly_data
         .add_yaxis(
             series_name="Weekly Close",

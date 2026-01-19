@@ -15,6 +15,7 @@ import minitools.user_config as ucfg
 from minitools.strategy_ma import StockMA_Strategy
 from minitools.vbt_backtest_Day_Week import VectorbtBacktest_DayWeek
 from minitools.vbt_backtest_Day_Ma import VectorbtBacktest_DayMa
+from minitools.vbt_backtest_Ma_Week import VectorbtBacktest_MaWeek
 from scripts.RootInfo import MainUtile as utile
 from scripts.ReadTDXDayFileToCSV import DayFileToCsv as DayToCsv
 from scripts.vectorbt_backtest import simple_backtest as simple_backtest
@@ -47,7 +48,7 @@ my_stocks_html_folder_name = ucfg.my_stocks_html_folder_name
 #在画面显示一个个check box，返回选择的（和配置的config 文件对应的 list key），并生成k线html，并显示
 #后面可以添加项目
 checkbox_items = [
-    {'id': 'tmp_stocks_list', 'name': '临时短线'},
+    {'id': 'vbt_tmp_stocks_list', 'name': '回测跟踪-策略2'},
     {'id': 'my_stocks_list', 'name': '我的自选'},
     {'id': 'neng_yuan_list', 'name': '能源金属'},
     {'id': 'you_se_list', 'name': '有色金属'},
@@ -55,9 +56,9 @@ checkbox_items = [
 ]
 
 strategy_items = [
-    {'id': 'ma_5_10_60', 'name': '五日线上60日买，下10日卖'},
-    {'id': 'ma_5_W_M', 'name': '股价在多头五，周，月均线上买，下5日卖'},
-    {'id': 'other_test1', 'name': '策略1'},
+    {'id': 'ma_5_10_60', 'name': '策略一 五日线上60日买，下10日卖'},
+    {'id': 'ma_5_W_M', 'name': '策略二 周均线上穿5日均线买，股价下5日均线卖'},
+    {'id': 'ma_5_w_5', 'name': '策略三 5日均线上穿周均线买，股价下5日均线卖  * 测试验证这策略是亏损策略'},
     {'id': 'other_test2', 'name': '策略2'}
 ]
 
@@ -206,7 +207,9 @@ def vectorbt_bt_strategy_D_W():
                     case 'ma_5_10_60' :
                         strategy_instance = VectorbtBacktest_DayMa(stock_code)
                     case 'ma_5_W_M' :
-                        strategy_instance = VectorbtBacktest_DayWeek(stock_code)                    
+                        strategy_instance = VectorbtBacktest_DayWeek(stock_code)
+                    case 'ma_5_w_5' :
+                        strategy_instance = VectorbtBacktest_MaWeek(stock_code)
 
             sum_result, pf = strategy_instance.simple_backtest()
 
