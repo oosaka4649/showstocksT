@@ -16,6 +16,7 @@ from minitools.strategy_ma import StockMA_Strategy
 from minitools.vbt_backtest_Day_Week import VectorbtBacktest_DayWeek
 from minitools.vbt_backtest_Day_Ma import VectorbtBacktest_DayMa
 from minitools.vbt_backtest_Ma_Week import VectorbtBacktest_MaWeek
+from minitools.vbt_backtest_Ma_Week_UP import VectorbtBacktest_DayWeek_UP
 from scripts.RootInfo import MainUtile as utile
 from scripts.ReadTDXDayFileToCSV import DayFileToCsv as DayToCsv
 from scripts.vectorbt_backtest import simple_backtest as simple_backtest
@@ -59,7 +60,7 @@ strategy_items = [
     {'id': 'ma_5_10_60', 'name': '策略一 五日线上60日买，下10日卖'},
     {'id': 'ma_5_W_M', 'name': '策略二 周均线上穿5日均线买，股价下5日均线卖'},
     {'id': 'ma_5_w_5', 'name': '策略三 5日均线上穿周均线买，股价下5日均线卖  * 测试验证这策略是亏损策略'},
-    {'id': 'other_test2', 'name': '策略2'}
+    {'id': 'up_test2', 'name': '策略二 的改进，对出场进行了修改'}
 ]
 
 @app.route("/", methods=["GET", "POST"])
@@ -210,6 +211,8 @@ def vectorbt_bt_strategy_D_W():
                         strategy_instance = VectorbtBacktest_DayWeek(stock_code)
                     case 'ma_5_w_5' :
                         strategy_instance = VectorbtBacktest_MaWeek(stock_code)
+                    case 'up_test2' :
+                        strategy_instance = VectorbtBacktest_DayWeek_UP(stock_code, '2024-01-01') #对  VectorbtBacktest_DayWeek 的出场规则进行优化                      
 
             sum_result, pf = strategy_instance.simple_backtest()
 

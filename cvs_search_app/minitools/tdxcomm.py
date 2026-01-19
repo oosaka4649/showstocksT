@@ -50,9 +50,12 @@ class TDXData:
     '''
       由于 py echart绘图需要输入数据是 list[list],暂时写这一个函数，后续需要其他格式再添加
       'Date','Open','Close','Low','High','Volume','Amount'
+
+      20260119 添加一个日期，用于对近期的数据进行回测，避免远古数据对回测结果的影响
+          比如 东北证券，在2007年复牌时，股票爆涨，这对目前2026年没有意义
     '''
     # 将通达信的日线文件转换成list[list]格式
-    def creatstocKDataList(self):
+    def creatstocKDataList(self, startDay=None):
         if self.day_file_path is not None and len(self.day_file_path) > 1:
             self.stock_name = self.get_stock_names()
             # 以二进制方式打开源文件
@@ -63,6 +66,8 @@ class TDXData:
             rec_count = int(buf_size / 32)
             begin = 0
             end = 32
+            # 解析 startDay（如果提供），支持可被 pandas 解析的任何日期格式
+            start_dt = pd.to_datetime(startDay) if startDay is not None else None
             for i in range(rec_count):
                 day_line = []
                 # 将字节流转换成Python数据格式
@@ -83,7 +88,9 @@ class TDXData:
                 tmp_volume = str(a[6] / 100.0)
                 # output 'Date','Open','Close','Low','High','Volume','Amount'
                 day_line = [date, tmp_open, tmp_close, tmp_low, tmp_high, tmp_volume, tmp_amount]
-                self.day_datas.append(day_line)
+                # 如果未提供 startDay，全部加入；否则只加入日期大于等于 startDay 的数据
+                if start_dt is None or pd.to_datetime(date) >= start_dt:
+                    self.day_datas.append(day_line)
                 begin += 32
                 end += 32            
 

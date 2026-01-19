@@ -32,11 +32,11 @@ show_templates_comm_html_path = os.path.join(parent_dir, 'templates', ucfg.commo
 
 
 class StockMA_Strategy:
-    def __init__(self, stock_code: str):
+    def __init__(self, stock_code: str, startDay=None):
         self.stock_code = stock_code
         self.tdx_data = tdx(stock_code)
         self.tdx_data.getStockDayFile()
-        self.tdx_data.creatstocKDataList()
+        self.tdx_data.creatstocKDataList(startDay)
         self.all_data = self.tdx_data.getTDXStockDWMDatas()
         self.chart_data = self.split_data(self.tdx_data.getTDXStockKDatas())
         self.stock_name = self.tdx_data.stock_name
