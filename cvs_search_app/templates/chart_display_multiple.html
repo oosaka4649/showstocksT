@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>游资月度净买入统计 - 分开显示</title>
+    <script src="https://assets.pyecharts.org/assets/echarts.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            color: #1890ff;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .info-box {
+            background-color: #e6f7ff;
+            border-left: 4px solid #1890ff;
+            padding: 12px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            color: #0050b3;
+        }
+        
+        .charts-wrapper {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .chart-item {
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: box-shadow 0.3s ease;
+        }
+        
+        .chart-item:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .chart-container {
+            width: 100%;
+            height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .chart-item > div {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .footer {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin: 10px 5px;
+            padding: 10px 20px;
+            background-color: #1890ff;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+        
+        .back-link:hover {
+            background-color: #0050b3;
+        }
+        
+        .secondary-link {
+            background-color: #52c41a;
+        }
+        
+        .secondary-link:hover {
+            background-color: #389e0d;
+        }
+        
+        .chart-count {
+            color: #666;
+            font-size: 14px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>游资月度净买入统计 - 分开显示</h1>
+            <p>每个游资单独显示其最近18个月的净买入金额变化趋势</p>
+        </div>
+        
+        {% if script_output %}
+        <div class="info-box">
+            <strong>✓ 执行结果:</strong> {{ script_output }}
+        </div>
+        {% endif %}
+        
+        {% if charts_html %}
+        <div class="charts-wrapper">
+            {% for chart_html in charts_html %}
+            <div class="chart-item">
+                <div class="chart-container">
+                    {{ chart_html | safe }}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="chart-count">
+            共显示 {{ chart_count }} 个游资的数据
+        </div>
+        {% endif %}
+        
+        <div class="footer">
+            <a href="/" class="back-link">← 返回首页</a>
+        </div>
+    </div>
+</body>
+</html>

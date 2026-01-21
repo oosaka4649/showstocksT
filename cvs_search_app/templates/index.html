@@ -41,6 +41,13 @@
                 </form>
             </div>
             <div>   
+                <form action="{{ url_for('trader_monthly_stats_separate') }}" method="POST">
+                    <div class="my-div">
+                        <button type="submit" name="action" value="run_script" class="btn btn-success">进场资金历史</button>
+                    </div>
+                </form>
+            </div>             
+            <div>   
                 <form action="{{ url_for('strategy_ma') }}" method="POST">
                     <div class="my-div">
                         <button type="submit" name="action" value="run_script" class="btn btn-success">策略1 筛选我关注的股票</button>

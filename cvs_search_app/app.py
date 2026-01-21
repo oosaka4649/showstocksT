@@ -17,6 +17,7 @@ from minitools.vbt_backtest_Day_Week import VectorbtBacktest_DayWeek
 from minitools.vbt_backtest_Day_Ma import VectorbtBacktest_DayMa
 from minitools.vbt_backtest_Ma_Week import VectorbtBacktest_MaWeek
 from minitools.vbt_backtest_Ma_Week_UP import VectorbtBacktest_DayWeek_UP
+from minitools.trader_stats import statistics_by_month_and_trader
 from scripts.RootInfo import MainUtile as utile
 from scripts.ReadTDXDayFileToCSV import DayFileToCsv as DayToCsv
 from scripts.vectorbt_backtest import simple_backtest as simple_backtest
@@ -149,6 +150,30 @@ def sortbydateandcode():
 @app.route("/help", methods=["GET", "POST"])
 def help():
     return render_template("help.html")
+
+@app.route("/trader_monthly_stats_separate", methods=["GET", "POST"])
+def trader_monthly_stats_separate():
+    """
+    显示游资月度净买入统计直方图（分开显示，最近24个月）
+    每个游资单独显示在一个柱状图中
+    """
+    try:
+        # 使用aijinggu.csv文件，最近24个月，分开显示
+        bar_charts = statistics_by_month_and_trader(aijinggu_csv_path, months_ago=18, separate_traders=True)
+        
+        if bar_charts is None or len(bar_charts) == 0:
+            return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, 
+                                 script_output="生成直方图失败")
+        
+        # 生成HTML列表
+        charts_html = [chart.render_embed() for chart in bar_charts]
+        
+        return render_template("chart_display_multiple.html", charts_html=charts_html, 
+                             chart_count=len(charts_html),
+                             script_output=f"游资月度净买入统计完成（最近24个月，共{len(charts_html)}个游资）")
+    except Exception as e:
+        return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, 
+                             script_output=f"执行失败: {str(e)}")
 
 #####  ################################ 使用策略 从配置文件中 筛选出符合条件的股票 ##################################################
 #####  ################################ 使用策略 1 strategy_ma.py  股价上冲 5日，10日，周，月     ##################################################
