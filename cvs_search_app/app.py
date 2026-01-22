@@ -17,7 +17,7 @@ from minitools.vbt_backtest_Day_Week import VectorbtBacktest_DayWeek
 from minitools.vbt_backtest_Day_Ma import VectorbtBacktest_DayMa
 from minitools.vbt_backtest_Ma_Week import VectorbtBacktest_MaWeek
 from minitools.vbt_backtest_Ma_Week_UP import VectorbtBacktest_DayWeek_UP
-from minitools.trader_stats import statistics_by_month_and_trader
+from minitools.trader_stats import statistics_by_month_and_trader, statistics_by_trader_monthly
 from scripts.RootInfo import MainUtile as utile
 from scripts.ReadTDXDayFileToCSV import DayFileToCsv as DayToCsv
 from scripts.vectorbt_backtest import simple_backtest as simple_backtest
@@ -171,6 +171,30 @@ def trader_monthly_stats_separate():
         return render_template("chart_display_multiple.html", charts_html=charts_html, 
                              chart_count=len(charts_html),
                              script_output=f"游资月度净买入统计完成（最近24个月，共{len(charts_html)}个游资）")
+    except Exception as e:
+        return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, 
+                             script_output=f"执行失败: {str(e)}")
+
+@app.route("/trader_monthly_comparison", methods=["GET", "POST"])
+def trader_monthly_comparison():
+    """
+    显示游资月度对比统计直方图（按月份显示）
+    每个月份单独显示在一个柱状图中，展示该月所有游资的净买入对比
+    """
+    try:
+        # 使用aijinggu.csv文件，最近12个月，按月份显示所有游资的对比
+        bar_charts = statistics_by_trader_monthly(aijinggu_csv_path, months_ago=12)
+        
+        if bar_charts is None or len(bar_charts) == 0:
+            return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, 
+                                 script_output="生成直方图失败")
+        
+        # 生成HTML列表
+        charts_html = [chart.render_embed() for chart in bar_charts]
+        
+        return render_template("chart_display_multiple.html", charts_html=charts_html, 
+                             chart_count=len(charts_html),
+                             script_output=f"游资月度对比统计完成（最近12个月，共{len(charts_html)}个月份）")
     except Exception as e:
         return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, 
                              script_output=f"执行失败: {str(e)}")
