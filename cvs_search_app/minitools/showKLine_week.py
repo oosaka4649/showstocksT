@@ -201,6 +201,7 @@ def draw_charts(stock_code='', stock_name=''):
             is_smooth=True,
             is_hover_animation=False,
             linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
+            itemstyle_opts=opts.ItemStyleOpts(color="#0000FF"),  # 添加这一行定义颜色
             label_opts=opts.LabelOpts(is_show=False),
         )
         #去掉 10日均线，只保留 5日，周，月，画面干净点
@@ -212,6 +213,9 @@ def draw_charts(stock_code='', stock_name=''):
         #    linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
         #    label_opts=opts.LabelOpts(is_show=False),
         #)
+        #        itemstyle_opts=opts.ItemStyleOpts(color="#FF0000")      # 红色
+        #        itemstyle_opts=opts.ItemStyleOpts(color="#00FF00")      # 绿色  
+        #        itemstyle_opts=opts.ItemStyleOpts(color="#0000FF")      # 蓝色
         #tdx_weekly_data
         .add_yaxis(
             series_name="Weekly Close",
@@ -220,6 +224,7 @@ def draw_charts(stock_code='', stock_name=''):
             is_hover_animation=False,
             is_connect_nones=True,
             linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
+            itemstyle_opts=opts.ItemStyleOpts(color="#FF0000"),  # 添加这一行定义颜色
             label_opts=opts.LabelOpts(is_show=False),
         )
         #tdx_monthly_data
@@ -230,6 +235,7 @@ def draw_charts(stock_code='', stock_name=''):
             is_hover_animation=False,
             is_connect_nones=True,
             linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
+            itemstyle_opts=opts.ItemStyleOpts(color="#00FF00"),  # 添加这一行定义颜色
             label_opts=opts.LabelOpts(is_show=False),
         )        
         #
