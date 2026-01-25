@@ -94,7 +94,9 @@ def index():
                     axis=1)]
             else:
                 results = df  # all结果
-            return render_template("results.html", results=results.to_html(classes="table"), search_key=search_key)
+            # 设置表格宽度为100%，使其显示最宽
+            results_html = results.to_html(classes="table", border=0).replace('<table', '<table style="width:100%; border-collapse:collapse;"')
+            return render_template("results.html", results=results_html, search_key=search_key)
         
         # 处理脚本执行
         elif "script_name" in request.form:
@@ -130,6 +132,17 @@ def sortbydateandcode():
     try:
         search_key = None
         df = pd.read_csv(aijinggu_csv_path, dtype=str)
+
+
+        df_stock_star = pd.read_csv(stock_star_csv_path, dtype=str) # 读入证券之星数据
+        
+        # 合并两个数据框（纵向合并）
+        df = pd.concat([df, df_stock_star], ignore_index=True)
+        
+        # 按日期和证券号码排序（日期最新的在前）
+        #df = df.sort_values(by=['上榜日期', '证券号码', '游资名称'], ascending=[False, False, False])
+        df = df.reset_index(drop=True)
+                
         results = df
         # 处理CSV查询
         if "search_key" in request.form:
