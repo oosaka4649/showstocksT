@@ -38,7 +38,9 @@ app = Flask(__name__)
 # 脚本常量
 current_dir = os.path.dirname(os.path.abspath(__file__))
 aijinggu_csv_path = os.path.join(current_dir, 'data', 'aijinggu.csv')
+stock_star_csv_path = os.path.join(current_dir, 'data', 'stockstar.csv')
 scripts_path = os.path.join(current_dir, 'scripts', 'getaijinggu_byall.py')
+scripts_stock_star_path = os.path.join(current_dir, 'scripts', 'stockstar_byall.py')
 scripts_k_line_path = os.path.join(current_dir, 'minitools', 'showKLine.py')
 scripts_mystocks_k_line_path = os.path.join(current_dir, 'minitools', 'showKLine_week.py')
 stocks_csv_dir = os.path.join(current_dir, 'stockscsv')
@@ -71,7 +73,20 @@ def index():
         # 处理CSV查询
         if "search_key" in request.form:
             search_key = request.form.get("search_key")
-            df = pd.read_csv(aijinggu_csv_path, dtype=str)
+            df = pd.read_csv(aijinggu_csv_path, dtype=str)   # 读入爱金股数据
+
+            df_stock_star = pd.read_csv(stock_star_csv_path, dtype=str) # 读入证券之星数据
+            
+            # 合并两个数据框（纵向合并）
+            df = pd.concat([df, df_stock_star], ignore_index=True)
+            
+            # 按日期和证券号码排序（日期最新的在前）
+            df = df.sort_values(by=['上榜日期', '证券号码', '游资名称'], ascending=[False, False, False])
+            df = df.reset_index(drop=True)
+            
+            # 只取前1000条记录
+            df = df.head(1000)
+
             if search_key:
                 # 在多个列中搜索（Name和City列）
                 columns_to_search = ['上榜日期', '证券号码', '游资名称']
@@ -86,6 +101,7 @@ def index():
             selected_script = request.form.get("script_name")          
             try:
                 # 调用外部Python脚本（例如：scripts/selected_script.py）
+                # 获取 爱金股 最新数据
                 result = subprocess.run(
                     ["python", scripts_path], 
                     capture_output=True, 
@@ -94,6 +110,15 @@ def index():
                 output = result.stdout if result.returncode == 0 else f"错误: {result.stderr}"
                 if output == None or output.strip() == '':
                     output = '游资信息已经更新，请在上面输入查询内容或直接点击上面查询按钮。'
+                # 获取证券之星 数据
+                result = subprocess.run(
+                    ["python", scripts_stock_star_path], 
+                    capture_output=True, 
+                    text=True
+                )
+                output = result.stdout if result.returncode == 0 else f"错误: {result.stderr}"
+                if output == None or output.strip() == '':
+                    output = '游资信息已经更新，请在上面输入查询内容或直接点击上面查询按钮。'                    
                 return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, script_output=output)
             except Exception as e:
                 return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, script_output=f"执行失败: {str(e)}")
