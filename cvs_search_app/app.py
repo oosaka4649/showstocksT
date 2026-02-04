@@ -179,8 +179,8 @@ def sortbydateandcode():
         sum_result = results.groupby(group_column)[calc_column].sum().reset_index()
         sum_result_date = results.groupby(['上榜日期'])[calc_column].sum().reset_index()
         sum_result_date = sum_result_date.sort_values(by=['上榜日期'], ascending=[False]) # 你可以根据需要更改排序列'
-        
-        return render_template("results.html", results=results.to_html(classes="table"), search_key=search_key, kline_div=stock_dashboard_div,
+        results_html = results.to_html(classes="table", border=0).replace('<table', '<table style="width:100%; border-collapse:collapse;"')
+        return render_template("results.html", results=results_html, search_key=search_key, kline_div=stock_dashboard_div,
                                script_output=f"按游资名称统计结果: {str(sum_result)}", script_output_date=f"按日期统计结果: {str(sum_result_date)}")
     except Exception as e:
         return render_template("index.html", script_output=f"执行失败: {str(e)}")

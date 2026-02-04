@@ -587,6 +587,7 @@ def read_web_page(sc_name, date_str):
     #  tables = soup.find_all('table', {'class': 'table1'})
     li_rows = uls.find_all('li')
     li_num = 0
+    title_only_flg = True
     for li_stocks in li_rows:
         if li_num == 0:
             li_num += 1
@@ -601,7 +602,7 @@ def read_web_page(sc_name, date_str):
         tables = li_stocks.find_all('table', {'class': 'table1'}) # 第一个 table 是 股票总结信息  一个  {'class': 'table1'} 就代码一个股票
         if len(tables) < 1:   # 股票个数
             continue
-
+        title_only_flg = False
         for stock_info in tables:
             stock_rows = stock_info.find_all('tr')[1:]  # 跳过标题和表头行
             #<tr class="lhb_first">
@@ -623,7 +624,7 @@ def read_web_page(sc_name, date_str):
                 return_line_num += 1            
         #print(f"股票代码: {stock_code}, 股票名称: {stock_name}")  #debug
         # 解析 买入金额最大的前五名 表格 todo
-    return return_line_num
+    return return_line_num, title_only_flg
 
 
 def save_to_csv(file_path, data_lines):
@@ -749,16 +750,20 @@ def get_main():
     all_line_num = -1
     time.sleep(2)  # 避免请求过快被封IP
     while all_line_num < 0:
+        title_only_flg = True
         tmp_today_str = tmp_date.strftime('%Y-%m-%d')
         print(f"最终使用日期: {tmp_today_str} ({['周一','周二','周三','周四','周五','周六','周日'][tmp_date.weekday()]})")
         all_line_num = 0
         for j in t_name.keys():
-            line_num = read_web_page(j, tmp_today_str)
+            line_num, title_only_flg = read_web_page(j, tmp_today_str)
             all_line_num += line_num
-        if all_line_num == 0:
+        if all_line_num == 0 and title_only_flg is False:
             print('没有新数据，结束')
             all_line_num = 0  # 退出循环
             break
+        elif all_line_num == 0 and title_only_flg:
+            all_line_num = -1  # 继续循环读取前一天数据
+            tmp_date -= pd.Timedelta(days=1)
         else:
             all_line_num = -1  # 继续循环读取前一天数据
             tmp_date -= pd.Timedelta(days=1)
