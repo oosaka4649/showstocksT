@@ -38,7 +38,7 @@ app = Flask(__name__)
 # 脚本常量
 current_dir = os.path.dirname(os.path.abspath(__file__))
 aijinggu_csv_path = os.path.join(current_dir, 'data', 'aijinggu.csv')
-stock_star_csv_path = os.path.join(current_dir, 'data', 'stockstar.csv')
+stock_star_csv_path = os.path.join(current_dir, 'data', 'stockstar_merged.csv')
 scripts_path = os.path.join(current_dir, 'scripts', 'getaijinggu_byall.py')
 scripts_stock_star_path = os.path.join(current_dir, 'scripts', 'stockstar_byall.py')
 scripts_k_line_path = os.path.join(current_dir, 'minitools', 'showKLine.py')

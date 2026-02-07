@@ -787,9 +787,107 @@ def fast_add_data():
                 break
     # 保存回CSV文件
     save_to_csv(csv_file_path, data_lines)
+	#
+	# 合并函数：读取由本脚本生成的CSV文件，对指定键相同的行合并“所属营业部”字段并输出到新文件
+def merge_stockstar_csv(input_csv_path, output_csv_path=None, merge_sep='|'):
+	"""
+	读取由本脚本生成的CSV文件，将以下字段相同的行合并：
+	[上榜日期, 证券号码, 证券简称, 上榜涨幅, 买入额（万）, 卖出额（万）, 净买入（万）, 游资名称]
+	合并规则：对这些字段完全相同时，将所属营业部字段合并为一条记录，所属营业部之间用 `merge_sep` 连接（默认 `|`），去重并保持出现顺序。
+
+	参数:
+		input_csv_path (str): 待合并的CSV文件路径
+		output_csv_path (str|None): 合并后输出的CSV路径，默认在输入文件同目录下以`_merged.csv`命名
+		merge_sep (str): 合并所属营业部时使用的分隔符
+
+	返回:
+		str: 输出文件路径
+	"""
+	# 读取原始CSV为行（使用csv以保证兼容当前文件格式）
+	try:
+		with open(input_csv_path, 'r', encoding='utf-8') as f:
+			reader = csv.reader(f)
+			rows = list(reader)
+	except FileNotFoundError:
+		print(f"文件不存在: {input_csv_path}")
+		return None
+
+	if not rows:
+		print("输入文件为空，退出")
+		return None
+
+	# 判断是否包含标题行（通过第一行是否含有'上榜日期'判断）
+	first_row_join = ','.join(rows[0])
+	header_present = '上榜日期' in first_row_join
+
+	standard_header = ['上榜日期', '证券号码', '证券简称', '上榜涨幅', '买入额（万）', '卖出额（万）', '净买入（万）', '所属营业部', '游资名称']
+
+	if header_present:
+		header = rows[0]
+		data_rows = rows[1:]
+	else:
+		header = standard_header
+		data_rows = rows
+
+	# 规范每行列数以匹配 header
+	needed = len(header)
+	norm_rows = []
+	for r in data_rows:
+		if len(r) < needed:
+			r = r + [''] * (needed - len(r))
+		elif len(r) > needed:
+			r = r[:needed]
+		norm_rows.append(r)
+
+	# 转为DataFrame
+	df = pd.DataFrame(norm_rows, columns=header)
+
+	# 确保必要列存在
+	key_cols = ['上榜日期', '证券号码', '证券简称', '上榜涨幅', '买入额（万）', '卖出额（万）', '净买入（万）', '游资名称']
+	for c in key_cols + ['所属营业部']:
+		if c not in df.columns:
+			print(f"缺少列: {c}，无法执行合并")
+			return None
+
+	# 统一字符串类型并去除空白
+	df = df.astype(str).fillna('')
+
+	# 合并函数：保持出现顺序并去重，忽略空值或仅包含'-'的占位符
+	def join_unique(series):
+		seen = set()
+		out = []
+		for v in series:
+			s = str(v).strip()
+			if not s or s == '-':
+				continue
+			if s not in seen:
+				seen.add(s)
+				out.append(s)
+		return merge_sep.join(out)
+
+	# 按键分组并合并所属营业部
+	merged = df.groupby(key_cols, sort=False, as_index=False).agg({'所属营业部': join_unique})
+
+	# 确保输出列顺序与原始规则一致（将所属营业部放在倒数第二列）
+	out_cols = ['上榜日期', '证券号码', '证券简称', '上榜涨幅', '买入额（万）', '卖出额（万）', '净买入（万）', '所属营业部', '游资名称']
+	for c in out_cols:
+		if c not in merged.columns:
+			merged[c] = ''
+	merged = merged[out_cols]
+
+	# 输出文件路径默认处理
+	if output_csv_path is None:
+		base, ext = os.path.splitext(input_csv_path)
+		output_csv_path = base + '_merged.csv'
+
+	merged.to_csv(output_csv_path, index=False, encoding='utf-8')
+	print(f"合并完成，已输出: {output_csv_path}")
+	return output_csv_path
 # 使用示例
 if __name__ == "__main__":
     #https://quote.stockstar.com/BillBoard/bjs_2026-01-23.html
     get_main()
     #fast_add_data()
+    stockstar_csv_path = os.path.join(parent_dir, 'data', 'stockstar.csv')
+    merge_stockstar_csv(stockstar_csv_path)
 
