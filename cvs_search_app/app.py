@@ -7,6 +7,7 @@ from plotly.subplots import make_subplots
 import subprocess  # 用于调用外部Python脚本
 import sys
 from pathlib import Path
+from bs4 import BeautifulSoup
 
 # 添加项目根目录到sys.path
 project_root = Path(__file__).parent
@@ -94,8 +95,8 @@ def index():
                     axis=1)]
             else:
                 results = df  # all结果
-            # 设置表格宽度为100%，使其显示最宽
-            results_html = results.to_html(classes="table", border=0).replace('<table', '<table style="width:100%; border-collapse:collapse;"')
+            # 设置表格宽度为100%，使其显示最宽，字体大小12px
+            results_html = format_table_html(results, font_size='13px', padding='5px')
             return render_template("results.html", results=results_html, search_key=search_key)
         
         # 处理脚本执行
@@ -179,7 +180,7 @@ def sortbydateandcode():
         sum_result = results.groupby(group_column)[calc_column].sum().reset_index()
         sum_result_date = results.groupby(['上榜日期'])[calc_column].sum().reset_index()
         sum_result_date = sum_result_date.sort_values(by=['上榜日期'], ascending=[False]) # 你可以根据需要更改排序列'
-        results_html = results.to_html(classes="table", border=0).replace('<table', '<table style="width:100%; border-collapse:collapse;"')
+        results_html = format_table_html(results, font_size='12px', padding='5px')
         return render_template("results.html", results=results_html, search_key=search_key, kline_div=stock_dashboard_div,
                                script_output=f"按游资名称统计结果: {str(sum_result)}", script_output_date=f"按日期统计结果: {str(sum_result_date)}")
     except Exception as e:
@@ -465,6 +466,36 @@ def clean_numeric_string(value):
     if match:
         return float(match.group())
     return 0.0
+
+def format_table_html(df, font_size='12px', padding='8px'):
+    """
+    将DataFrame转换为格式化的HTML表格，支持自定义字体大小和内边距
+    
+    参数:
+    df (DataFrame): 要转换的数据框
+    font_size (str): 字体大小，如 '12px'
+    padding (str): 单元格内边距，如 '8px'
+    
+    返回:
+    str: 格式化后的HTML字符串
+    """
+    html = df.to_html(classes="table", border=0)
+    soup = BeautifulSoup(html, 'html.parser')
+    
+    # 设置table样式
+    table = soup.find('table')
+    if table:
+        table['style'] = f'width:100%; border-collapse:collapse; font-size:{font_size}; text-align:center;'
+    
+    # 设置所有th（表头）样式
+    for th in soup.find_all('th'):
+        th['style'] = f'font-size:{font_size}; padding:{padding}; background-color:#f0f0f0; border:1px solid #ddd; font-weight:bold;'
+    
+    # 设置所有td（数据单元格）样式
+    for td in soup.find_all('td'):
+        td['style'] = f'font-size:{font_size}; padding:{padding}; border:1px solid #ddd;'
+    
+    return str(soup.prettify())
 
 #################################### back test detail ##################################################
 @app.route("/backtest", methods=["GET", "POST"])
