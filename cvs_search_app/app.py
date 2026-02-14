@@ -85,15 +85,14 @@ def index():
             df = df.sort_values(by=['上榜日期', '证券号码', '游资名称'], ascending=[False, False, False])
             df = df.reset_index(drop=True)
             
-            # 只取前1000条记录
-            df = df.head(1000)
-
             if search_key:
                 # 在多个列中搜索（Name和City列）
                 columns_to_search = ['上榜日期', '证券号码', '游资名称']
                 results = df[df[columns_to_search].apply(lambda row: any(str(search_key).lower() in str(cell).lower() for cell in row), 
                     axis=1)]
             else:
+                # 只取前1000条记录
+                df = df.head(1000)
                 results = df  # all结果
             # 设置表格宽度为100%，使其显示最宽，字体大小12px
             results_html = format_table_html(results, font_size='13px', padding='5px')

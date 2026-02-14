@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>彩票号码生成器 - 双色球 & 大乐透 & 快乐8</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .number-ball.small {
+            width: 45px;
+            height: 45px;
+            font-size: 1.1rem;
+        }
+
+        @media (max-width: 768px) {
+            .number-ball.small {
+                width: 38px;
+                height: 38px;
+                font-size: 0.95rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .number-ball.small {
+                width: 32px;
+                height: 32px;
+                font-size: 0.85rem;
+            }
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50px;
+            padding: 5px;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            background: transparent;
+            color: white;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            background: white;
+            color: #667eea;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .lottery-section {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 1.8rem;
+            margin-bottom: 30px;
+            color: #333;
+        }
+
+        .numbers-display {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 30px;
+            min-height: 100px;
+        }
+
+        .number-ball {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            opacity: 0;
+            transform: scale(0);
+            transition: all 0.5s ease;
+        }
+
+        .number-ball.show {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .number-ball.red {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+        }
+
+        .number-ball.blue {
+            background: linear-gradient(135deg, #4834d4, #686de0);
+        }
+
+        .number-ball.green {
+            background: linear-gradient(135deg, #00b894, #00cec9);
+        }
+
+        .controls {
+            text-align: center;
+        }
+
+        .number-selector {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .number-selector label {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: white;
+            margin-right: 15px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .custom-select {
+            position: relative;
+            display: inline-block;
+            min-width: 180px;
+        }
+
+        .custom-select select {
+            display: none;
+        }
+
+        .select-selected {
+            background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.85));
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 25px;
+            padding: 12px 45px 12px 20px;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .select-selected:after {
+            position: absolute;
+            content: "▼";
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+            font-size: 0.8rem;
+            color: #667eea;
+            transition: transform 0.3s ease;
+        }
+
+        .select-selected.select-arrow-active:after {
+            transform: translateY(-50%) rotate(180deg);
+        }
+
+        .select-items {
+            position: absolute;
+            background: rgba(255,255,255,0.95);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 15px;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 99;
+            margin-top: 5px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            backdrop-filter: blur(10px);
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .select-items div {
+            padding: 12px 20px;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            transition: all 0.2s ease;
+            color: #333;
+        }
+
+        .select-items div:last-child {
+            border-bottom: none;
+        }
+
+        .select-items div:hover {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .select-hide {
+            display: none;
+        }
+
+        .select-selected:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+            border-color: rgba(255,255,255,0.5);
+        }
+
+        .same-as-selected {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .number-selector {
+                margin-bottom: 20px;
+            }
+            
+            .number-selector label {
+                font-size: 1rem;
+                display: block;
+                margin-bottom: 12px;
+            }
+            
+            .custom-select {
+                min-width: 160px;
+            }
+            
+            .select-selected {
+                padding: 10px 40px 10px 15px;
+                font-size: 0.95rem;
+            }
+            
+            .select-items div {
+                padding: 10px 15px;
+                font-size: 0.9rem;
+            }
+        }
+
+        .generate-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .generate-btn:active {
+            transform: translateY(0);
+        }
+
+        .generate-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .history {
+            margin-top: 30px;
+        }
+
+        .history h3 {
+            margin-bottom: 15px;
+            color: #333;
+            text-align: center;
+        }
+
+        .history-list {
+            max-height: 200px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .history-item {
+            margin-bottom: 15px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .history-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .history-balls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .history-ball {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .history-ball.red {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+        }
+
+        .history-ball.blue {
+            background: linear-gradient(135deg, #4834d4, #686de0);
+        }
+
+        .history-ball.green {
+            background: linear-gradient(135deg, #00b894, #00cec9);
+        }
+
+        .history-type {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .history-ball {
+                width: 30px;
+                height: 30px;
+                font-size: 0.8rem;
+            }
+            
+            .history-balls {
+                gap: 6px;
+            }
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .lottery-section {
+                padding: 20px;
+            }
+            
+            .number-ball {
+                width: 50px;
+                height: 50px;
+                font-size: 1.2rem;
+            }
+            
+            .tabs {
+                max-width: 350px;
+            }
+            
+            .tab {
+                padding: 10px 15px;
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .number-ball {
+                width: 40px;
+                height: 40px;
+                font-size: 1rem;
+            }
+            
+            .generate-btn {
+                padding: 12px 30px;
+                font-size: 1rem;
+            }
+            
+            .tabs {
+                max-width: 320px;
+            }
+            
+            .tab {
+                padding: 8px 12px;
+                font-size: 0.8rem;
+            }
+        }
+
+        /* 动画效果 */
+        @keyframes bounceIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.3) translateY(100px);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.05);
+            }
+            70% {
+                transform: scale(0.9);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .bounce-in {
+            animation: bounceIn 0.6s ease-out;
+        }
+
+        .pulse {
+            animation: pulse 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 彩票号码生成器</h1>
+            <p>智能生成双色球和大乐透号码，祝您好运！</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" data-type="ssq">双色球</button>
+            <button class="tab" data-type="dlt">大乐透</button>
+            <button class="tab" data-type="kl8">快乐8</button>
+        </div>
+
+        <!-- 双色球区域 -->
+        <div class="lottery-section" id="ssq-section">
+            <h2 class="section-title">双色球号码生成</h2>
+            <div class="numbers-display" id="ssq-numbers">
+                <!-- 号码球将通过JS动态生成 -->
+            </div>
+            <div class="controls">
+                <button class="generate-btn" id="generate-ssq">生成号码</button>
+            </div>
+            <div class="history">
+                <h3>历史记录</h3>
+                <div class="history-list" id="ssq-history"></div>
+            </div>
+        </div>
+
+        <!-- 大乐透区域 -->
+        <div class="lottery-section" id="dlt-section" style="display: none;">
+            <h2 class="section-title">大乐透号码生成</h2>
+            <div class="numbers-display" id="dlt-numbers">
+                <!-- 号码球将通过JS动态生成 -->
+            </div>
+            <div class="controls">
+                <button class="generate-btn" id="generate-dlt">生成号码</button>
+            </div>
+            <div class="history">
+                <h3>历史记录</h3>
+                <div class="history-list" id="dlt-history"></div>
+            </div>
+        </div>
+
+        <!-- 快乐8区域 -->
+        <div class="lottery-section" id="kl8-section" style="display: none;">
+            <h2 class="section-title">快乐8号码生成</h2>
+            <div class="number-selector">
+            <label>选择投注方式：</label>
+            <div class="custom-select" style="width:200px;">
+                <select id="kl8-count">
+                    <option value="5">选5（5个号码）</option>
+                    <option value="6">选6（6个号码）</option>
+                    <option value="7">选7（7个号码）</option>
+                    <option value="8">选8（8个号码）</option>
+                    <option value="9">选9（9个号码）</option>
+                    <option value="10" selected>选10（10个号码）</option>
+                </select>
+                <div class="select-selected">选10（10个号码）</div>
+                <div class="select-items select-hide">
+                    <div>选5（5个号码）</div>
+                    <div>选6（6个号码）</div>
+                    <div>选7（7个号码）</div>
+                    <div>选8（8个号码）</div>
+                    <div>选9（9个号码）</div>
+                    <div>选10（10个号码）</div>
+                </div>
+            </div>
+        </div>
+            <div class="numbers-display" id="kl8-numbers">
+                <!-- 号码球将通过JS动态生成 -->
+            </div>
+            <div class="controls">
+                <button class="generate-btn" id="generate-kl8">生成号码</button>
+            </div>
+            <div class="history">
+                <h3>历史记录</h3>
+                <div class="history-list" id="kl8-history"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let currentType = 'ssq';
+        let ssqHistory = [];
+        let dltHistory = [];
+        let kl8History = [];
+
+        // DOM 元素
+        const tabs = document.querySelectorAll('.tab');
+        const ssqSection = document.getElementById('ssq-section');
+        const dltSection = document.getElementById('dlt-section');
+        const kl8Section = document.getElementById('kl8-section');
+        const ssqNumbers = document.getElementById('ssq-numbers');
+        const dltNumbers = document.getElementById('dlt-numbers');
+        const kl8Numbers = document.getElementById('kl8-numbers');
+        const generateSsqBtn = document.getElementById('generate-ssq');
+        const generateDltBtn = document.getElementById('generate-dlt');
+        const generateKl8Btn = document.getElementById('generate-kl8');
+        const kl8CountSelect = document.getElementById('kl8-count');
+        const ssqHistoryList = document.getElementById('ssq-history');
+        const dltHistoryList = document.getElementById('dlt-history');
+        const kl8HistoryList = document.getElementById('kl8-history');
+
+        // 工具函数：生成不重复的随机数
+        function generateUniqueNumbers(count, min, max) {
+            const numbers = new Set();
+            while (numbers.size < count) {
+                numbers.add(Math.floor(Math.random() * (max - min + 1)) + min);
+            }
+            return Array.from(numbers).sort((a, b) => a - b);
+        }
+
+        // 生成双色球号码
+        function generateSSQ() {
+            const redBalls = generateUniqueNumbers(6, 1, 33);
+            const blueBall = generateUniqueNumbers(1, 1, 16)[0];
+            return { redBalls, blueBall };
+        }
+
+        // 生成大乐透号码
+        function generateDLT() {
+            const frontBalls = generateUniqueNumbers(5, 1, 35);
+            const backBalls = generateUniqueNumbers(2, 1, 12);
+            return { frontBalls, backBalls };
+        }
+
+        // 创建号码球元素
+        function createNumberBall(number, isBlue = false, isGreen = false, isSmall = false) {
+            const ball = document.createElement('div');
+            let colorClass = 'red';
+            if (isBlue) colorClass = 'blue';
+            if (isGreen) colorClass = 'green';
+            
+            ball.className = `number-ball ${colorClass} ${isSmall ? 'small' : ''}`;
+            ball.textContent = number.toString().padStart(2, '0');
+            return ball;
+        }
+
+        // 显示号码动画
+        function displayNumbersWithAnimation(numbers, container, type = 'ssq') {
+            // 清空容器
+            container.innerHTML = '';
+            
+            // 创建号码球
+            const balls = [];
+            
+            if (type === 'dlt') {
+                // 大乐透：前区5个红球 + 后区2个蓝球
+                numbers.frontBalls.forEach(num => {
+                    balls.push(createNumberBall(num, false));
+                });
+                numbers.backBalls.forEach(num => {
+                    balls.push(createNumberBall(num, true));
+                });
+            } else if (type === 'kl8') {
+                // 快乐8：10个绿色号码球
+                numbers.forEach(num => {
+                    balls.push(createNumberBall(num, false, true, true));
+                });
+            } else {
+                // 双色球：6个红球 + 1个蓝球
+                numbers.redBalls.forEach(num => {
+                    balls.push(createNumberBall(num, false));
+                });
+                balls.push(createNumberBall(numbers.blueBall, true));
+            }
+            
+            // 添加号码球到容器
+            balls.forEach(ball => {
+                container.appendChild(ball);
+            });
+            
+            // 逐个显示动画
+                balls.forEach((ball, index) => {
+                    setTimeout(() => {
+                        ball.classList.add('show', 'bounce-in');
+                        
+                        // 添加脉冲效果
+                        setTimeout(() => {
+                            ball.classList.add('pulse');
+                            setTimeout(() => {
+                                ball.classList.remove('pulse');
+                            }, 500);
+                        }, 300);
+                    }, index * (type === 'kl8' ? 150 : 200)); // 快乐8号码较多，动画间隔稍短
+                });
+        }
+
+        // 生成快乐8号码
+        function generateKL8(count = 10) {
+            return generateUniqueNumbers(count, 1, 80);
+        }
+
+        // 创建历史记录小球
+        function createHistoryBall(number, type) {
+            const ball = document.createElement('div');
+            let colorClass = 'red';
+            
+            if (type === 'ssq' && number === numbers.blueBall) {
+                colorClass = 'blue';
+            } else if (type === 'dlt' && numbers.backBalls.includes(number)) {
+                colorClass = 'blue';
+            } else if (type === 'kl8') {
+                colorClass = 'green';
+            }
+            
+            ball.className = `history-ball ${colorClass}`;
+            ball.textContent = number.toString().padStart(2, '0');
+            return ball;
+        }
+
+        // 添加历史记录
+        function addHistory(numbers, type, kl8Count = 10) {
+            let historyItem;
+            
+            if (type === 'ssq') {
+                historyItem = { type: '双色球', numbers: numbers };
+                ssqHistory.unshift(historyItem);
+                
+                // 限制历史记录数量
+                if (ssqHistory.length > 10) {
+                    ssqHistory.pop();
+                }
+                
+                updateHistoryDisplay(ssqHistoryList, ssqHistory, type);
+            } else if (type === 'dlt') {
+                historyItem = { type: '大乐透', numbers: numbers };
+                dltHistory.unshift(historyItem);
+                
+                // 限制历史记录数量
+                if (dltHistory.length > 10) {
+                    dltHistory.pop();
+                }
+                
+                updateHistoryDisplay(dltHistoryList, dltHistory, type);
+            } else if (type === 'kl8') {
+                historyItem = { type: `快乐8-选${kl8Count}`, numbers: numbers };
+                kl8History.unshift(historyItem);
+                
+                // 限制历史记录数量
+                if (kl8History.length > 10) {
+                    kl8History.pop();
+                }
+                
+                updateHistoryDisplay(kl8HistoryList, kl8History, type);
+            }
+        }
+
+        // 更新历史记录显示
+        function updateHistoryDisplay(container, history, type) {
+            container.innerHTML = '';
+            history.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'history-item';
+                
+                // 添加类型标签
+                const typeDiv = document.createElement('div');
+                typeDiv.className = 'history-type';
+                typeDiv.textContent = item.type;
+                div.appendChild(typeDiv);
+                
+                // 添加号码球
+                const ballsDiv = document.createElement('div');
+                ballsDiv.className = 'history-balls';
+                
+                if (type === 'ssq') {
+                    // 双色球：红球 + 蓝球
+                    item.numbers.redBalls.forEach(num => {
+                        ballsDiv.appendChild(createHistoryBall(num, type));
+                    });
+                    ballsDiv.appendChild(createHistoryBall(item.numbers.blueBall, type));
+                } else if (type === 'dlt') {
+                    // 大乐透：前区 + 后区
+                    item.numbers.frontBalls.forEach(num => {
+                        ballsDiv.appendChild(createHistoryBall(num, type));
+                    });
+                    item.numbers.backBalls.forEach(num => {
+                        ballsDiv.appendChild(createHistoryBall(num, type));
+                    });
+                } else if (type === 'kl8') {
+                    // 快乐8：所有号码
+                    item.numbers.forEach(num => {
+                        ballsDiv.appendChild(createHistoryBall(num, type));
+                    });
+                }
+                
+                div.appendChild(ballsDiv);
+                container.appendChild(div);
+            });
+        }
+
+        // 切换标签页
+        function switchTab(type) {
+            currentType = type;
+            
+            // 更新标签状态
+            tabs.forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.type === type);
+            });
+            
+            // 显示对应区域
+            ssqSection.style.display = type === 'ssq' ? 'block' : 'none';
+            dltSection.style.display = type === 'dlt' ? 'block' : 'none';
+            kl8Section.style.display = type === 'kl8' ? 'block' : 'none';
+        }
+
+        // 事件监听器
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                switchTab(tab.dataset.type);
+            });
+        });
+
+        generateSsqBtn.addEventListener('click', () => {
+            // 禁用按钮防止重复点击
+            generateSsqBtn.disabled = true;
+            
+            const numbers = generateSSQ();
+            displayNumbersWithAnimation(numbers, ssqNumbers, 'ssq');
+            addHistory(numbers, 'ssq');
+            
+            // 1秒后重新启用按钮
+            setTimeout(() => {
+                generateSsqBtn.disabled = false;
+            }, 1000);
+        });
+
+        generateDltBtn.addEventListener('click', () => {
+            // 禁用按钮防止重复点击
+            generateDltBtn.disabled = true;
+            
+            const numbers = generateDLT();
+            displayNumbersWithAnimation(numbers, dltNumbers, 'dlt');
+            addHistory(numbers, 'dlt');
+            
+            // 1秒后重新启用按钮
+            setTimeout(() => {
+                generateDltBtn.disabled = false;
+            }, 1000);
+        });
+
+        generateKl8Btn.addEventListener('click', () => {
+            // 禁用按钮防止重复点击
+            generateKl8Btn.disabled = true;
+            
+            const count = parseInt(kl8CountSelect.value);
+            const numbers = generateKL8(count);
+            displayNumbersWithAnimation(numbers, kl8Numbers, 'kl8');
+            addHistory(numbers, 'kl8', count);
+            
+            // 1秒后重新启用按钮
+            setTimeout(() => {
+                generateKl8Btn.disabled = false;
+            }, 1000);
+        });
+
+        // 自定义下拉框功能
+        function initCustomSelect() {
+            const customSelects = document.querySelectorAll(".custom-select");
+            
+            customSelects.forEach(select => {
+                const selectSelected = select.querySelector(".select-selected");
+                const selectItems = select.querySelector(".select-items");
+                const originalSelect = select.querySelector("select");
+                
+                // 点击选择框
+                selectSelected.addEventListener("click", function(e) {
+                    e.stopPropagation();
+                    closeAllSelect(this);
+                    this.nextElementSibling.classList.toggle("select-hide");
+                    this.classList.toggle("select-arrow-active");
+                });
+                
+                // 点击选项
+                const options = selectItems.querySelectorAll("div");
+                options.forEach(option => {
+                    option.addEventListener("click", function() {
+                        const text = this.textContent;
+                        const value = this.textContent.match(/选(\d+)/)[1];
+                        
+                        selectSelected.textContent = text;
+                        originalSelect.value = value;
+                        
+                        // 更新选中状态
+                        options.forEach(opt => opt.classList.remove("same-as-selected"));
+                        this.classList.add("same-as-selected");
+                        
+                        selectItems.classList.add("select-hide");
+                        selectSelected.classList.remove("select-arrow-active");
+                    });
+                });
+            });
+            
+            // 点击页面其他地方关闭下拉框
+            document.addEventListener("click", closeAllSelect);
+        }
+        
+        function closeAllSelect(elmnt) {
+            const selectItems = document.querySelectorAll(".select-items");
+            const selectSelected = document.querySelectorAll(".select-selected");
+            
+            selectItems.forEach(item => {
+                if (elmnt !== item.previousElementSibling) {
+                    item.classList.add("select-hide");
+                }
+            });
+            
+            selectSelected.forEach(selected => {
+                if (elmnt !== selected) {
+                    selected.classList.remove("select-arrow-active");
+                }
+            });
+        }
+
+        // 初始化页面
+        function init() {
+            // 默认显示双色球区域
+            switchTab('ssq');
+            
+            // 初始化历史记录显示
+            updateHistoryDisplay(ssqHistoryList, ssqHistory);
+            updateHistoryDisplay(dltHistoryList, dltHistory);
+            updateHistoryDisplay(kl8HistoryList, kl8History);
+            
+            // 初始化自定义下拉框
+            initCustomSelect();
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
