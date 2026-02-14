@@ -556,6 +556,13 @@
                 <div class="history-list" id="kl8-history"></div>
             </div>
         </div>
+
+        {% if script_output %}
+        <div class="padding: 20px background-color: #50b178ff">
+            <h4>执行结果：</h4>
+            <pre>{{ script_output }}</pre>
+        </div>
+        {% endif %} 
     </div>
 
     <script>
