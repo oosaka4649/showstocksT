@@ -26,13 +26,6 @@ app = Flask(__name__, template_folder=templates_dir)
 '''
 app = Flask(__name__)
 
-
-# 尝试导入共享配置（非必须）
-try:
-    from minitools import user_config as ucfg  # type: ignore
-except Exception:
-    ucfg = None
-
 @app.route("/", methods=["GET", "POST"])
 def index():
     script_output = "test"

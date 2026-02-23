@@ -683,7 +683,7 @@
             const ball = document.createElement('div');
             let colorClass = 'red';
             
-            if (type === 'ssq' && number === numbers.blueBall) {
+            if (type === 'ssq' && number === Number(ssqNumbers.lastChild.innerText)) {
                 colorClass = 'blue';
             } else if (type === 'dlt' && numbers.backBalls.includes(number)) {
                 colorClass = 'blue';

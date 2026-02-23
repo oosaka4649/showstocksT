@@ -69,4 +69,19 @@ http://www.qianshancapital.com/h-nd-329.html
 https://gitcode.com/open-source-toolkit/ae637/blob/main/README.md
 https://gitcode.com/open-source-toolkit/ae637/blob/main/%E5%8E%86%E5%B9%B4%E5%8F%8C%E8%89%B2%E7%90%83%E4%B8%AD%E5%A5%96%E5%8F%B7%E7%A0%812003-2023%E5%B9%B4.rar
 
+
+
+
+PyPortfolioOpt   PyPortfolioOpt
+
+这个操作指南，主要针对那些对优化组合一些资产（很可能是股票）的快速方法感兴趣的用户。 
+在必要的时候，我也介绍了所需的理论，也指出了可能是更高级优化技术的合适跳板的领域。 
+有关参数的细节可以在各自的文档页面中找到（请见侧边导航栏）。
+
+在本指南中，我们将专注于均值-方差优化（MVO），这是大多数人听到“投资组合优化”时想到的东西。 
+MVO 构成了 PyPortfolioOpt 产品的核心，不过需要注意的是，MVO 有很多种类，可能有非常不同的性能特征。 
+请参考侧边导航栏，了解各种可能性，以及提供的其他优化方法。现在，我们将继续使用标准的有效前沿。
+https://www.wuzao.com/document/pyportfolioopt/UserGuide.html
+https://portfolio.apachecn.org/Installation/
+
 '''
