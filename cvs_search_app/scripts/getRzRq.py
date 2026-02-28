@@ -11,6 +11,9 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 '''
+
+sh999999.day 上综指
+sz399001.day 深成指
 response = requests.get(url)
 web_content = response.text
 #print(web_content)

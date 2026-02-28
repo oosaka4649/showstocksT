@@ -24,6 +24,9 @@ class TDXData:
     STOCK_CODE_NUM = {'6':'sh','3':'sz','0':'sz','4':'bj','8':'bj','9':'bj'}  # 股票代码前缀
     CSV_HEADER_INFO = ['Date','Open','Close','Low','High','Volume','Amount']
 
+    #特殊代码
+    STOCK_CODE_ZS = {'999999':'sh','399001':'sz'}  # 股票代码前缀，sh999999 是上证指数，sz399001 是深成指
+
     def __init__(self, stock_code = None):
         self.day_file_path = '' 
         self.stock_code = stock_code
@@ -98,6 +101,9 @@ class TDXData:
     def get_stock_prefix(self):
         """根据股票代码获取前缀 第一位数字 6=sh 0,3=sz 9=bj"""
         prefix = self.STOCK_CODE_NUM.get(self.stock_code[0], 'unknown')
+        #对特殊代码进行处理，比如 000001 是上证指数，000002 是万科A，这些都是深圳交易所的股票，但代码以0开头，所以需要特殊处理
+        if self.stock_code in self.STOCK_CODE_ZS:
+            prefix = self.STOCK_CODE_ZS[self.stock_code]
         return prefix
 
     def get_stock_day_file_full_path(self, stock_prefix):
