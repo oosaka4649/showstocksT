@@ -44,6 +44,8 @@ scripts_path = os.path.join(current_dir, 'scripts', 'getaijinggu_byall.py')
 scripts_stock_star_path = os.path.join(current_dir, 'scripts', 'stockstar_byall.py')
 scripts_k_line_path = os.path.join(current_dir, 'minitools', 'showKLine.py')
 scripts_mystocks_k_line_path = os.path.join(current_dir, 'minitools', 'showKLine_week.py')
+scripts_mystocks_rzrq_line_path = os.path.join(current_dir, 'minitools', 'showLine_rzrq.py')
+scripts_get_rzrq_path = os.path.join(current_dir, 'scripts', 'getRzRq.py')
 stocks_csv_dir = os.path.join(current_dir, 'stockscsv')
 tdx_day_file_path = 'C:\\zd_zsone\\vipdoc\\'  # tdx路径
 
@@ -355,6 +357,31 @@ def showhtml():
             return render_template("showhtmllist.html", script_output=f"执行失败: {str(e)}")
     html_files = [f'{ucfg.common_html_folder_name}/{f}' for f in os.listdir(folder_path) if f.endswith(extension)]
     return render_template('showhtmllist.html', files_list=html_files, script_output=f"执行股票数：{len(selected_ids)} \n执行结果: {str(output)}")
+
+
+@app.route("/show_rzrq_line", methods=["GET", "POST"])
+def show_rzrq_line():
+    try:
+        result = subprocess.run(
+            ["python", scripts_get_rzrq_path], 
+            capture_output=True, 
+            text=True
+        )
+        output = result.stdout if result.returncode == 0 else f"错误: {result.stderr}"
+        print(f"get_rzrq_data.py output: {output}")        
+        result = subprocess.run(
+            ["python", scripts_mystocks_rzrq_line_path], 
+            capture_output=True, 
+            text=True
+        )
+        output = result.stdout if result.returncode == 0 else f"错误: {result.stderr}"
+        print(f"showLine_rzrq.py output: {output}")
+    except Exception as e:
+        return render_template("showhtmllist.html", script_output=f"执行失败: {str(e)}")
+    html_files = [f'{ucfg.common_html_folder_name}/rzrq_line.html'] # 只显示一个rzrq_line.html
+
+    return render_template('showhtmllist.html', files_list=html_files, script_output=f"执行结果: {str(output)}")
+
 
 #####  ################################ show multiple stock html ##################################################
 # 调用 showkline_week.py 生成我关注的股票的html，然后显示在一个页面中

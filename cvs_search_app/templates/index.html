@@ -40,6 +40,14 @@
                     </div>
                 </form>
             </div>
+            <div style="width: 200px;">   
+                <form action="{{ url_for('show_rzrq_line') }}" method="POST">
+                    <div class="my-div">
+                        <input type="text" name="script_name" value="run_script" class="form-control" hidden>
+                        <button type="submit" name="action" value="run_script" class="btn btn-success">融资融券数据</button>
+                    </div>
+                </form>
+            </div>            
             <div>   
                 <form action="{{ url_for('trader_monthly_stats_separate') }}" method="POST">
                     <div class="my-div">
