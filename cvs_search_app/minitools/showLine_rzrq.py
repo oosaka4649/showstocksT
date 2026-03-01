@@ -66,7 +66,7 @@ def draw_charts(stock_name='融资融券', sh_data=None, sz_data=None):
         sh_data = {'categoryData': [], 'values': [], 'closes': []}
     if sz_data is None:
         sz_data = {'categoryData': [], 'values': [], 'closes': []}
-
+    sh_sz_values = [sh + sz for sh, sz in zip(sh_data['values'], sz_data['values'])]
     line = (
         Line()
         .add_xaxis(xaxis_data=line_date)
@@ -88,23 +88,14 @@ def draw_charts(stock_name='融资融券', sh_data=None, sz_data=None):
             label_opts=opts.LabelOpts(is_show=False),
         )
         .add_yaxis(
-            series_name="上海综指",
-            y_axis=sh_data['values'],
+            series_name="上，深综量",
+            y_axis=sh_sz_values,
             is_smooth=True,
             is_connect_nones=True,
             linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
             itemstyle_opts=opts.ItemStyleOpts(color="#22D44E"),  # 添加这一行定义颜色
             label_opts=opts.LabelOpts(is_show=False),
-        )
-        .add_yaxis(
-            series_name="深综指",
-            y_axis=sz_data['values'],
-            is_smooth=True,
-            is_connect_nones=True,
-            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
-            itemstyle_opts=opts.ItemStyleOpts(color="#E2BB0E"),  # 添加这一行定义颜色
-            label_opts=opts.LabelOpts(is_show=False),
-        )        
+        )     
         #
         .set_global_opts(title_opts=opts.TitleOpts(title=f"{stock_name}与上综指、深成指对比"),
                                 tooltip_opts=opts.TooltipOpts(trigger="axis"),
