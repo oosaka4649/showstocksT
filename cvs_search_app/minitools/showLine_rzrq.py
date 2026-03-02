@@ -134,11 +134,9 @@ def line_rzrq_sh_sz_value(sh_data, sz_data, rzrq_data=None) -> Line:
     return c
 
 def line_rzrq_sh_value(sh_data, sz_data, rzrq_data=None) -> Line:
-    v_sh = percent_change_from_previous(sh_data['values'])
-    v_sz = percent_change_from_previous(sz_data['values'])
-    v_rz = percent_change_from_previous(rzrq_data['rz'], 1000)
-    c_sh = percent_change_from_previous(sh_data['closes'], 1000)
-    c_sz = percent_change_from_previous(sz_data['closes'], 1000)
+    v_sh = standardize(sh_data['values'])
+    v_rz = standardize(rzrq_data['rz'])
+    c_sh = standardize(sh_data['closes'])
     c = (Line()
         .add_xaxis(xaxis_data=line_date)
         .add_yaxis(
@@ -179,9 +177,9 @@ def line_rzrq_sh_value(sh_data, sz_data, rzrq_data=None) -> Line:
     return c
 
 def line_rzrq_sz_value(sh_data, sz_data, rzrq_data=None) -> Line:
-    v_sz = percent_change_from_previous(sz_data['values'])
-    v_rz = percent_change_from_previous(rzrq_data['rz'], 1000)
-    c_sz = percent_change_from_previous(sz_data['closes'], 1000)
+    v_sz = standardize(sz_data['values'])
+    v_rz = standardize(rzrq_data['rz'])
+    c_sz = standardize(sz_data['closes'])
     c = (Line()
         .add_xaxis(xaxis_data=line_date)
         .add_yaxis(
@@ -221,19 +219,6 @@ def line_rzrq_sz_value(sh_data, sz_data, rzrq_data=None) -> Line:
     )
     return c
 
-'''
-    计算数组每个元素相对于前一个元素的变化幅度。
-'''
-def percent_change_from_previous(arr, base=100):
-    result = [0.0]
-    for i in range(1, len(arr)):
-        prev = arr[i-1]
-        if prev == 0:
-            result.append(float('inf'))
-        else:
-            result.append(base * (arr[i] - prev) / prev)
-    return result
-
 def chart_table_data(sh_data=None, sz_data=None, rzrq_data=None):
     # prefer explicit data instead of relying on globals
     if sh_data is None:
@@ -244,10 +229,117 @@ def chart_table_data(sh_data=None, sz_data=None, rzrq_data=None):
         rzrq_data = {'categoryDate': [], 'rz': [], 'rq': []}
     tab = Tab()
     tab.add(line_rzrq_sh_sz_value(sh_data, sz_data, rzrq_data), "融资融券量和市场量")
-    tab.add(line_rzrq_sh_value(sh_data, sz_data, rzrq_data), "融资和上证量及上证指数对比")
-    tab.add(line_rzrq_sz_value(sh_data, sz_data, rzrq_data), "融资和深证量及深证指数对比")
+    tab.add(line_rzrq_sh_value(sh_data, sz_data, rzrq_data), "融资和上证量及上证指数对比标准化")
+    tab.add(line_rzrq_sz_value(sh_data, sz_data, rzrq_data), "融资和深证量及深证指数对比标准化")
+    tab.add(line_rzrq_all_value(sh_data, sz_data, rzrq_data), "归一化后的融资和上证、深证量及指数对比")
     tab.render(f'{show_templates_comm_html_path}/rzrq_line.html')
 
+
+def line_rzrq_all_value(sh_data, sz_data, rzrq_data=None) -> Line:
+    sh_sz_values = [sh + sz for sh, sz in zip(sh_data['values'], sz_data['values'])]
+
+    v_sz_sh = normalize(sh_sz_values)
+    v_rz = normalize(rzrq_data['rz'])
+    c_sz = normalize(sz_data['closes'])
+    c_sh = normalize(sh_data['closes'])
+    c = (Line()
+        .add_xaxis(xaxis_data=line_date)
+        .add_yaxis(
+            series_name="融资",
+            y_axis=v_rz,
+            is_smooth=True,
+            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
+            itemstyle_opts=opts.ItemStyleOpts(color="#0000FF"),  # 添加这一行定义颜色
+            label_opts=opts.LabelOpts(is_show=False),
+        )
+        .add_yaxis(
+            series_name="sz综收盘价",
+            y_axis=c_sz,
+            is_smooth=True,
+            is_connect_nones=True,
+            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
+            itemstyle_opts=opts.ItemStyleOpts(color="#FF0000"),  # 添加这一行定义颜色
+            label_opts=opts.LabelOpts(is_show=False),
+        )
+        .add_yaxis(
+            series_name="sh综收盘价",
+            y_axis=c_sh,
+            is_smooth=True,
+            is_connect_nones=True,
+            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
+            itemstyle_opts=opts.ItemStyleOpts(color="#D31BE4B2"),  # 添加这一行定义颜色
+            label_opts=opts.LabelOpts(is_show=False),
+        )        
+        .add_yaxis(
+            series_name="上，深综量",
+            y_axis=v_sz_sh,
+            is_smooth=True,
+            is_connect_nones=True,
+            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
+            itemstyle_opts=opts.ItemStyleOpts(color="#22D44E"),  # 添加这一行定义颜色
+            label_opts=opts.LabelOpts(is_show=False),
+        )
+        .set_global_opts(tooltip_opts=opts.TooltipOpts(trigger="axis"),
+                                yaxis_opts=opts.AxisOpts(
+                                    type_="value",
+                                    axistick_opts=opts.AxisTickOpts(is_show=True),
+                                    splitline_opts=opts.SplitLineOpts(is_show=True),
+                                ),
+                                xaxis_opts=opts.AxisOpts(type_="category", boundary_gap=False),
+                         )        
+    )
+    return c
+
+def standardize(arr):
+    """
+    Z-score 标准化：将数组转换为均值为 0、标准差为 1 的分布。
+    
+    参数:
+        arr (array-like): 输入数组（一维或多维，但按整体计算）
+    
+    返回:
+        np.ndarray: 标准化后的数组，形状与输入相同
+    
+    处理特殊情况：
+        - 如果标准差为零（所有元素相等），返回全零数组（均值即为自身）。
+    """
+    arr = np.asarray(arr, dtype=float)
+    mean = np.mean(arr)
+    std = np.std(arr)
+    
+    if std == 0:
+        # 所有值相同，标准化后均为 0
+        return np.zeros_like(arr)
+    
+    return (arr - mean) / std
+
+
+def normalize(arr, feature_range=(0, 1)):
+    """
+    Min-Max 归一化：将数组缩放到指定的特征范围（默认 [0, 1]）。
+    
+    参数:
+        arr (array-like): 输入数组
+        feature_range (tuple): 目标范围，默认为 (0, 1)
+    
+    返回:
+        np.ndarray: 归一化后的数组，形状与输入相同
+    
+    处理特殊情况：
+        - 如果最大值等于最小值，返回全 0 数组（或全为 feature_range[0]）。
+    """
+    arr = np.asarray(arr, dtype=float)
+    min_val = np.min(arr)
+    max_val = np.max(arr)
+    a, b = feature_range
+    
+    if max_val == min_val:
+        # 所有值相同，无法缩放，返回全为下限值
+        return np.full_like(arr, a)
+    
+    # 线性缩放公式
+    scaled = (arr - min_val) / (max_val - min_val)  # 先缩放到 [0, 1]
+    return scaled * (b - a) + a
 
 def main():
     '''
