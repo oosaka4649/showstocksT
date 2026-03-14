@@ -31,7 +31,7 @@ from selenium.webdriver.support import expected_conditions as EC
 # 适当参与
 url = 'https://www.aijingu.com/youzi/'
 url_2 = '.html?page='
- 
+
 t_name = {'2':'杭州帮','3':'成泉系','4':'上海超短帮','5':'首板挖掘','6':'苏南帮','8':'广东帮','9':'瑞鹤仙','10':'佛山系',
           '13':'T王','14':'一花一残忆','16':'敢死队','17':'赵老哥','18':'量化打板','20':'章盟主',
           '21':'炒股养家','23':'孙哥','24':'方新侠','25':'欢乐海岸','26':'炒新一族','27':'湖州劳动路','29':'独股一剑',
@@ -263,7 +263,7 @@ def get_main():
     csv_file_path = aijinggu_csv_path
     add_string_to_csv_memory(csv_file_path)
     for j in t_name.keys():
-        for i in range(1, 100):  # 假设最多爬取100页
+        for i in range(1, 150):  # 假设最多爬取100页
             if read_web_page(i, j) == 0:
                 print('没有新数据，结束')
                 break
