@@ -46,6 +46,11 @@ scripts_k_line_path = os.path.join(current_dir, 'minitools', 'showKLine.py')
 scripts_mystocks_k_line_path = os.path.join(current_dir, 'minitools', 'showKLine_week.py')
 scripts_mystocks_rzrq_line_path = os.path.join(current_dir, 'minitools', 'showLine_rzrq.py')
 scripts_get_rzrq_path = os.path.join(current_dir, 'scripts', 'getRzRq.py')
+
+scripts_mystocks_zjlx_line_path = os.path.join(current_dir, 'minitools', 'showLine_zjlx.py')
+scripts_get_zjlx_path = os.path.join(current_dir, 'scripts', 'getZJLX.py')
+
+
 stocks_csv_dir = os.path.join(current_dir, 'stockscsv')
 tdx_day_file_path = 'C:\\zd_zsone\\vipdoc\\'  # tdx路径
 
@@ -379,6 +384,30 @@ def show_rzrq_line():
     except Exception as e:
         return render_template("showhtmllist.html", script_output=f"执行失败: {str(e)}")
     html_files = [f'{ucfg.common_html_folder_name}/rzrq_line.html'] # 只显示一个rzrq_line.html
+
+    return render_template('showhtmllist.html', files_list=html_files, script_output=f"执行结果: {str(output)}")
+
+# 资金流向的页面显示
+@app.route("/show_zjlx_line", methods=["GET", "POST"])
+def show_zjlx_line():
+    try:
+        result = subprocess.run(
+            ["python", scripts_get_zjlx_path], 
+            capture_output=True, 
+            text=True
+        )
+        output = result.stdout if result.returncode == 0 else f"错误: {result.stderr}"
+        print(f"getzjlx.py output: {output}")        
+        result = subprocess.run(
+            ["python", scripts_mystocks_zjlx_line_path], 
+            capture_output=True, 
+            text=True
+        )
+        output = result.stdout if result.returncode == 0 else f"错误: {result.stderr}"
+        print(f"showLine_zjlx.py output: {output}")
+    except Exception as e:
+        return render_template("showhtmllist.html", script_output=f"执行失败: {str(e)}")
+    html_files = [f'{ucfg.common_html_folder_name}/zjlx_line.html'] # 只显示一个zjlx_line.html
 
     return render_template('showhtmllist.html', files_list=html_files, script_output=f"执行结果: {str(output)}")
 

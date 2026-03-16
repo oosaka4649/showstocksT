@@ -1,0 +1,277 @@
+from tdxcomm import TDXData as tdx
+from typing import List, Union
+import user_config as ucfg
+
+from pyecharts import options as opts
+from pyecharts.charts import Kline, Line, Bar, Grid, Line, Pie, Tab
+
+import numpy as np
+from datetime import datetime
+import os
+import csv
+import pandas as pd
+import sys
+# 脚本常量
+current_dir = os.path.dirname(os.path.abspath(__file__))
+# 上一级目录（父目录）
+parent_dir = os.path.dirname(current_dir)
+show_templates_comm_html_path = os.path.join(parent_dir, 'templates', ucfg.common_html_folder_name)
+dpzjlx_csv_path = os.path.join(parent_dir, 'data', 'dpzjlx.csv') # 大盘资金流向历史数据(沪深两市) csv文件路径
+
+data_lines = []   # 存储CSV文件内容的内存列表 dpzjlx 数据
+
+#日期,上证收盘价,上证涨跌幅,深证收盘价,深证涨跌幅,主力净流入净额,主力净流入净占比,超大单净流入净额,超大单净流入净占比,大单净流入净额,大单净流入净占比,中单净流入净额,中单净流入净占比,小单净流入净额,小单净流入净占比
+
+zjlx_sh_close = [] # 大盘资金流向数据中的上证收盘价
+zjlx_sh_close_change = [] # 大盘资金流向数据中的上证涨跌幅
+zjlx_sz_close = [] # 大盘资金流向数据中的深证收盘价
+zjlx_sz_close_change = [] # 大盘资金流向数据中的深证涨跌幅
+
+zjlx_date = []      # 大盘资金流向日期数据
+
+zjlx_inflow_main = []    # 大盘资金流向净流入数据  主力净流入数据
+zjlx_inflow_super_large = []    # 大盘资金流向净流入数据  超大单净流入数据
+zjlx_inflow_large = []    # 大盘资金流向净流入数据  大单净流入数据
+zjlx_inflow_medium = []    # 大盘资金流向净流入数据  中单净流入数据
+zjlx_inflow_small = []    # 大盘资金流向净流入数据  小单净流入数据
+
+
+'''
+使用 pyecharts 绘制 
+
+大盘资金流向曲线，和 上综指，深成指的 close值和 它们的量线，以便于和大盘资金流向的量线对比，看看是否有关系，是否可以用来预测大盘资金流向的走势
+
+生成html后，被放在 stockhtml 文件夹下，命名为 zjlx_line.html
+
+'''
+def split_zjlx_data(data):
+    for line in data:
+        zjlx_date.append(line[0]) # 日期
+        zjlx_sh_close.append(float(line[1][1])) # 上证收盘价
+        #zjlx_sh_close_change.append(float(line[1][2])) # 上证涨跌幅
+        zjlx_sz_close.append(float(line[1][3])) # 深证收盘价
+        #zjlx_sz_close_change.append(float(line[1][4])) # 深证涨跌幅
+        zjlx_inflow_main.append(float(line[1][5])) # 主力净流入净额
+        zjlx_inflow_super_large.append(float(line[1][7])) # 超大单净流入净额
+        zjlx_inflow_large.append(float(line[1][9])) # 大单净流入净额
+        zjlx_inflow_medium.append(float(line[1][11])) # 中单净流入净额
+        zjlx_inflow_small.append(float(line[1][13])) # 小单净流入净额
+    return {"categoryDate": zjlx_date, "sh_close": zjlx_sh_close, "sz_close": zjlx_sz_close, "main": zjlx_inflow_main, "super_large": zjlx_inflow_super_large, "large": zjlx_inflow_large, "medium": zjlx_inflow_medium, "small": zjlx_inflow_small}
+
+def running_sum(nums):
+    return_sum = []
+    return_sum.append(nums[0])
+    for i in range(1, len(nums)):
+        return_sum.append(return_sum[i-1] + nums[i])
+    return return_sum
+
+def add_string_to_csv_memory(csv_file_path):
+    """
+    读取CSV文件到内存列表，检查字符串是否存在，不存在则添加。
+    
+    参数:
+        csv_file_path (str): CSV文件路径
+   
+    返回:
+        list: 更新后的内存数据列表
+    """  
+    # 读取CSV文件内容到内存
+    try:
+        header_flag = 0
+        with open(csv_file_path, 'r', newline='', encoding='utf-8') as csvfile:
+            csv_reader = csv.reader(csvfile)
+            for fields in csv_reader:
+                if header_flag == 0:
+                    header_flag = 1
+                    continue  # 跳过标题行
+                data_lines.append((fields[0], fields))
+    except FileNotFoundError:
+        print(f"文件 {csv_file_path} 不存在，将创建新列表")
+
+    # 按日期排序
+    try:
+        # 尝试按日期对象排序
+        data_lines.sort(key=lambda x: x[0], reverse=False)
+    except:
+        # 如果日期对象排序失败，尝试按字符串排序
+        data_lines.sort(key=lambda x: str(x[0]), reverse=False)
+
+def line_rzrq_sh_sz_value(zjlx_data) -> Line:
+    c = (Line()
+        .add_xaxis(xaxis_data=zjlx_date)
+        .add_yaxis(
+            series_name="主力净流入",
+            y_axis=running_sum(zjlx_data['main']),
+            is_smooth=True,
+            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
+            itemstyle_opts=opts.ItemStyleOpts(color="#0000FF"),  # 添加这一行定义颜色
+            label_opts=opts.LabelOpts(is_show=False),
+        )
+        .add_yaxis(
+            series_name="大单净流入",
+            y_axis=running_sum(zjlx_data['large']),
+            is_smooth=True,
+            is_connect_nones=True,
+            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
+            itemstyle_opts=opts.ItemStyleOpts(color="#FF0000"),  # 添加这一行定义颜色
+            label_opts=opts.LabelOpts(is_show=False),
+        )
+        .add_yaxis(
+            series_name="超大单净流入",
+            y_axis=running_sum(zjlx_data['super_large']),
+            is_smooth=True,
+            is_connect_nones=True,
+            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
+            itemstyle_opts=opts.ItemStyleOpts(color="#22D44E"),  # 添加这一行定义颜色
+            label_opts=opts.LabelOpts(is_show=False),
+        )
+        .add_yaxis(
+            series_name="中单净流入",
+            y_axis=running_sum(zjlx_data['medium']),
+            is_smooth=True,
+            is_connect_nones=True,
+            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
+            itemstyle_opts=opts.ItemStyleOpts(color="#22D44E"),  # 添加这一行定义颜色
+            label_opts=opts.LabelOpts(is_show=False),
+        )
+        .add_yaxis(
+            series_name="小单净流入",
+            y_axis=running_sum(zjlx_data['small']),
+            is_smooth=True,
+            is_connect_nones=True,
+            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
+            itemstyle_opts=opts.ItemStyleOpts(color="#A50C8494"),  # 添加这一行定义颜色
+            label_opts=opts.LabelOpts(is_show=False),
+        )
+        .add_yaxis(
+            series_name="上海综指收盘价涨跌幅",
+            y_axis=zjlx_data['sh_close'],
+            is_smooth=True,
+            is_connect_nones=True,
+            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
+            itemstyle_opts=opts.ItemStyleOpts(color="#E7F70C"),  # 添加这一行定义颜色
+            label_opts=opts.LabelOpts(is_show=False),
+        ) 
+        .set_global_opts(tooltip_opts=opts.TooltipOpts(trigger="axis"),
+                                yaxis_opts=opts.AxisOpts(
+                                    type_="value",
+                                    axistick_opts=opts.AxisTickOpts(is_show=True),
+                                    splitline_opts=opts.SplitLineOpts(is_show=True),
+                                ),
+                                xaxis_opts=opts.AxisOpts(type_="category", boundary_gap=False),
+                         )        
+        )
+    return c
+
+'''
+
+def line_rzrq_sh_value(sh_data, sz_data, rzrq_data=None) -> Line:
+    v_sh = standardize(sh_data['values'])
+    v_rz = standardize(rzrq_data['rz'])
+    c_sh = standardize(sh_data['closes'])
+    c = (Line()
+        .add_xaxis(xaxis_data=line_date)
+        .add_yaxis(
+            series_name="融资",
+            y_axis=v_rz,
+            is_smooth=True,
+            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
+            itemstyle_opts=opts.ItemStyleOpts(color="#0000FF"),  # 添加这一行定义颜色
+            label_opts=opts.LabelOpts(is_show=False),
+        )
+        .add_yaxis(
+            series_name="上市综量",
+            y_axis=v_sh,
+            is_smooth=True,
+            is_connect_nones=True,
+            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
+            itemstyle_opts=opts.ItemStyleOpts(color="#22D44E"),  # 添加这一行定义颜色
+            label_opts=opts.LabelOpts(is_show=False),
+        )
+        .add_yaxis(
+            series_name="上市综收盘价",
+            y_axis=c_sh,
+            is_smooth=True,
+            is_connect_nones=True,
+            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
+            itemstyle_opts=opts.ItemStyleOpts(color="#E41426"),  # 添加这一行定义颜色
+            label_opts=opts.LabelOpts(is_show=False),
+        )        
+        .set_global_opts(tooltip_opts=opts.TooltipOpts(trigger="axis"),
+                                yaxis_opts=opts.AxisOpts(
+                                    type_="value",
+                                    axistick_opts=opts.AxisTickOpts(is_show=True),
+                                    splitline_opts=opts.SplitLineOpts(is_show=True),
+                                ),
+                                xaxis_opts=opts.AxisOpts(type_="category", boundary_gap=False),
+                         )         
+    )
+    return c
+
+def line_rzrq_sz_value(sh_data, sz_data, rzrq_data=None) -> Line:
+    v_sz = standardize(sz_data['values'])
+    v_rz = standardize(rzrq_data['rz'])
+    c_sz = standardize(sz_data['closes'])
+    c = (Line()
+        .add_xaxis(xaxis_data=line_date)
+        .add_yaxis(
+            series_name="融资",
+            y_axis=v_rz,
+            is_smooth=True,
+            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
+            itemstyle_opts=opts.ItemStyleOpts(color="#0000FF"),  # 添加这一行定义颜色
+            label_opts=opts.LabelOpts(is_show=False),
+        )
+        .add_yaxis(
+            series_name="深证综量",
+            y_axis=v_sz,
+            is_smooth=True,
+            is_connect_nones=True,
+            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
+            itemstyle_opts=opts.ItemStyleOpts(color="#22D44E"),  # 添加这一行定义颜色
+            label_opts=opts.LabelOpts(is_show=False),
+        )
+        .add_yaxis(
+            series_name="深证综收盘价",
+            y_axis=c_sz,
+            is_smooth=True,
+            is_connect_nones=True,
+            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
+            itemstyle_opts=opts.ItemStyleOpts(color="#E41426"),  # 添加这一行定义颜色
+            label_opts=opts.LabelOpts(is_show=False),
+        )        
+        .set_global_opts(tooltip_opts=opts.TooltipOpts(trigger="axis"),
+                                yaxis_opts=opts.AxisOpts(
+                                    type_="value",
+                                    axistick_opts=opts.AxisTickOpts(is_show=True),
+                                    splitline_opts=opts.SplitLineOpts(is_show=True),
+                                ),
+                                xaxis_opts=opts.AxisOpts(type_="category", boundary_gap=False),
+                         )         
+    )
+    return c
+'''
+
+def chart_table_data(zjlx_data=None):
+    # prefer explicit data instead of relying on globals
+    if zjlx_data is None:
+        zjlx_data = {'categoryDate': [], 'main': [], 'super_large': [], 'large': [], 'medium': [], 'small': []}
+    tab = Tab()
+    tab.add(line_rzrq_sh_sz_value(zjlx_data), "大盘资金流向与上综深综量对比")
+    #tab.add(line_rzrq_sh_value(sh_data, sz_data, rzrq_data), "融资和上证量及上证指数对比标准化")
+    #tab.add(line_rzrq_sz_value(sh_data, sz_data, rzrq_data), "融资和深证量及深证指数对比标准化")
+    tab.render(f'{show_templates_comm_html_path}/zjlx_line.html')
+
+
+
+def main():
+    # 读取已有CSV文件内容到内存
+    csv_file_path = dpzjlx_csv_path
+    add_string_to_csv_memory(csv_file_path)
+    all_zjlx_data = split_zjlx_data(data_lines)
+  
+    chart_table_data(zjlx_data=all_zjlx_data)
+
+if __name__ == "__main__":
+    main()
+    
