@@ -321,7 +321,57 @@ class TDXData:
                     month_ma_dataes.append(np.float64(np.nan))
         return month_ma_dataes
 
-  
+    def standardize(arr):
+        """
+        Z-score 标准化：将数组转换为均值为 0、标准差为 1 的分布。
+        
+        参数:
+            arr (array-like): 输入数组（一维或多维，但按整体计算）
+        
+        返回:
+            np.ndarray: 标准化后的数组，形状与输入相同
+        
+        处理特殊情况：
+            - 如果标准差为零（所有元素相等），返回全零数组（均值即为自身）。
+        """
+        arr = np.asarray(arr, dtype=float)
+        mean = np.mean(arr)
+        std = np.std(arr)
+        
+        if std == 0:
+            # 所有值相同，标准化后均为 0
+            return np.zeros_like(arr)
+        
+        return (arr - mean) / std
+
+
+    def normalize(arr, feature_range=(0, 1)):
+        """
+        Min-Max 归一化：将数组缩放到指定的特征范围（默认 [0, 1]）。
+        
+        参数:
+            arr (array-like): 输入数组
+            feature_range (tuple): 目标范围，默认为 (0, 1)
+        
+        返回:
+            np.ndarray: 归一化后的数组，形状与输入相同
+        
+        处理特殊情况：
+            - 如果最大值等于最小值，返回全 0 数组（或全为 feature_range[0]）。
+        """
+        arr = np.asarray(arr, dtype=float)
+        min_val = np.min(arr)
+        max_val = np.max(arr)
+        a, b = feature_range
+        
+        if max_val == min_val:
+            # 所有值相同，无法缩放，返回全为下限值
+            return np.full_like(arr, a)
+        
+        # 线性缩放公式
+        scaled = (arr - min_val) / (max_val - min_val)  # 先缩放到 [0, 1]
+        return scaled * (b - a) + a
+    
 
 if __name__ == "__main__":
     data = TDXData()

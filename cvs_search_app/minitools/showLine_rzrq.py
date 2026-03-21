@@ -154,11 +154,11 @@ def line_rzrq_sh_sz_value(sh_data, sz_data, rzrq_data=None) -> Line:
     return c
 
 def line_rzrq_sh_value(sh_data, sz_data, rzrq_data=None) -> Line:
-    v_sh = standardize(sh_data['values'])
-    v_rz = standardize(rzrq_data['rz'])
-    c_sh = standardize(sh_data['closes'])
+    v_sh = tdx.standardize(sh_data['values'])
+    v_rz = tdx.standardize(rzrq_data['rz'])
+    c_sh = tdx.standardize(sh_data['closes'])
 
-    p_sh = standardize(sh_data['prices'])
+    p_sh = tdx.standardize(sh_data['prices'])
     c = (Line()
         .add_xaxis(xaxis_data=line_date)
         .add_yaxis(
@@ -208,11 +208,11 @@ def line_rzrq_sh_value(sh_data, sz_data, rzrq_data=None) -> Line:
     return c
 
 def line_rzrq_sz_value(sh_data, sz_data, rzrq_data=None) -> Line:
-    v_sz = standardize(sz_data['values'])
-    v_rz = standardize(rzrq_data['rz'])
-    c_sz = standardize(sz_data['closes'])
+    v_sz = tdx.standardize(sz_data['values'])
+    v_rz = tdx.standardize(rzrq_data['rz'])
+    c_sz = tdx.standardize(sz_data['closes'])
 
-    p_sz = standardize(sz_data['prices'])
+    p_sz = tdx.standardize(sz_data['prices'])
     c = (Line()
         .add_xaxis(xaxis_data=line_date)
         .add_yaxis(
@@ -263,9 +263,9 @@ def line_rzrq_sz_value(sh_data, sz_data, rzrq_data=None) -> Line:
 
 
 def line_sh_all(sh_data) -> Line:
-    v_sh = standardize(sh_data['values'])
-    c_sh = standardize(sh_data['closes'])
-    p_sh = standardize(sh_data['prices'])
+    v_sh = tdx.standardize(sh_data['values'])
+    c_sh = tdx.standardize(sh_data['closes'])
+    p_sh = tdx.standardize(sh_data['prices'])
 
     d_sh = sh_data['categoryData']
     c = (Line()
@@ -310,10 +310,10 @@ def line_sh_all(sh_data) -> Line:
     return c
 
 def line_sz_all(sz_data) -> Line:
-    v_sz = standardize(sz_data['values'])
-    c_sz = standardize(sz_data['closes'])
+    v_sz = tdx.standardize(sz_data['values'])
+    c_sz = tdx.standardize(sz_data['closes'])
 
-    p_sz = standardize(sz_data['prices'])
+    p_sz = tdx.standardize(sz_data['prices'])
     d_sz = sz_data['categoryData']
     c = (Line()
         .add_xaxis(xaxis_data=d_sz)
@@ -357,7 +357,7 @@ def line_sz_all(sz_data) -> Line:
     # 将注释添加到HTML模板中
     c.add_js_funcs("""
         var comment = document.createElement('div');
-        comment.innerHTML = '在两市的单纯量和金额对比中，<br>注意观察 <br>1999-10到2001-10 <br>2006-04到2008-9  <br>2014-04到2015-11  <br>2024-08到现在 <p style="color: red;"><br>这段时间，量和金额及收盘点的走势，它们之间的上穿，下穿，间隔幅度，等相对关系来判断现在大致处于哪个阶段，来判断大盘整体的走势</p>';
+        comment.innerHTML = '在<p style="color: red;">两市的单纯量和金额标准化对比中</p>，<br>注意观察 <br>1999-10到2001-10 <br>2006-04到2008-9  <br>2014-04到2015-11  <br>2024-08到现在 <p style="color: red;"><br>这段时间，量和金额及收盘点的走势，它们之间的上穿，下穿，间隔幅度，等相对关系来判断现在大致处于哪个阶段，来判断大盘整体的走势</p>';
         comment.style.position = 'absolute';
         comment.style.top = '600px'; // 根据需要调整位置
         comment.style.left = '250px'; // 根据需要调整位置
@@ -387,11 +387,11 @@ def chart_table_data(sh_data=None, sz_data=None, rzrq_data=None):
 def line_rzrq_all_value(sh_data, sz_data, rzrq_data=None) -> Line:
     sh_sz_values = [sh + sz for sh, sz in zip(sh_data['values'], sz_data['values'])]
     sh_sz_prices = [sh + sz for sh, sz in zip(sh_data['prices'], sz_data['prices'])]
-    v_sz_sh = normalize(sh_sz_values)
-    v_rz = normalize(rzrq_data['rz'])
-    c_sz = normalize(sz_data['closes'])
-    c_sh = normalize(sh_data['closes'])
-    p_sz_sh = normalize(sh_sz_prices)
+    v_sz_sh = tdx.normalize(sh_sz_values)
+    v_rz = tdx.normalize(rzrq_data['rz'])
+    c_sz = tdx.normalize(sz_data['closes'])
+    c_sh = tdx.normalize(sh_data['closes'])
+    p_sz_sh = tdx.normalize(sh_sz_prices)
     c = (Line()
         .add_xaxis(xaxis_data=line_date)
         .add_yaxis(
@@ -448,57 +448,6 @@ def line_rzrq_all_value(sh_data, sz_data, rzrq_data=None) -> Line:
                          )        
     )
     return c
-
-def standardize(arr):
-    """
-    Z-score 标准化：将数组转换为均值为 0、标准差为 1 的分布。
-    
-    参数:
-        arr (array-like): 输入数组（一维或多维，但按整体计算）
-    
-    返回:
-        np.ndarray: 标准化后的数组，形状与输入相同
-    
-    处理特殊情况：
-        - 如果标准差为零（所有元素相等），返回全零数组（均值即为自身）。
-    """
-    arr = np.asarray(arr, dtype=float)
-    mean = np.mean(arr)
-    std = np.std(arr)
-    
-    if std == 0:
-        # 所有值相同，标准化后均为 0
-        return np.zeros_like(arr)
-    
-    return (arr - mean) / std
-
-
-def normalize(arr, feature_range=(0, 1)):
-    """
-    Min-Max 归一化：将数组缩放到指定的特征范围（默认 [0, 1]）。
-    
-    参数:
-        arr (array-like): 输入数组
-        feature_range (tuple): 目标范围，默认为 (0, 1)
-    
-    返回:
-        np.ndarray: 归一化后的数组，形状与输入相同
-    
-    处理特殊情况：
-        - 如果最大值等于最小值，返回全 0 数组（或全为 feature_range[0]）。
-    """
-    arr = np.asarray(arr, dtype=float)
-    min_val = np.min(arr)
-    max_val = np.max(arr)
-    a, b = feature_range
-    
-    if max_val == min_val:
-        # 所有值相同，无法缩放，返回全为下限值
-        return np.full_like(arr, a)
-    
-    # 线性缩放公式
-    scaled = (arr - min_val) / (max_val - min_val)  # 先缩放到 [0, 1]
-    return scaled * (b - a) + a
 
 def main():
     '''

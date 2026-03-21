@@ -4,6 +4,7 @@ import user_config as ucfg
 
 from pyecharts import options as opts
 from pyecharts.charts import Kline, Line, Bar, Grid, Line, Pie, Tab
+from pyecharts.options import TitleOpts, DataZoomOpts
 
 import numpy as np
 from datetime import datetime
@@ -163,25 +164,29 @@ def line_rzrq_sh_sz_value(zjlx_data) -> Line:
         )
     return c
 
-'''
-
-def line_rzrq_sh_value(sh_data, sz_data, rzrq_data=None) -> Line:
-    v_sh = standardize(sh_data['values'])
-    v_rz = standardize(rzrq_data['rz'])
-    c_sh = standardize(sh_data['closes'])
+def line_zjlx_sh_sz_value(zjlx_data) -> Line:
     c = (Line()
-        .add_xaxis(xaxis_data=line_date)
+        .add_xaxis(xaxis_data=zjlx_date)
         .add_yaxis(
-            series_name="融资",
-            y_axis=v_rz,
+            series_name="主力净流入",
+            y_axis=zjlx_data['main'],
             is_smooth=True,
             linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
             itemstyle_opts=opts.ItemStyleOpts(color="#0000FF"),  # 添加这一行定义颜色
             label_opts=opts.LabelOpts(is_show=False),
         )
         .add_yaxis(
-            series_name="上市综量",
-            y_axis=v_sh,
+            series_name="大单净流入",
+            y_axis=zjlx_data['large'],
+            is_smooth=True,
+            is_connect_nones=True,
+            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
+            itemstyle_opts=opts.ItemStyleOpts(color="#FF0000"),  # 添加这一行定义颜色
+            label_opts=opts.LabelOpts(is_show=False),
+        )
+        .add_yaxis(
+            series_name="超大单净流入",
+            y_axis=zjlx_data['super_large'],
             is_smooth=True,
             is_connect_nones=True,
             linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
@@ -189,42 +194,8 @@ def line_rzrq_sh_value(sh_data, sz_data, rzrq_data=None) -> Line:
             label_opts=opts.LabelOpts(is_show=False),
         )
         .add_yaxis(
-            series_name="上市综收盘价",
-            y_axis=c_sh,
-            is_smooth=True,
-            is_connect_nones=True,
-            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
-            itemstyle_opts=opts.ItemStyleOpts(color="#E41426"),  # 添加这一行定义颜色
-            label_opts=opts.LabelOpts(is_show=False),
-        )        
-        .set_global_opts(tooltip_opts=opts.TooltipOpts(trigger="axis"),
-                                yaxis_opts=opts.AxisOpts(
-                                    type_="value",
-                                    axistick_opts=opts.AxisTickOpts(is_show=True),
-                                    splitline_opts=opts.SplitLineOpts(is_show=True),
-                                ),
-                                xaxis_opts=opts.AxisOpts(type_="category", boundary_gap=False),
-                         )         
-    )
-    return c
-
-def line_rzrq_sz_value(sh_data, sz_data, rzrq_data=None) -> Line:
-    v_sz = standardize(sz_data['values'])
-    v_rz = standardize(rzrq_data['rz'])
-    c_sz = standardize(sz_data['closes'])
-    c = (Line()
-        .add_xaxis(xaxis_data=line_date)
-        .add_yaxis(
-            series_name="融资",
-            y_axis=v_rz,
-            is_smooth=True,
-            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
-            itemstyle_opts=opts.ItemStyleOpts(color="#0000FF"),  # 添加这一行定义颜色
-            label_opts=opts.LabelOpts(is_show=False),
-        )
-        .add_yaxis(
-            series_name="深证综量",
-            y_axis=v_sz,
+            series_name="中单净流入",
+            y_axis=zjlx_data['medium'],
             is_smooth=True,
             is_connect_nones=True,
             linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
@@ -232,14 +203,23 @@ def line_rzrq_sz_value(sh_data, sz_data, rzrq_data=None) -> Line:
             label_opts=opts.LabelOpts(is_show=False),
         )
         .add_yaxis(
-            series_name="深证综收盘价",
-            y_axis=c_sz,
+            series_name="小单净流入",
+            y_axis=zjlx_data['small'],
             is_smooth=True,
             is_connect_nones=True,
             linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
-            itemstyle_opts=opts.ItemStyleOpts(color="#E41426"),  # 添加这一行定义颜色
+            itemstyle_opts=opts.ItemStyleOpts(color="#A50C8494"),  # 添加这一行定义颜色
             label_opts=opts.LabelOpts(is_show=False),
-        )        
+        )
+        .add_yaxis(
+            series_name="上海综指收盘价涨跌幅",
+            y_axis=zjlx_data['sh_close'],
+            is_smooth=True,
+            is_connect_nones=True,
+            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
+            itemstyle_opts=opts.ItemStyleOpts(color="#E7F70C"),  # 添加这一行定义颜色
+            label_opts=opts.LabelOpts(is_show=False),
+        ) 
         .set_global_opts(tooltip_opts=opts.TooltipOpts(trigger="axis"),
                                 yaxis_opts=opts.AxisOpts(
                                     type_="value",
@@ -247,10 +227,97 @@ def line_rzrq_sz_value(sh_data, sz_data, rzrq_data=None) -> Line:
                                     splitline_opts=opts.SplitLineOpts(is_show=True),
                                 ),
                                 xaxis_opts=opts.AxisOpts(type_="category", boundary_gap=False),
-                         )         
-    )
+                                datazoom_opts=[DataZoomOpts()],  # 添加缩放功能
+                         )        
+        )
     return c
-'''
+
+
+def line_standardize_sh_sz_value(zjlx_data) -> Line:
+    c = (Line()
+        .add_xaxis(xaxis_data=zjlx_date)
+        .add_yaxis(
+            series_name="主力净流入",
+            y_axis=tdx.standardize(zjlx_data['main']),
+            is_smooth=True,
+            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
+            itemstyle_opts=opts.ItemStyleOpts(color="#0000FF"),  # 添加这一行定义颜色
+            label_opts=opts.LabelOpts(is_show=False),
+        )
+        .add_yaxis(
+            series_name="大单净流入",
+            y_axis=tdx.standardize(zjlx_data['large']),
+            is_smooth=True,
+            is_connect_nones=True,
+            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
+            itemstyle_opts=opts.ItemStyleOpts(color="#FF0000"),  # 添加这一行定义颜色
+            label_opts=opts.LabelOpts(is_show=False),
+        )
+        .add_yaxis(
+            series_name="超大单净流入",
+            y_axis=tdx.standardize(zjlx_data['super_large']),
+            is_smooth=True,
+            is_connect_nones=True,
+            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
+            itemstyle_opts=opts.ItemStyleOpts(color="#22D44E"),  # 添加这一行定义颜色
+            label_opts=opts.LabelOpts(is_show=False),
+        )
+        .add_yaxis(
+            series_name="中单净流入",
+            y_axis=tdx.standardize(zjlx_data['medium']),
+            is_smooth=True,
+            is_connect_nones=True,
+            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
+            itemstyle_opts=opts.ItemStyleOpts(color="#22D44E"),  # 添加这一行定义颜色
+            label_opts=opts.LabelOpts(is_show=False),
+        )
+        .add_yaxis(
+            series_name="小单净流入",
+            y_axis=tdx.standardize(zjlx_data['small']),
+            is_smooth=True,
+            is_connect_nones=True,
+            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
+            itemstyle_opts=opts.ItemStyleOpts(color="#A50C8494"),  # 添加这一行定义颜色
+            label_opts=opts.LabelOpts(is_show=False),
+        )
+        .add_yaxis(
+            series_name="上海综指收盘价涨跌幅",
+            y_axis=tdx.standardize(zjlx_data['sh_close']),
+            is_smooth=True,
+            is_connect_nones=True,
+            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
+            itemstyle_opts=opts.ItemStyleOpts(color="#E7F70C"),  # 添加这一行定义颜色
+            label_opts=opts.LabelOpts(is_show=False),
+        ) 
+        .add_yaxis(
+            series_name="深成指收盘价涨跌幅",
+            y_axis=tdx.standardize(zjlx_data['sz_close']),
+            is_smooth=True,
+            is_connect_nones=True,
+            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
+            itemstyle_opts=opts.ItemStyleOpts(color="#6E7506"),  # 添加这一行定义颜色
+            label_opts=opts.LabelOpts(is_show=False),
+        )         
+        .set_global_opts(tooltip_opts=opts.TooltipOpts(trigger="axis"),
+                                yaxis_opts=opts.AxisOpts(
+                                    type_="value",
+                                    axistick_opts=opts.AxisTickOpts(is_show=True),
+                                    splitline_opts=opts.SplitLineOpts(is_show=True),
+                                ),
+                                xaxis_opts=opts.AxisOpts(type_="category", boundary_gap=False),
+                                datazoom_opts=[DataZoomOpts()],  # 添加缩放功能
+                         )        
+        )
+    # 将注释添加到HTML模板中
+    c.add_js_funcs("""
+        var comment = document.createElement('div');
+        comment.innerHTML = '在两市的收盘价和金额 <p style="color: red;">标准化对比中</p>，<br>注意观察 <br>2026-01-12到2026-01-13  <br>2026-02-27到2026-03-03 <p style="color: red;"><br>这段时间，金额及收盘点的走势，它们之间的上穿，下穿，间隔幅度，等相对关系来判断现在大致处于哪个阶段，来判断大盘整体的走势</p>';
+        comment.style.position = 'absolute';
+        comment.style.top = '600px'; // 根据需要调整位置
+        comment.style.left = '250px'; // 根据需要调整位置
+        document.body.appendChild(comment);
+    """)    
+    return c
 
 def chart_table_data(zjlx_data=None):
     # prefer explicit data instead of relying on globals
@@ -258,8 +325,8 @@ def chart_table_data(zjlx_data=None):
         zjlx_data = {'categoryDate': [], 'main': [], 'super_large': [], 'large': [], 'medium': [], 'small': []}
     tab = Tab()
     tab.add(line_rzrq_sh_sz_value(zjlx_data), "大盘资金流向与上综深综量对比")
-    #tab.add(line_rzrq_sh_value(sh_data, sz_data, rzrq_data), "融资和上证量及上证指数对比标准化")
-    #tab.add(line_rzrq_sz_value(sh_data, sz_data, rzrq_data), "融资和深证量及深证指数对比标准化")
+    tab.add(line_zjlx_sh_sz_value(zjlx_data), "大盘资金流向与上综深综量对比-没有累计")
+    tab.add(line_standardize_sh_sz_value(zjlx_data), "大盘资金流向与上综深综量对比-标准化")
     tab.render(f'{show_templates_comm_html_path}/zjlx_line.html')
 
 
