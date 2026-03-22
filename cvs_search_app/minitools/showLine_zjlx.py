@@ -311,7 +311,7 @@ def line_standardize_sh_sz_value(zjlx_data) -> Line:
     # 将注释添加到HTML模板中
     c.add_js_funcs("""
         var comment = document.createElement('div');
-        comment.innerHTML = '在两市的收盘价和金额 <p style="color: red;">标准化对比中</p>，<br>注意观察 <br>2026-01-12到2026-01-13  <br>2026-02-27到2026-03-03 <p style="color: red;"><br>这段时间，金额及收盘点的走势，它们之间的上穿，下穿，间隔幅度，等相对关系来判断现在大致处于哪个阶段，来判断大盘整体的走势</p>';
+        comment.innerHTML = '在两市的收盘价和金额 <p style="color: red;">标准化对比中</p>，<br>注意观察  小单，大单 > +-2的情况 和收盘价上穿下穿 0轴的情况<br>2026-01-12到2026-01-13  <br>2026-02-27到2026-03-03 <p style="color: red;"><br>这段时间，金额及收盘点的走势，它们之间的上穿，下穿，间隔幅度，等相对关系来判断现在大致处于哪个阶段，来判断大盘整体的走势</p>';
         comment.style.position = 'absolute';
         comment.style.top = '600px'; // 根据需要调整位置
         comment.style.left = '250px'; // 根据需要调整位置

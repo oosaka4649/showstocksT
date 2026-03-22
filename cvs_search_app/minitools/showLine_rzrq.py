@@ -149,6 +149,7 @@ def line_rzrq_sh_sz_value(sh_data, sz_data, rzrq_data=None) -> Line:
                                     splitline_opts=opts.SplitLineOpts(is_show=True),
                                 ),
                                 xaxis_opts=opts.AxisOpts(type_="category", boundary_gap=False),
+                                datazoom_opts=[DataZoomOpts()],  # 添加缩放功能
                          )        
     )
     return c
@@ -203,6 +204,7 @@ def line_rzrq_sh_value(sh_data, sz_data, rzrq_data=None) -> Line:
                                     splitline_opts=opts.SplitLineOpts(is_show=True),
                                 ),
                                 xaxis_opts=opts.AxisOpts(type_="category", boundary_gap=False),
+                                datazoom_opts=[DataZoomOpts()],  # 添加缩放功能
                          )         
     )
     return c
@@ -257,6 +259,7 @@ def line_rzrq_sz_value(sh_data, sz_data, rzrq_data=None) -> Line:
                                     splitline_opts=opts.SplitLineOpts(is_show=True),
                                 ),
                                 xaxis_opts=opts.AxisOpts(type_="category", boundary_gap=False),
+                                datazoom_opts=[DataZoomOpts()],  # 添加缩放功能
                          )         
     )
     return c
