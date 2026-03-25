@@ -74,6 +74,11 @@ strategy_items = [
     {'id': 'up_test2', 'name': '策略二 的改进，对出场进行了修改'}
 ]
 
+show_html_items = [
+    {'id': 'rzrq_line', 'name': '融资融券数据 主力资金流向等'},
+    {'id': 'zjlx_line', 'name': '主力资金流向'}
+]
+
 @app.route("/", methods=["GET", "POST"])
 def index():
     selected_script = None
@@ -128,11 +133,11 @@ def index():
                 output = result.stdout if result.returncode == 0 else f"错误: {result.stderr}"
                 if output == None or output.strip() == '':
                     output = '游资信息已经更新，请在上面输入查询内容或直接点击上面查询按钮。'                    
-                return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, script_output=output)
+                return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, htmlitems=show_html_items, script_output=output)
             except Exception as e:
-                return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, script_output=f"执行失败: {str(e)}")
+                return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, htmlitems=show_html_items, script_output=f"执行失败: {str(e)}")
 
-    return render_template("index.html", items=checkbox_items, vbtitems=strategy_items)
+    return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, htmlitems=show_html_items)
 
 @app.route("/sortbydateandcode", methods=["GET", "POST"])
 def sortbydateandcode():
@@ -207,7 +212,7 @@ def trader_monthly_stats_separate():
         bar_charts = statistics_by_month_and_trader(aijinggu_csv_path, months_ago=18, separate_traders=True)
         
         if bar_charts is None or len(bar_charts) == 0:
-            return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, 
+            return render_template("index.html", items=checkbox_items, vbtitems=strategy_items,  htmlitems=show_html_items,
                                  script_output="生成直方图失败")
         
         # 生成HTML列表
@@ -217,7 +222,7 @@ def trader_monthly_stats_separate():
                              chart_count=len(charts_html),
                              script_output=f"游资月度净买入统计完成（最近24个月，共{len(charts_html)}个游资）")
     except Exception as e:
-        return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, 
+        return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, htmlitems=show_html_items,
                              script_output=f"执行失败: {str(e)}")
 
 @app.route("/trader_monthly_comparison", methods=["GET", "POST"])
@@ -231,7 +236,7 @@ def trader_monthly_comparison():
         bar_charts = statistics_by_trader_monthly(aijinggu_csv_path, months_ago=12)
         
         if bar_charts is None or len(bar_charts) == 0:
-            return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, 
+            return render_template("index.html", items=checkbox_items, vbtitems=strategy_items,  htmlitems=show_html_items,
                                  script_output="生成直方图失败")
         
         # 生成HTML列表
@@ -241,7 +246,7 @@ def trader_monthly_comparison():
                              chart_count=len(charts_html),
                              script_output=f"游资月度对比统计完成（最近12个月，共{len(charts_html)}个月份）")
     except Exception as e:
-        return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, 
+        return render_template("index.html", items=checkbox_items, vbtitems=strategy_items,  htmlitems=show_html_items,
                              script_output=f"执行失败: {str(e)}")
 
 #####  ################################ 使用策略 从配置文件中 筛选出符合条件的股票 ##################################################
@@ -311,7 +316,7 @@ def vectorbt_bt_strategy_D_W():
             sum_result, pf = strategy_instance.simple_backtest()
 
         if pf is None:
-            return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, script_output=f"回测失败: {str(sum_result)}")  
+            return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, htmlitems=show_html_items, script_output=f"回测失败: {str(sum_result)}")  
     
         #显示该股票的回测结果图
         stock_back_test_div = pf.plot().to_html(include_plotlyjs='cdn')
@@ -323,7 +328,7 @@ def vectorbt_bt_strategy_D_W():
         return render_template("vbt_bt_result.html", files_list=html_files, results_detail=backtest_detail.to_html(classes="table"), back_test_div=stock_back_test_div,
                                script_output=f"{str(sum_result)}")
     except Exception as e:
-        return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, script_output=f"执行失败: {str(e)}")
+        return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, htmlitems=show_html_items, script_output=f"执行失败: {str(e)}")
 
 #####  ################################ show multiple stock html ##################################################
 # 将批处理生成的html，读取 templates/stockhtml 文件夹下的所有 HTML 文件，并显示在一个页面中
@@ -362,6 +367,25 @@ def showhtml():
             return render_template("showhtmllist.html", script_output=f"执行失败: {str(e)}")
     html_files = [f'{ucfg.common_html_folder_name}/{f}' for f in os.listdir(folder_path) if f.endswith(extension)]
     return render_template('showhtmllist.html', files_list=html_files, script_output=f"执行股票数：{len(selected_ids)} \n执行结果: {str(output)}")
+
+
+# 只显示已经生成的 html 融资融券数据 主力资金流向 等，每天只执行一次上面的脚本，后面就不用再执行了，直接显示已经生成好了的
+# 后面这函数专门用于单纯显示已经生成的html文件，不再执行生成html的脚本了，节约时间，避免重复执行爬虫脚本
+@app.route("/showallhtml", methods=["GET", "POST"])
+def showallhtml():
+    output_html_list = []
+    sum_result = None
+    pf = None
+    selected_ids = request.form.getlist('html_checkbox')
+    if selected_ids and len(selected_ids) > 0:
+        #取得输入的股票代码  ['rzrq_line.html', 'zjlx_line.html'] # 只显示这两个html文件，其他的html文件，是通过 showmyhtml函数生成的，和这个函数无关
+        output_html_list.append(f'{selected_ids[0]}.html')
+    else:
+        output_html_list = ['rzrq_line.html', 'zjlx_line.html'] # 默认显示这两个html文件，其他的html文件，是通过 showmyhtml函数生成的，和这个函数无关
+        
+    html_files = [f'{ucfg.common_html_folder_name}/{f}' for f in output_html_list]
+    return render_template('showhtmllist.html', files_list=html_files, script_output=f"显示已经生成的html文件，执行结果: 融资融券数据 主力资金流向等html文件数：{len(html_files)}")
+
 
 
 @app.route("/show_rzrq_line", methods=["GET", "POST"])

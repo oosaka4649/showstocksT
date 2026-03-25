@@ -82,6 +82,23 @@
         <h2>显示股票K线图</h2>
         <div style="width: 700px;">
             <div  class="my-div">
+                <!-- 只显示上面已经生成的 html 融资融券数据 主力资金流向 等，每天只执行一次上面的脚本，后面就不用再执行了，直接显示已经生成好了的 -->
+                <form action="{{ url_for('showallhtml') }}" method="POST">
+                    {% for item in htmlitems %}
+                        <div>
+                            <input type="checkbox" 
+                                name="html_checkbox" 
+                                value="{{ item.id }}" 
+                                id="check_{{ item.id }}">
+                            <label for="check_{{ item.id }}">{{ item.name }}</label>
+                        </div>
+                    {% endfor %}                    
+                    <div class="input-group" style="width: 600px; margin-top: 20px;">
+                        <button type="submit" class="btn btn-primary" style="margin-left: 30px;">显示既存的融资融券数据，主力资金流向等html</button>
+                    </div>
+                </form>
+            </div>            
+            <div  class="my-div">
                 <!-- action 指定提交到的路由，method 指定请求方式 -->
                 <form action="{{ url_for('showhtml') }}" method="POST">
                     <div class="input-group" style="width: 600px; margin-top: 20px;">
