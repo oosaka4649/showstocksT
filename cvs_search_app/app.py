@@ -50,6 +50,7 @@ scripts_get_rzrq_path = os.path.join(current_dir, 'scripts', 'getRzRq.py')
 scripts_mystocks_zjlx_line_path = os.path.join(current_dir, 'minitools', 'showLine_zjlx.py')
 scripts_get_zjlx_path = os.path.join(current_dir, 'scripts', 'getZJLX.py')
 
+scripts_mystocks_zjlx_rzrq_line_path = os.path.join(current_dir, 'minitools', 'showLine_zjlx_rzrq.py')
 
 stocks_csv_dir = os.path.join(current_dir, 'stockscsv')
 tdx_day_file_path = 'C:\\zd_zsone\\vipdoc\\'  # tdx路径
@@ -76,7 +77,8 @@ strategy_items = [
 
 show_html_items = [
     {'id': 'rzrq_line', 'name': '融资融券数据 主力资金流向等'},
-    {'id': 'zjlx_line', 'name': '主力资金流向'}
+    {'id': 'zjlx_line', 'name': '主力资金流向'},
+    {'id': 'zjlx_rzrq_line', 'name': '主力资金流向 融资融券数据'}
 ]
 
 @app.route("/", methods=["GET", "POST"])
@@ -381,7 +383,17 @@ def showallhtml():
         #取得输入的股票代码  ['rzrq_line.html', 'zjlx_line.html'] # 只显示这两个html文件，其他的html文件，是通过 showmyhtml函数生成的，和这个函数无关
         output_html_list.append(f'{selected_ids[0]}.html')
     else:
-        output_html_list = ['rzrq_line.html', 'zjlx_line.html'] # 默认显示这两个html文件，其他的html文件，是通过 showmyhtml函数生成的，和这个函数无关
+        try:
+            result = subprocess.run(
+                ["python", scripts_mystocks_zjlx_rzrq_line_path], 
+                capture_output=True, 
+                text=True
+            )
+            output = result.stdout if result.returncode == 0 else f"错误: {result.stderr}"
+            print(f"showLine_zjlx_rzrq.py output: {output}")
+            output_html_list.append('zjlx_rzrq_line.html')
+        except Exception as e:
+            return render_template("showhtmllist.html", script_output=f"执行失败: {str(e)}")
         
     html_files = [f'{ucfg.common_html_folder_name}/{f}' for f in output_html_list]
     return render_template('showhtmllist.html', files_list=html_files, script_output=f"显示已经生成的html文件，执行结果: 融资融券数据 主力资金流向等html文件数：{len(html_files)}")
