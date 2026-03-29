@@ -2,24 +2,63 @@ import time
 import tkinter as tk
 from tkinter import font
 from tkinter import messagebox
+from tkinter import ttk
 import calendar
 from datetime import datetime, timedelta
 import re
 
 def show_reminder(getout_day):
     root = tk.Tk()
-    root.geometry("800x600")  # 设置窗口大小为400x300像素
-    root.withdraw()  # 隐藏主窗口
-    root.attributes("-topmost", True)  # 设置窗口总在最前
-    messagebox.showinfo("提醒", getout_day + "\n 快起来运动 时间到了！\n "
-                          "市场中钱是赚不完的，但钱是可以亏完的！\n "
-                          "交易不要勉强，交易的感觉应该是自己最舒服的情况下成交的，\n"
-                          "        所以买卖后就不纠结了！\n "
-                          "买入条件是一定要起浪，一定要拉开差价，震荡幅度，方向斜率，运动趋势最重要！\n"
-                          "目前看，交易时间点早上10：30左右，下午14点左右，不是最高就是最低，或是变盘\n"
-                          "老王战法(在强势或热闹的市场中)，选当日涨幅靠前，且换手率在28%以上，\n"
-                          "    30%以上最好，买入，快马上拉，即使不立刻拉，目前看盘整20日后会有爆发")
-    root.destroy()
+    root.title("提醒")
+    root.geometry("800x600")
+    root.attributes("-topmost", True)
+    
+    nb = ttk.Notebook(root)
+    nb.pack(expand=True, fill='both')
+    
+    # Tab1: 当前时间和期权信息
+    frame0 = ttk.Frame(nb)
+    nb.add(frame0, text='当前时间')
+    
+    time_str = time.strftime('%Y-%m-%d %H:%M:%S')
+    time_labe0 = tk.Label(frame0, text=f"当前时间: {time_str}", font=('Arial', 32), fg='blue')
+    time_labe0.pack(pady=10)
+
+    # Tab1: 当前时间和期权信息
+    frame1 = ttk.Frame(nb)
+    nb.add(frame1, text='期权信息')
+    
+    info_label = tk.Label(frame1, text=getout_day, font=('Arial', 10), justify='left')
+    info_label.pack(pady=10, padx=10)
+    
+    # Tab2: 便签
+    frame2 = ttk.Frame(nb)
+    nb.add(frame2, text='便签')
+    
+    text_widget = tk.Text(frame2, wrap='word', font=('Arial', 12))
+    text_widget.pack(expand=True, fill='both', padx=10, pady=10)
+    
+    # 加载便签内容
+    try:
+        with open('notes.txt', 'r', encoding='utf-8') as f:
+            content = f.read()
+            text_widget.insert('1.0', content)
+    except FileNotFoundError:
+        pass
+    
+    # 保存便签内容
+    def save_notes():
+        content = text_widget.get('1.0', 'end-1c')
+        with open('notes.txt', 'w', encoding='utf-8') as f:
+            f.write(content)
+    
+    # 绑定事件：失去焦点时保存
+    text_widget.bind('<FocusOut>', lambda e: save_notes())
+    
+    # 窗口关闭时保存
+    root.protocol("WM_DELETE_WINDOW", lambda: (save_notes(), root.destroy()))
+    
+    root.mainloop()
 
 def set_timer(hour, minute):
     while True:
@@ -31,9 +70,20 @@ def set_timer(hour, minute):
         
 def set_hourly_reminder():
     getout_day = get_out_day()  # 先调用一次显示结果
+
+    text_showinfo = f'{getout_day}\n 快起来运动 时间到了！\n \
+                    市场中钱是赚不完的，但钱是可以亏完的！\n \
+                    交易不要勉强，交易的感觉应该是自己最舒服的情况下成交的，\n \
+                      所以买卖后就不纠结了！\n \
+                    买入条件是一定要起浪，一定要拉开差价，震荡幅度，方向斜率，运动趋势最重要！\n \
+                    目前看，交易时间点早上10：30左右，下午14点左右，不是最高就是最低，或是变盘\n \
+                    \n 逃顶一定要经常注意macd顶背离时一定要择高逃跑，\n \
+                    \n 老王战法(在强势或热闹的市场中)，选当日涨幅靠前，且换手率在28%以上，\n \
+                        30%以上最好，买入，快马上拉，即使不立刻拉，目前看盘整20日后会有爆发'
     while True:
-        show_reminder(getout_day)
-        time.sleep(1800)  # 每3600秒（1小时）弹出一次
+        show_reminder(text_showinfo)
+        #time.sleep(1800)  # 每3600秒（1小时）弹出一次
+        time.sleep(60)  # 每3600秒（1小时）弹出一次
         
 ############################################################################################################################
 
