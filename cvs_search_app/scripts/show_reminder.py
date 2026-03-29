@@ -10,7 +10,7 @@ import re
 def show_reminder(getout_day):
     root = tk.Tk()
     root.title("提醒")
-    root.geometry("800x600")
+    root.geometry("980x780")
     root.attributes("-topmost", True)
     
     nb = ttk.Notebook(root)
@@ -21,21 +21,21 @@ def show_reminder(getout_day):
     nb.add(frame0, text='当前时间')
     
     time_str = time.strftime('%Y-%m-%d %H:%M:%S')
-    time_labe0 = tk.Label(frame0, text=f"当前时间: {time_str}", font=('Arial', 32), fg='blue')
+    time_labe0 = tk.Label(frame0, text=f"当前时间: {time_str}", font=('Arial', 38), fg='blue')
     time_labe0.pack(pady=10)
 
     # Tab1: 当前时间和期权信息
     frame1 = ttk.Frame(nb)
     nb.add(frame1, text='期权信息')
     
-    info_label = tk.Label(frame1, text=getout_day, font=('Arial', 10), justify='left')
+    info_label = tk.Label(frame1, text=getout_day, font=('Arial', 16), justify='left', fg='red')
     info_label.pack(pady=10, padx=10)
     
     # Tab2: 便签
     frame2 = ttk.Frame(nb)
     nb.add(frame2, text='便签')
     
-    text_widget = tk.Text(frame2, wrap='word', font=('Arial', 12))
+    text_widget = tk.Text(frame2, wrap='word', font=('Arial', 18), fg='green')
     text_widget.pack(expand=True, fill='both', padx=10, pady=10)
     
     # 加载便签内容
