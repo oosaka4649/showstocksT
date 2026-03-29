@@ -26,17 +26,12 @@ def show_reminder(getout_day):
 
     # Tab1: 当前时间和期权信息
     frame1 = ttk.Frame(nb)
-    nb.add(frame1, text='期权信息')
+    nb.add(frame1, text='期权信息和便签')
     
-    info_label = tk.Label(frame1, text=getout_day, font=('Arial', 16), justify='left', fg='red')
+    info_label = tk.Label(frame1, text=getout_day, font=('Arial', 16), justify='left', fg='blue')
     info_label.pack(pady=10, padx=10)
-    
-    # Tab2: 便签
-    frame2 = ttk.Frame(nb)
-    nb.add(frame2, text='便签')
-    
-    text_widget = tk.Text(frame2, wrap='word', font=('Arial', 18), fg='green')
-    text_widget.pack(expand=True, fill='both', padx=10, pady=10)
+    text_widget = tk.Text(frame1, wrap='word', font=('Arial', 18), fg='green')
+    text_widget.pack(expand=True, fill='both', padx=10, pady=10)    
     
     # 加载便签内容
     try:
