@@ -31,6 +31,8 @@ def calculate_price_changes(data, start_date=None, end_date=None):
     '''
     price_changes = []  # 涨跌价格：收盘 - 开盘
     price_changes_pct = []  # 涨跌幅：(收盘 - 开盘) / 开盘 * 100%
+    price_max_open_pct = []  # 记录相对于开盘价的最大涨跌幅，后续可以用于调整图表范围
+    price_max_min_pct = []  # 记录相对于最低价的最大涨跌幅，后续可以用于调整图表范围
 
     for tick in data:
         date_str = tick[0]
@@ -41,16 +43,22 @@ def calculate_price_changes(data, start_date=None, end_date=None):
         
         open_price = float(tick[1])
         close_price = float(tick[2])
+        high_price = float(tick[4])
+        low_price = float(tick[3])
         
         if open_price != 0:  # 避免除零错误
             change = close_price - open_price
             change_pct = (change / open_price) * 100
             price_changes.append(change)
             price_changes_pct.append(change_pct)
-    
-    return price_changes, price_changes_pct
 
-def draw_distribution_charts(stock_code='', stock_name='', price_changes=[], price_changes_pct=[]):
+            
+            price_max_open_pct.append(high_price - open_price)  # 记录相对于开盘价的最大涨跌价格
+            price_max_min_pct.append(high_price - low_price)  # 记录相对于最低价的最大涨跌价格
+    
+    return price_changes, price_changes_pct, price_max_open_pct, price_max_min_pct
+
+def draw_distribution_charts(stock_code='', stock_name='', price_changes=[], price_changes_pct=[], price_max_open_pct=[], price_max_min_pct=[]):
     '''
     绘制涨跌价格和涨跌幅分布图表（直方图）
     '''
@@ -64,6 +72,27 @@ def draw_distribution_charts(stock_code='', stock_name='', price_changes=[], pri
     else:
         bin_centers_price = []
         hist_price = []
+
+    if price_max_open_pct:
+        min_price = min(price_max_open_pct)
+        max_price = max(price_max_open_pct)
+        bins_price = np.arange(np.floor(min_price * 10) / 10, np.ceil(max_price * 10) / 10 + 0.1, 0.1)
+        hist_price_m_o, bin_edges_price_m_o = np.histogram(price_max_open_pct, bins=bins_price)
+        bin_centers_price_m_o = (bin_edges_price_m_o[:-1] + bin_edges_price_m_o[1:]) / 2
+    else:
+        bin_centers_price_m_o = []
+        hist_price_m_o = []
+
+    if price_max_min_pct:
+        min_price = min(price_max_min_pct)
+        max_price = max(price_max_min_pct)
+        bins_price = np.arange(np.floor(min_price * 10) / 10, np.ceil(max_price * 10) / 10 + 0.1, 0.1)
+        hist_price_m_m, bin_edges_price_m_m = np.histogram(price_max_min_pct, bins=bins_price)
+        bin_centers_price_m_m = (bin_edges_price_m_m[:-1] + bin_edges_price_m_m[1:]) / 2
+    else:
+        bin_centers_price_m_m = []
+        hist_price_m_m = []        
+
 
     # 涨跌幅分布：每0.01%间隔
     if price_changes_pct:
@@ -88,10 +117,42 @@ def draw_distribution_charts(stock_code='', stock_name='', price_changes=[], pri
         .set_global_opts(
             title_opts=opts.TitleOpts(title=f"开始日期={ucfg.stocks_analysis_start_date}", pos_left="right"),
             xaxis_opts=opts.AxisOpts(name="价格变化 (元)"),
-            yaxis_opts=opts.AxisOpts(name="出现次数"),
+            yaxis_opts=opts.AxisOpts(name="出现次数_close_open"),
             tooltip_opts=opts.TooltipOpts(trigger="axis"),
         )
     )
+
+    # 价格分布图
+    bar_price_m_o = (
+        Bar()
+        .add_xaxis([f"{x:.1f}" for x in bin_centers_price_m_o])
+        .add_yaxis(
+            series_name="涨跌价格出现次数",
+            y_axis=hist_price_m_o.tolist(),
+            label_opts=opts.LabelOpts(is_show=False),
+        )
+        .set_global_opts(
+            xaxis_opts=opts.AxisOpts(name="价格变化 (元)"),
+            yaxis_opts=opts.AxisOpts(name="出现次数_max_open"),
+            tooltip_opts=opts.TooltipOpts(trigger="axis"),
+        )
+    )   
+
+    # 价格分布图
+    bar_price_m_m = (
+        Bar()
+        .add_xaxis([f"{x:.1f}" for x in bin_centers_price_m_m])
+        .add_yaxis(
+            series_name="涨跌价格出现次数",
+            y_axis=hist_price_m_m.tolist(),
+            label_opts=opts.LabelOpts(is_show=False),
+        )
+        .set_global_opts(
+            xaxis_opts=opts.AxisOpts(name="价格变化 (元)"),
+            yaxis_opts=opts.AxisOpts(name="出现次数_max_min"),
+            tooltip_opts=opts.TooltipOpts(trigger="axis"),
+        )
+    )      
 
     # 幅度分布图
     bar_pct = (
@@ -103,7 +164,7 @@ def draw_distribution_charts(stock_code='', stock_name='', price_changes=[], pri
             label_opts=opts.LabelOpts(is_show=False),
         )
         .set_global_opts(
-            title_opts=opts.TitleOpts(title=f"统计次数={len(price_changes)}", pos_left="left"),
+            title_opts=opts.TitleOpts(title=f"\n{stock_name}\n统计次数={len(price_changes)}", pos_left="left"),
             xaxis_opts=opts.AxisOpts(name="涨跌幅 (%)"),
             yaxis_opts=opts.AxisOpts(name="出现次数"),
             tooltip_opts=opts.TooltipOpts(trigger="axis"),
@@ -114,17 +175,25 @@ def draw_distribution_charts(stock_code='', stock_name='', price_changes=[], pri
     grid_chart = Grid(
         init_opts=opts.InitOpts(
             width="1200px",
-            height="800px",
+            height="1800px",
             animation_opts=opts.AnimationOpts(animation=False),
         )
     )
     grid_chart.add(
         bar_price,
-        grid_opts=opts.GridOpts(pos_left="10%", pos_right="8%", height="40%"),
+        grid_opts=opts.GridOpts(pos_left="10%", pos_right="8%", pos_top="1%", height="20%"),
     )
     grid_chart.add(
+        bar_price_m_o,
+        grid_opts=opts.GridOpts(pos_left="10%", pos_right="8%", pos_top="26%", height="20%"),
+    )
+    grid_chart.add(
+        bar_price_m_m,
+        grid_opts=opts.GridOpts(pos_left="10%", pos_right="8%", pos_top="52%", height="20%"),
+    )        
+    grid_chart.add(
         bar_pct,
-        grid_opts=opts.GridOpts(pos_left="10%", pos_right="8%", pos_top="55%", height="35%"),
+        grid_opts=opts.GridOpts(pos_left="10%", pos_right="8%", pos_top="77%", height="13%"),
     )
 
     # 保存图表
@@ -138,6 +207,8 @@ if __name__ == "__main__":
         sys.exit(1)
     '''
     stock_code = sys.argv[1]
+    
+    #stock_code = '300006'  # 可以根据需要修改为其他股票代码 by test
     start_date = ucfg.stocks_analysis_start_date
     end_date = None  # 可以根据需要设置结束日期
     
@@ -146,8 +217,8 @@ if __name__ == "__main__":
     tdx_datas.creatstocKDataList()
     chart_data = tdx_datas.getTDXStockKDatas()  # 获取日线数据
     
-    price_changes, price_changes_pct = calculate_price_changes(chart_data, start_date)
+    price_changes, price_changes_pct, price_max_open_pct, price_max_min_pct = calculate_price_changes(chart_data, start_date)
     
-    draw_distribution_charts(stock_code, tdx_datas.stock_name, price_changes, price_changes_pct)
+    draw_distribution_charts(stock_code, tdx_datas.stock_name, price_changes, price_changes_pct, price_max_open_pct, price_max_min_pct)
     
     print("分析完成，图表已生成, 统计天数:", len(price_changes))
