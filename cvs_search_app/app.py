@@ -51,12 +51,15 @@ scripts_mystocks_zjlx_line_path = os.path.join(current_dir, 'minitools', 'showLi
 scripts_get_zjlx_path = os.path.join(current_dir, 'scripts', 'getZJLX.py')
 
 scripts_mystocks_zjlx_rzrq_line_path = os.path.join(current_dir, 'minitools', 'showLine_zjlx_rzrq.py')
+scripts_mystocks_price_analysis_path = os.path.join(current_dir, 'minitools', 'stock_price_analysis.py') #统计股票价格涨跌分布的脚本
 
 stocks_csv_dir = os.path.join(current_dir, 'stockscsv')
 tdx_day_file_path = 'C:\\zd_zsone\\vipdoc\\'  # tdx路径
 
 my_stocks_list = ucfg.my_stocks_list
 my_stocks_html_folder_name = ucfg.my_stocks_html_folder_name
+
+not_delete_html_files = ['rzrq_line.html', 'zjlx_line.html', 'zjlx_rzrq_line.html'] # 这些html文件，是通过 showmyhtml函数生成的，和 showallhtml函数无关，所以在 showallhtml函数中，不删除这些文件
 
 #在画面显示一个个check box，返回选择的（和配置的config 文件对应的 list key），并生成k线html，并显示
 #后面可以添加项目
@@ -351,7 +354,8 @@ def showhtml():
             # 清空获取文件名列表
             html_files = [f'{f}' for f in os.listdir(folder_path) if f.endswith(extension)]    
             for f in html_files:
-                os.remove(os.path.join(folder_path, f))            
+                if f not in not_delete_html_files: # 不删除特定的html文件
+                    os.remove(os.path.join(folder_path, f))            
         
         # 调用 showKLine_week.py 生成我关注的股票的html
         try: 
@@ -364,10 +368,16 @@ def showhtml():
                     text=True
                 )
                 output = result.stdout if result.returncode == 0 else f"错误: {result.stderr}"
+                result = subprocess.run(
+                    ["python", scripts_mystocks_price_analysis_path , list_id], 
+                    capture_output=True, 
+                    text=True
+                )
+                output = result.stdout if result.returncode == 0 else f"错误: {result.stderr}"                
             print(f"showKLine_week.py output: {output}")
         except Exception as e:
             return render_template("showhtmllist.html", script_output=f"执行失败: {str(e)}")
-    html_files = [f'{ucfg.common_html_folder_name}/{f}' for f in os.listdir(folder_path) if f.endswith(extension)]
+    html_files = [f'{ucfg.common_html_folder_name}/{f}' for f in os.listdir(folder_path) if f.endswith(extension) and f not in not_delete_html_files] # 只显示选中股票的html文件
     return render_template('showhtmllist.html', files_list=html_files, script_output=f"执行股票数：{len(selected_ids)} \n执行结果: {str(output)}")
 
 
