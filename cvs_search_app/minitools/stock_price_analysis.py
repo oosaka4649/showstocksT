@@ -107,7 +107,7 @@ def draw_distribution_charts(stock_code='', stock_name='', price_changes=[], pri
             # 打印或保存bin_to_dates
             print("\n收盘对于开盘-每个价格区间内的日期：")
             for bin_center, dates in sorted(bin_to_dates.items()):
-                print(f"区间中心 {bin_center:.1f} 元，个数{len(dates)}: {dates}")
+                print(f"区间中心 {bin_center:.2f} 元，个数{len(dates)}: {dates}")
     else:
         bin_centers_price = []
         hist_price = []
@@ -132,7 +132,7 @@ def draw_distribution_charts(stock_code='', stock_name='', price_changes=[], pri
                     bin_to_dates_m_o[bin_center].append(date_str)
             print("\n最高价与开盘价之差-每个价格区间内的日期：")
             for bin_center, dates in sorted(bin_to_dates_m_o.items()):
-                print(f"区间中心 {bin_center:.1f} 元，个数{len(dates)}: {dates}")
+                print(f"区间中心 {bin_center:.2f} 元，个数{len(dates)}: {dates}")
     else:
         bin_centers_price_m_o = []
         hist_price_m_o = []
@@ -157,7 +157,7 @@ def draw_distribution_charts(stock_code='', stock_name='', price_changes=[], pri
                     bin_to_dates_m_m[bin_center].append(date_str)
             print("\n最低价与最高价之差-每个价格区间内的日期：")
             for bin_center, dates in sorted(bin_to_dates_m_m.items()):
-                print(f"区间中心 {bin_center:.1f} 元，个数{len(dates)}: {dates}")
+                print(f"区间中心 {bin_center:.2f} 元，个数{len(dates)}: {dates}")
     else:
         bin_centers_price_m_m = []
         hist_price_m_m = []        
@@ -177,7 +177,7 @@ def draw_distribution_charts(stock_code='', stock_name='', price_changes=[], pri
     # 价格分布图
     bar_price = (
         Bar()
-        .add_xaxis([f"{x:.1f}" for x in bin_centers_price])
+        .add_xaxis([f"{x:.2f}" for x in bin_centers_price])
         .add_yaxis(
             series_name="涨跌价格出现次数",
             y_axis=hist_price.tolist(),
@@ -186,7 +186,7 @@ def draw_distribution_charts(stock_code='', stock_name='', price_changes=[], pri
         .set_global_opts(
             title_opts=opts.TitleOpts(title=f"开始日期={ucfg.stocks_analysis_start_date}", pos_left="right"),
             xaxis_opts=opts.AxisOpts(name="价格变化 (元)"),
-            yaxis_opts=opts.AxisOpts(name="出现次数_close_open"),
+            yaxis_opts=opts.AxisOpts(name="出现次数_当日相对于开盘价的涨跌"),
             tooltip_opts=opts.TooltipOpts(trigger="axis"),
         )
     )
@@ -194,7 +194,7 @@ def draw_distribution_charts(stock_code='', stock_name='', price_changes=[], pri
     # 价格分布图
     bar_price_m_o = (
         Bar()
-        .add_xaxis([f"{x:.1f}" for x in bin_centers_price_m_o])
+        .add_xaxis([f"{x:.2f}" for x in bin_centers_price_m_o])
         .add_yaxis(
             series_name="涨跌价格出现次数",
             y_axis=hist_price_m_o.tolist(),
@@ -202,7 +202,7 @@ def draw_distribution_charts(stock_code='', stock_name='', price_changes=[], pri
         )
         .set_global_opts(
             xaxis_opts=opts.AxisOpts(name="价格变化 (元)"),
-            yaxis_opts=opts.AxisOpts(name="出现次数_max_open"),
+            yaxis_opts=opts.AxisOpts(name="出现次数_距离开盘价的最大涨跌"),
             tooltip_opts=opts.TooltipOpts(trigger="axis"),
         )
     )   
@@ -210,15 +210,16 @@ def draw_distribution_charts(stock_code='', stock_name='', price_changes=[], pri
     # 价格分布图
     bar_price_m_m = (
         Bar()
-        .add_xaxis([f"{x:.1f}" for x in bin_centers_price_m_m])
+        .add_xaxis([f"{x:.2f}" for x in bin_centers_price_m_m])
         .add_yaxis(
             series_name="涨跌价格出现次数",
             y_axis=hist_price_m_m.tolist(),
             label_opts=opts.LabelOpts(is_show=False),
         )
         .set_global_opts(
+            title_opts=opts.TitleOpts(title=f"\n{stock_name}\n统计次数={len(price_changes)}", pos_left="left"),
             xaxis_opts=opts.AxisOpts(name="价格变化 (元)"),
-            yaxis_opts=opts.AxisOpts(name="出现次数_max_min"),
+            yaxis_opts=opts.AxisOpts(name="出现次数_最高价与最低价之差"),
             tooltip_opts=opts.TooltipOpts(trigger="axis"),
         )
     )      
@@ -244,26 +245,28 @@ def draw_distribution_charts(stock_code='', stock_name='', price_changes=[], pri
     grid_chart = Grid(
         init_opts=opts.InitOpts(
             width="1200px",
-            height="1800px",
+            height="1500px",
             animation_opts=opts.AnimationOpts(animation=False),
         )
     )
     grid_chart.add(
         bar_price,
-        grid_opts=opts.GridOpts(pos_left="10%", pos_right="8%", pos_top="1%", height="20%"),
+        grid_opts=opts.GridOpts(pos_left="10%", pos_right="5%", height="20%"),
     )
     grid_chart.add(
         bar_price_m_o,
-        grid_opts=opts.GridOpts(pos_left="10%", pos_right="8%", pos_top="26%", height="20%"),
+        grid_opts=opts.GridOpts(pos_left="10%", pos_right="5%", pos_top="30%", height="20%"),
     )
     grid_chart.add(
         bar_price_m_m,
-        grid_opts=opts.GridOpts(pos_left="10%", pos_right="8%", pos_top="52%", height="20%"),
+        grid_opts=opts.GridOpts(pos_left="10%", pos_right="5%", pos_top="55%", height="20%"),
     )        
+    ''' 
     grid_chart.add(
         bar_pct,
         grid_opts=opts.GridOpts(pos_left="10%", pos_right="8%", pos_top="77%", height="13%"),
     )
+    '''
 
     # 保存图表
     grid_chart.render(f'{show_templates_html_path}/{stock_name}_{stock_code}_price_analysis.html')
@@ -277,9 +280,17 @@ if __name__ == "__main__":
     '''
     stock_code = sys.argv[1]
     
-    #stock_code = '300006'  # 可以根据需要修改为其他股票代码 by test
-    start_date = ucfg.stocks_analysis_start_date
+    #stock_code = '300215'  # 可以根据需要修改为其他股票代码 by test
+    #start_date = '2026-01-01'  # 可以根据需要设置开始日期
+
     end_date = None  # 可以根据需要设置结束日期
+
+    if len(sys.argv) >= 3:
+        start_date = sys.argv[2]
+        if start_date == 'other' or start_date == '':
+            start_date = ucfg.stocks_analysis_start_date
+    if len(sys.argv) >= 4:
+        end_date = sys.argv[3]
     
     tdx_datas = tdx(stock_code)
     tdx_datas.getStockDayFile()

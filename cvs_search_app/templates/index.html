@@ -101,11 +101,20 @@
             <div  class="my-div">
                 <!-- action 指定提交到的路由，method 指定请求方式 -->
                 <form action="{{ url_for('showhtml') }}" method="POST">
+                    {% for item in start_date_items %}
+                        <div>
+                            <input type="checkbox" 
+                                name="start_date_key" 
+                                value="{{ item.id }}" 
+                                id="check_{{ item.id }}">
+                            <label for="check_{{ item.id }}">{{ item.name }}</label>
+                        </div>
+                    {% endfor %}                     
                     <div class="input-group" style="width: 600px; margin-top: 20px;">
                         <input type="text" name="search_key" placeholder="输入股票代码..." class="form-control">
                         <button type="submit" class="btn btn-primary" style="margin-left: 30px;">显示既存的K线图</button>
                     </div>
-                    <input type="checkbox" name="a_checkbox" value="1" id="check_1">
+                    <input type="checkbox" name="a_checkbox" value="1" id="check_1" checked>
                     <label for="check_1">仅清空生成过的K线图</label><br>
                     <label for="check_1">*勾选并输入代码则只显示输入的</label><br>
                 </form>

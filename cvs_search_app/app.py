@@ -84,6 +84,13 @@ show_html_items = [
     {'id': 'zjlx_rzrq_line', 'name': '主力资金流向 融资融券数据'}
 ]
 
+stock_price_analysis_start_date_items = [
+    {'id': 'other', 'name': '系统设定的开始日期'},
+    {'id': '2024-08-01', 'name': '本轮行情开始以来20240801'},
+    {'id': '2026-01-01', 'name': '2026年初以来20260101'},
+    {'id': '1990-01-01', 'name': '全部数据19900101'}
+]
+
 @app.route("/", methods=["GET", "POST"])
 def index():
     selected_script = None
@@ -138,11 +145,15 @@ def index():
                 output = result.stdout if result.returncode == 0 else f"错误: {result.stderr}"
                 if output == None or output.strip() == '':
                     output = '游资信息已经更新，请在上面输入查询内容或直接点击上面查询按钮。'                    
-                return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, htmlitems=show_html_items, script_output=output)
+                return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, htmlitems=show_html_items, 
+                                       start_date_items=stock_price_analysis_start_date_items,
+                                       script_output=output)
             except Exception as e:
-                return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, htmlitems=show_html_items, script_output=f"执行失败: {str(e)}")
+                return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, htmlitems=show_html_items,
+                                        start_date_items=stock_price_analysis_start_date_items,
+                                        script_output=f"执行失败: {str(e)}")
 
-    return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, htmlitems=show_html_items)
+    return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, htmlitems=show_html_items, start_date_items=stock_price_analysis_start_date_items)
 
 @app.route("/sortbydateandcode", methods=["GET", "POST"])
 def sortbydateandcode():
@@ -217,7 +228,7 @@ def trader_monthly_stats_separate():
         bar_charts = statistics_by_month_and_trader(aijinggu_csv_path, months_ago=18, separate_traders=True)
         
         if bar_charts is None or len(bar_charts) == 0:
-            return render_template("index.html", items=checkbox_items, vbtitems=strategy_items,  htmlitems=show_html_items,
+            return render_template("index.html", items=checkbox_items, vbtitems=strategy_items,  htmlitems=show_html_items, start_date_items=stock_price_analysis_start_date_items,
                                  script_output="生成直方图失败")
         
         # 生成HTML列表
@@ -227,7 +238,7 @@ def trader_monthly_stats_separate():
                              chart_count=len(charts_html),
                              script_output=f"游资月度净买入统计完成（最近24个月，共{len(charts_html)}个游资）")
     except Exception as e:
-        return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, htmlitems=show_html_items,
+        return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, htmlitems=show_html_items, start_date_items=stock_price_analysis_start_date_items,
                              script_output=f"执行失败: {str(e)}")
 
 @app.route("/trader_monthly_comparison", methods=["GET", "POST"])
@@ -242,6 +253,7 @@ def trader_monthly_comparison():
         
         if bar_charts is None or len(bar_charts) == 0:
             return render_template("index.html", items=checkbox_items, vbtitems=strategy_items,  htmlitems=show_html_items,
+                                   start_date_items=stock_price_analysis_start_date_items,
                                  script_output="生成直方图失败")
         
         # 生成HTML列表
@@ -252,6 +264,7 @@ def trader_monthly_comparison():
                              script_output=f"游资月度对比统计完成（最近12个月，共{len(charts_html)}个月份）")
     except Exception as e:
         return render_template("index.html", items=checkbox_items, vbtitems=strategy_items,  htmlitems=show_html_items,
+                               start_date_items=stock_price_analysis_start_date_items,
                              script_output=f"执行失败: {str(e)}")
 
 #####  ################################ 使用策略 从配置文件中 筛选出符合条件的股票 ##################################################
@@ -321,7 +334,9 @@ def vectorbt_bt_strategy_D_W():
             sum_result, pf = strategy_instance.simple_backtest()
 
         if pf is None:
-            return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, htmlitems=show_html_items, script_output=f"回测失败: {str(sum_result)}")  
+            return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, htmlitems=show_html_items,
+                                   start_date_items=stock_price_analysis_start_date_items,
+                                   script_output=f"回测失败: {str(sum_result)}")  
     
         #显示该股票的回测结果图
         stock_back_test_div = pf.plot().to_html(include_plotlyjs='cdn')
@@ -333,7 +348,9 @@ def vectorbt_bt_strategy_D_W():
         return render_template("vbt_bt_result.html", files_list=html_files, results_detail=backtest_detail.to_html(classes="table"), back_test_div=stock_back_test_div,
                                script_output=f"{str(sum_result)}")
     except Exception as e:
-        return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, htmlitems=show_html_items, script_output=f"执行失败: {str(e)}")
+        return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, htmlitems=show_html_items, 
+                               start_date_items=stock_price_analysis_start_date_items,
+                               script_output=f"执行失败: {str(e)}")
 
 #####  ################################ show multiple stock html ##################################################
 # 将批处理生成的html，读取 templates/stockhtml 文件夹下的所有 HTML 文件，并显示在一个页面中
@@ -345,6 +362,8 @@ def showhtml():
     folder_path = os.path.join(current_dir, 'templates', ucfg.common_html_folder_name) # 目标文件夹路径
     extension = '.html' # 指定后缀名
     output = ''
+
+    start_date = request.form.get("start_date_key")
   
     show_code = request.form.get("search_key")
     if show_code is not None and show_code != '':
@@ -369,7 +388,7 @@ def showhtml():
                 )
                 output = result.stdout if result.returncode == 0 else f"错误: {result.stderr}"
                 result = subprocess.run(
-                    ["python", scripts_mystocks_price_analysis_path , list_id], 
+                    ["python", scripts_mystocks_price_analysis_path , list_id, start_date], 
                     capture_output=True, 
                     text=True
                 )
