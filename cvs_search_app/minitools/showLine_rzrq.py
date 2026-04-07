@@ -73,7 +73,7 @@ def split_data(data, flag='sh'):
             category_data.append(tick[0]) # 日期
             # convert volume to millions and round to 2 decimal places
             values.append(round(float(tick[5]) / 100, 2))  # 成交量
-            prices.append(round(float(tick[6]) / 100000, 2)) # 市场金额
+            prices.append(round(float(tick[6]) / 1000000, 2)) # 市场金额  实际上是除以1000000了，单位是亿了
             closes.append(float(tick[2])) # 收盘价
     if flag == 'sh':
         sh_all_data.update({"categoryData": all_category_date, "values": all_values, "prices": all_prices, "closes": all_closes})
@@ -114,6 +114,7 @@ def add_string_to_csv_memory(csv_file_path):
 
 def line_rzrq_sh_sz_value(sh_data, sz_data, rzrq_data=None) -> Line:
     sh_sz_values = [sh + sz for sh, sz in zip(sh_data['values'], sz_data['values'])]
+    sh_sz_prices = [sh + sz for sh, sz in zip(sh_data['prices'], sz_data['prices'])]
     c = (Line()
         .add_xaxis(xaxis_data=line_date)
         .add_yaxis(
@@ -142,6 +143,15 @@ def line_rzrq_sh_sz_value(sh_data, sz_data, rzrq_data=None) -> Line:
             itemstyle_opts=opts.ItemStyleOpts(color="#22D44E"),  # 添加这一行定义颜色
             label_opts=opts.LabelOpts(is_show=False),
         )
+        .add_yaxis(
+            series_name="上，深综金额",
+            y_axis=sh_sz_prices,
+            is_smooth=True,
+            is_connect_nones=True,
+            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5, type_="dashed"), # 添加虚线样式
+            itemstyle_opts=opts.ItemStyleOpts(color="#EC1111"),  # 添加这一行定义颜色
+            label_opts=opts.LabelOpts(is_show=False),
+        )        
         .set_global_opts(tooltip_opts=opts.TooltipOpts(trigger="axis"),
                                 yaxis_opts=opts.AxisOpts(
                                     type_="value",
@@ -149,7 +159,7 @@ def line_rzrq_sh_sz_value(sh_data, sz_data, rzrq_data=None) -> Line:
                                     splitline_opts=opts.SplitLineOpts(is_show=True),
                                 ),
                                 xaxis_opts=opts.AxisOpts(type_="category", boundary_gap=False),
-                                datazoom_opts=[DataZoomOpts()],  # 添加缩放功能
+                                datazoom_opts=[DataZoomOpts(), DataZoomOpts(type_="inside")],  # 添加缩放功能，包括鼠标滑轮缩放
                          )        
     )
     return c
@@ -204,7 +214,7 @@ def line_rzrq_sh_value(sh_data, sz_data, rzrq_data=None) -> Line:
                                     splitline_opts=opts.SplitLineOpts(is_show=True),
                                 ),
                                 xaxis_opts=opts.AxisOpts(type_="category", boundary_gap=False),
-                                datazoom_opts=[DataZoomOpts()],  # 添加缩放功能
+                                datazoom_opts=[DataZoomOpts(), DataZoomOpts(type_="inside")],  # 添加缩放功能，包括鼠标滑轮缩放
                          )         
     )
     return c
@@ -259,7 +269,7 @@ def line_rzrq_sz_value(sh_data, sz_data, rzrq_data=None) -> Line:
                                     splitline_opts=opts.SplitLineOpts(is_show=True),
                                 ),
                                 xaxis_opts=opts.AxisOpts(type_="category", boundary_gap=False),
-                                datazoom_opts=[DataZoomOpts()],  # 添加缩放功能
+                                datazoom_opts=[DataZoomOpts(), DataZoomOpts(type_="inside")],  # 添加缩放功能，包括鼠标滑轮缩放
                          )         
     )
     return c
@@ -307,7 +317,7 @@ def line_sh_all(sh_data) -> Line:
                                     splitline_opts=opts.SplitLineOpts(is_show=True),
                                 ),
                                 xaxis_opts=opts.AxisOpts(type_="category", boundary_gap=False),
-                                datazoom_opts=[DataZoomOpts()],  # 添加缩放功能
+                                datazoom_opts=[DataZoomOpts(), DataZoomOpts(type_="inside")],  # 添加缩放功能，包括鼠标滑轮缩放
                          )         
     )
     return c
@@ -354,7 +364,7 @@ def line_sz_all(sz_data) -> Line:
                                     splitline_opts=opts.SplitLineOpts(is_show=True),
                                 ),
                                 xaxis_opts=opts.AxisOpts(type_="category", boundary_gap=False),
-                                datazoom_opts=[DataZoomOpts()],  # 添加缩放功能
+                                datazoom_opts=[DataZoomOpts(), DataZoomOpts(type_="inside")],  # 添加缩放功能，包括鼠标滑轮缩放
                          )         
     )
     # 将注释添加到HTML模板中
