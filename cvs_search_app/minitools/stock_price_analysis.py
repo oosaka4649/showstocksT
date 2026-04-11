@@ -67,23 +67,75 @@ def calculate_price_changes(data, start_date=None, end_date=None):
     
     return price_changes, price_changes_pct, price_max_open_pct, price_max_min_pct, price_changes_with_dates, price_max_open_with_dates, price_max_min_with_dates, first_open_price
 
+
+def calculate_price_changes_by_bfclose(data, start_date=None, end_date=None):
+    '''
+    计算相对于前收盘价格的涨跌价格和涨跌幅
+    data: 股票数据列表，格式 [日期, 开盘, 收盘, 最低, 最高, 成交量]
+    start_date: 开始日期 (YYYY-MM-DD)
+    end_date: 结束日期 (YYYY-MM-DD)
+    返回：涨跌价格列表、涨跌幅列表
+    '''
+
+    before_close_price = None  # 第一个有效的前收盘价，用于计算基准价格，用于确定区间宽度
+    price_changes = []  # 涨跌价格：收盘 - 前收盘价
+    price_max_close_pct = []  # 记录相对于前收盘价的最大涨跌幅，后续可以用于调整图表范围
+    price_min_close_pct = []  # 记录相对于前收盘价的最小涨跌幅，后续可以用于调整图表范围
+    price_changes_with_dates = []  # 包含日期的涨跌价格列表：[(change, date_str), ...]
+    price_max_close_with_dates = []  # 包含日期的 max_close 列表：[(max_close, date_str), ...]
+    price_min_close_with_dates = []  # 包含日期的 min_close 列表：[(min_close, date_str), ...]
+    first_close_price = None  # 第一个有效的前收盘价，用于确定区间宽度
+
+    for tick in data:
+        date_str = tick[0]
+        if start_date and date_str < start_date:
+            continue
+        if end_date and date_str > end_date:
+            continue
+        
+        open_price = float(tick[1])
+        close_price = float(tick[2])
+        high_price = float(tick[4])
+        low_price = float(tick[3])
+        
+        if open_price != 0:  # 避免除零错误
+            if before_close_price is None:
+                before_close_price = close_price  #如果是第一个，为了逻辑简单，则用第一个收盘价作为基准价格
+                first_close_price = close_price
+               
+            change = close_price - before_close_price
+            price_changes.append(change)
+            price_changes_with_dates.append((change, date_str))
+
+            price_max_close_pct.append(high_price - before_close_price)  # 记录相对于前收盘价的最大涨跌价格
+            price_max_close_with_dates.append((high_price - before_close_price, date_str))
+            price_min_close_pct.append(low_price - before_close_price)  # 记录相对于前收盘价的最小涨跌价格
+            price_min_close_with_dates.append((low_price - before_close_price, date_str))
+
+            
+            before_close_price = close_price  # 记录前收盘价，用于下一次计算
+    
+    return price_changes, price_max_close_pct, price_min_close_pct, price_changes_with_dates, price_max_close_with_dates, price_min_close_with_dates, first_close_price
+
+
+def get_bin_width(price):
+    if price < 10:
+        return 0.1
+    elif price < 20:
+        return 0.2
+    elif price < 50:
+        return 0.3        
+    elif price < 150:
+        return 0.5
+    elif price < 250:
+        return 0.8      
+    else:
+        return 1
+        
 def draw_distribution_charts(stock_code='', stock_name='', price_changes=[], price_changes_pct=[], price_max_open_pct=[], price_max_min_pct=[], price_changes_with_dates=None, price_max_open_with_dates=None, price_max_min_with_dates=None, first_open_price=None):
     '''
     绘制涨跌价格和涨跌幅分布图表（直方图）
     '''
-    def get_bin_width(price):
-        if price < 10:
-            return 0.1
-        elif price < 20:
-            return 0.2
-        elif price < 50:
-            return 0.3        
-        elif price < 150:
-            return 0.5
-        elif price < 250:
-            return 0.8      
-        else:
-            return 1
     # 涨跌价格分布：动态区间宽度
     if price_changes:
         min_price = min(price_changes)
@@ -272,6 +324,165 @@ def draw_distribution_charts(stock_code='', stock_name='', price_changes=[], pri
     grid_chart.render(f'{show_templates_html_path}/{stock_name}_{stock_code}_price_analysis.html')
     grid_chart.render(f'{show_templates_comm_html_path}/stock_price_kline.html')    
 
+
+def draw_distribution_charts_by_bfclose(start_date, stock_code='', stock_name='', price_changes=[], price_max_close_pct=[], price_min_close_pct=[], price_changes_with_dates=None, price_max_close_with_dates=None, price_min_close_with_dates=None, first_close_price=None):
+    '''
+    绘制涨跌价格和涨跌幅分布图表（直方图）
+    '''
+    # 涨跌价格分布：动态区间宽度
+    if price_changes:
+        min_price = min(price_changes)
+        max_price = max(price_changes)
+        bin_width = get_bin_width(first_close_price) if first_close_price is not None else 0.1
+        bins_price = np.arange(np.floor(min_price / bin_width) * bin_width, np.ceil(max_price / bin_width) * bin_width + bin_width, bin_width)
+        hist_price, bin_edges_price = np.histogram(price_changes, bins=bins_price)
+        bin_centers_price = (bin_edges_price[:-1] + bin_edges_price[1:]) / 2
+
+        # 保留每个区间内的日期
+        bin_to_dates = {}
+        if price_changes_with_dates:
+            for change, date_str in price_changes_with_dates:
+                # 找到change对应的bin索引
+                bin_index = np.digitize(change, bins_price) - 1
+                if 0 <= bin_index < len(bin_centers_price):
+                    bin_center = bin_centers_price[bin_index]
+                    if bin_center not in bin_to_dates:
+                        bin_to_dates[bin_center] = []
+                    bin_to_dates[bin_center].append(date_str)
+            # 打印或保存bin_to_dates
+            print("\n收盘对于前收盘价-每个价格区间内的日期：")
+            for bin_center, dates in sorted(bin_to_dates.items()):
+                print(f"区间中心 {bin_center:.2f} 元，个数{len(dates)}: {dates}")
+    else:
+        bin_centers_price = []
+        hist_price = []
+
+    if price_max_close_pct:
+        min_price = min(price_max_close_pct)
+        max_price = max(price_max_close_pct)
+        bin_width = get_bin_width(first_close_price) if first_close_price is not None else 0.1
+        bins_price = np.arange(np.floor(min_price / bin_width) * bin_width, np.ceil(max_price / bin_width) * bin_width + bin_width, bin_width)
+        hist_price_m_c, bin_edges_price_m_c = np.histogram(price_max_close_pct, bins=bins_price)
+        bin_centers_price_m_c = (bin_edges_price_m_c[:-1] + bin_edges_price_m_c[1:]) / 2
+
+        # 保留每个区间内的日期 for price_max_close_pct
+        bin_to_dates_m_o = {}
+        if price_max_close_with_dates:
+            for change, date_str in price_max_close_with_dates:
+                bin_index = np.digitize(change, bins_price) - 1
+                if 0 <= bin_index < len(bin_centers_price_m_c):
+                    bin_center = bin_centers_price_m_c[bin_index]
+                    if bin_center not in bin_to_dates_m_o:
+                        bin_to_dates_m_o[bin_center] = []
+                    bin_to_dates_m_o[bin_center].append(date_str)
+            print("\n最高价与前收盘价之差-每个价格区间内的日期：")
+            for bin_center, dates in sorted(bin_to_dates_m_o.items()):
+                print(f"区间中心 {bin_center:.2f} 元，个数{len(dates)}: {dates}")
+    else:
+        bin_centers_price_m_c = []
+        hist_price_m_c = []
+
+    if price_min_close_pct:
+        min_price = min(price_min_close_pct)
+        max_price = max(price_min_close_pct)
+        bin_width = get_bin_width(first_close_price) if first_close_price is not None else 0.1
+        bins_price = np.arange(np.floor(min_price / bin_width) * bin_width, np.ceil(max_price / bin_width) * bin_width + bin_width, bin_width)
+        hist_price_m_m, bin_edges_price_m_m = np.histogram(price_min_close_pct, bins=bins_price)
+        bin_centers_price_m_m = (bin_edges_price_m_m[:-1] + bin_edges_price_m_m[1:]) / 2
+
+        # 保留每个区间内的日期 for price_min_close_pct
+        bin_to_dates_m_m = {}
+        if price_min_close_with_dates:
+            for change, date_str in price_min_close_with_dates:
+                bin_index = np.digitize(change, bins_price) - 1
+                if 0 <= bin_index < len(bin_centers_price_m_m):
+                    bin_center = bin_centers_price_m_m[bin_index]
+                    if bin_center not in bin_to_dates_m_m:
+                        bin_to_dates_m_m[bin_center] = []
+                    bin_to_dates_m_m[bin_center].append(date_str)
+            print("\n最低价与前收盘价之差-每个价格区间内的日期：")
+            for bin_center, dates in sorted(bin_to_dates_m_m.items()):
+                print(f"区间中心 {bin_center:.2f} 元，个数{len(dates)}: {dates}")
+    else:
+        bin_centers_price_m_m = []
+        hist_price_m_m = []        
+
+    # 价格分布图
+    bar_price = (
+        Bar()
+        .add_xaxis([f"{x:.2f}" for x in bin_centers_price])
+        .add_yaxis(
+            series_name="涨跌价格出现次数",
+            y_axis=hist_price.tolist(),
+            label_opts=opts.LabelOpts(is_show=False),
+        )
+        .set_global_opts(
+            title_opts=opts.TitleOpts(title=f"开始日期={start_date}", pos_left="right"),
+            xaxis_opts=opts.AxisOpts(name="价格变化 (元)"),
+            yaxis_opts=opts.AxisOpts(name="出现次数_当日相对前收盘价的涨跌"),
+            tooltip_opts=opts.TooltipOpts(trigger="axis"),
+        )
+    )
+
+    # 价格分布图
+    bar_price_m_c = (
+        Bar()
+        .add_xaxis([f"{x:.2f}" for x in bin_centers_price_m_c])
+        .add_yaxis(
+            series_name="涨跌价格出现次数",
+            y_axis=hist_price_m_c.tolist(),
+            label_opts=opts.LabelOpts(is_show=False),
+        )
+        .set_global_opts(
+            xaxis_opts=opts.AxisOpts(name="价格变化 (元)"),
+            yaxis_opts=opts.AxisOpts(name="出现次数_前收盘价与最高价之差"),
+            tooltip_opts=opts.TooltipOpts(trigger="axis"),
+        )
+    )   
+
+    # 价格分布图
+    bar_price_m_m = (
+        Bar()
+        .add_xaxis([f"{x:.2f}" for x in bin_centers_price_m_m])
+        .add_yaxis(
+            series_name="涨跌价格出现次数",
+            y_axis=hist_price_m_m.tolist(),
+            label_opts=opts.LabelOpts(is_show=False),
+        )
+        .set_global_opts(
+            title_opts=opts.TitleOpts(title=f"\n{stock_name}\n统计次数={len(price_changes)}", pos_left="left"),
+            xaxis_opts=opts.AxisOpts(name="价格变化 (元)"),
+            yaxis_opts=opts.AxisOpts(name="出现次数_前收盘价与最低价之差"),
+            tooltip_opts=opts.TooltipOpts(trigger="axis"),
+        )
+    )      
+
+    # 合并图表
+    grid_chart = Grid(
+        init_opts=opts.InitOpts(
+            width="1200px",
+            height="1500px",
+            animation_opts=opts.AnimationOpts(animation=False),
+        )
+    )
+    grid_chart.add(
+        bar_price,
+        grid_opts=opts.GridOpts(pos_left="10%", pos_right="5%", height="20%"),
+    )
+    grid_chart.add(
+        bar_price_m_c,
+        grid_opts=opts.GridOpts(pos_left="10%", pos_right="5%", pos_top="30%", height="20%"),
+    )
+    grid_chart.add(
+        bar_price_m_m,
+        grid_opts=opts.GridOpts(pos_left="10%", pos_right="5%", pos_top="55%", height="20%"),
+    )        
+
+
+    # 保存图表
+    grid_chart.render(f'{show_templates_html_path}/{stock_name}_{stock_code}_price_analysis.html')
+    grid_chart.render(f'{show_templates_comm_html_path}/stock_price_kline.html')        
+
 if __name__ == "__main__":
     '''
     if len(sys.argv) < 3:
@@ -280,7 +491,7 @@ if __name__ == "__main__":
     '''
     stock_code = sys.argv[1]
     
-    #stock_code = '300215'  # 可以根据需要修改为其他股票代码 by test
+    #stock_code = '301246'  # 可以根据需要修改为其他股票代码 by test
     #start_date = '2026-01-01'  # 可以根据需要设置开始日期
 
     end_date = None  # 可以根据需要设置结束日期
@@ -297,8 +508,11 @@ if __name__ == "__main__":
     tdx_datas.creatstocKDataList()
     chart_data = tdx_datas.getTDXStockKDatas()  # 获取日线数据
     
-    price_changes, price_changes_pct, price_max_open_pct, price_max_min_pct, price_changes_with_dates, price_max_open_with_dates, price_max_min_with_dates, first_open_price = calculate_price_changes(chart_data, start_date)
+    #price_changes, price_changes_pct, price_max_open_pct, price_max_min_pct, price_changes_with_dates, price_max_open_with_dates, price_max_min_with_dates, first_open_price = calculate_price_changes(chart_data, start_date)
     
-    draw_distribution_charts(stock_code, tdx_datas.stock_name, price_changes, price_changes_pct, price_max_open_pct, price_max_min_pct, price_changes_with_dates, price_max_open_with_dates, price_max_min_with_dates, first_open_price)
+    #draw_distribution_charts(stock_code, tdx_datas.stock_name, price_changes, price_changes_pct, price_max_open_pct, price_max_min_pct, price_changes_with_dates, price_max_open_with_dates, price_max_min_with_dates, first_open_price)
+
+    price_changes, price_max_close_pct, price_min_close_pct, price_changes_with_dates, price_max_close_with_dates, price_min_close_with_dates, first_close_price = calculate_price_changes_by_bfclose(chart_data, start_date)
+    draw_distribution_charts_by_bfclose(start_date, stock_code, tdx_datas.stock_name, price_changes, price_max_close_pct, price_min_close_pct, price_changes_with_dates, price_max_close_with_dates, price_min_close_with_dates, first_close_price)
     
     print("分析完成，图表已生成, 统计天数:", len(price_changes))
