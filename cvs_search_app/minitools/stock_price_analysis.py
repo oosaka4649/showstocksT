@@ -2,7 +2,8 @@ from tdxcomm import TDXData as tdx
 import user_config as ucfg
 
 from pyecharts import options as opts
-from pyecharts.charts import Bar, Grid
+from pyecharts.charts import Bar, Pie, Grid
+from pyecharts.commons.utils import JsCode
 
 import numpy as np
 from datetime import datetime
@@ -407,81 +408,55 @@ def draw_distribution_charts_by_bfclose(start_date, stock_code='', stock_name=''
         bin_centers_price_m_m = []
         hist_price_m_m = []        
 
-    # 价格分布图
+    def new_label_opts():
+        return opts.LabelOpts(formatter=JsCode(fn), position="center")
+    # 价格分布图 - 改为饼图
+    pie_data = [(f"{x:.2f}", int(y)) for x, y in zip(bin_centers_price, hist_price)]
+    pie_data_m_c = [(f"{x:.2f}", int(y)) for x, y in zip(bin_centers_price_m_c, hist_price_m_c)]
+    pie_data_m_m = [(f"{x:.2f}", int(y)) for x, y in zip(bin_centers_price_m_m, hist_price_m_m)]
     bar_price = (
-        Bar()
-        .add_xaxis([f"{x:.2f}" for x in bin_centers_price])
-        .add_yaxis(
-            series_name="涨跌价格出现次数",
-            y_axis=hist_price.tolist(),
-            label_opts=opts.LabelOpts(is_show=False),
+        Pie()
+        .add(
+            series_name="涨跌价格分布",
+            data_pair=pie_data,
+            center=["20%", "53%"],
+            radius=["15%", "70%"], #饼图的半径调整为 内径15% 外径60%，以便显示更多的区间
+            # 小于这个角度（0 ~ 360）的扇区，不显示标签（label 和 labelLine）。
+            #    min_show_label_angle: types.Numeric = 0,
+            min_show_label_angle = 1,            
+            label_opts=opts.LabelOpts(formatter="{b}: {c}", position="outside"),
+        )
+        .add(
+            series_name="最高价相对前收盘价分布",
+            data_pair=pie_data_m_c,
+            center=["50%", "53%"],
+            radius=["15%", "70%"],
+            # 小于这个角度（0 ~ 360）的扇区，不显示标签（label 和 labelLine）。
+            #    min_show_label_angle: types.Numeric = 0,
+            min_show_label_angle = 1,
+            label_opts=opts.LabelOpts(formatter="{b}: {c}", position="outside"),
+        )
+        .add(
+            series_name="最低价相对前收盘价分布",
+            data_pair=pie_data_m_m,
+            center=["80%", "53%"],
+            radius=["15%", "70%"],
+            # 小于这个角度（0 ~ 360）的扇区，不显示标签（label 和 labelLine）。
+            #    min_show_label_angle: types.Numeric = 0,
+            min_show_label_angle = 1,
+            label_opts=opts.LabelOpts(formatter="{b}: {c}", position="outside"),
         )
         .set_global_opts(
-            title_opts=opts.TitleOpts(title=f"开始日期={start_date}", pos_left="right"),
-            xaxis_opts=opts.AxisOpts(name="价格变化 (元)"),
-            yaxis_opts=opts.AxisOpts(name="出现次数_当日相对前收盘价的涨跌"),
-            tooltip_opts=opts.TooltipOpts(trigger="axis"),
+            title_opts=opts.TitleOpts(title=f"{stock_name}---统计次数={len(price_changes)}---开始日期={start_date}", pos_left="center"),
+            #tooltip_opts=opts.TooltipOpts(trigger="item"),
+            legend_opts=opts.LegendOpts(pos_bottom="1px"),
         )
     )
-
-    # 价格分布图
-    bar_price_m_c = (
-        Bar()
-        .add_xaxis([f"{x:.2f}" for x in bin_centers_price_m_c])
-        .add_yaxis(
-            series_name="涨跌价格出现次数",
-            y_axis=hist_price_m_c.tolist(),
-            label_opts=opts.LabelOpts(is_show=False),
-        )
-        .set_global_opts(
-            xaxis_opts=opts.AxisOpts(name="价格变化 (元)"),
-            yaxis_opts=opts.AxisOpts(name="出现次数_前收盘价与最高价之差"),
-            tooltip_opts=opts.TooltipOpts(trigger="axis"),
-        )
-    )   
-
-    # 价格分布图
-    bar_price_m_m = (
-        Bar()
-        .add_xaxis([f"{x:.2f}" for x in bin_centers_price_m_m])
-        .add_yaxis(
-            series_name="涨跌价格出现次数",
-            y_axis=hist_price_m_m.tolist(),
-            label_opts=opts.LabelOpts(is_show=False),
-        )
-        .set_global_opts(
-            title_opts=opts.TitleOpts(title=f"\n{stock_name}\n统计次数={len(price_changes)}", pos_left="left"),
-            xaxis_opts=opts.AxisOpts(name="价格变化 (元)"),
-            yaxis_opts=opts.AxisOpts(name="出现次数_前收盘价与最低价之差"),
-            tooltip_opts=opts.TooltipOpts(trigger="axis"),
-        )
-    )      
-
-    # 合并图表
-    grid_chart = Grid(
-        init_opts=opts.InitOpts(
-            width="1200px",
-            height="1500px",
-            animation_opts=opts.AnimationOpts(animation=False),
-        )
-    )
-    grid_chart.add(
-        bar_price,
-        grid_opts=opts.GridOpts(pos_left="10%", pos_right="5%", height="20%"),
-    )
-    grid_chart.add(
-        bar_price_m_c,
-        grid_opts=opts.GridOpts(pos_left="10%", pos_right="5%", pos_top="30%", height="20%"),
-    )
-    grid_chart.add(
-        bar_price_m_m,
-        grid_opts=opts.GridOpts(pos_left="10%", pos_right="5%", pos_top="55%", height="20%"),
-    )        
-
 
     # 保存图表
-    grid_chart.render(f'{show_templates_html_path}/{stock_name}_{stock_code}_price_analysis.html')
-    grid_chart.render(f'{show_templates_comm_html_path}/stock_price_kline.html')        
+    bar_price.render(f'{show_templates_comm_html_path}/stock_price_kline.html')
+    bar_price.render(f'{show_templates_html_path}/{stock_name}_{stock_code}_price_analysis.html')
+
 
 if __name__ == "__main__":
     '''
@@ -491,7 +466,7 @@ if __name__ == "__main__":
     '''
     stock_code = sys.argv[1]
     
-    #stock_code = '301246'  # 可以根据需要修改为其他股票代码 by test
+    #stock_code = '300215'  # 可以根据需要修改为其他股票代码 by test
     #start_date = '2026-01-01'  # 可以根据需要设置开始日期
 
     end_date = None  # 可以根据需要设置结束日期
