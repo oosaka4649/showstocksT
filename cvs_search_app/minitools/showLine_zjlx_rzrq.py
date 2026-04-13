@@ -204,10 +204,10 @@ def line_zjlx_standardize_sh_sz_value(zjlx_data, rzrq_data) -> Line:
             label_opts=opts.LabelOpts(is_show=False),
         )        
         .add_yaxis(
-            series_name="主力净流入",
+            series_name="主力净流入-汇总",
             y_axis=tdx.standardize(zjlx_data['main']),
             is_smooth=True,
-            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
+            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5, type_="dashed"),
             itemstyle_opts=opts.ItemStyleOpts(color="#0000FF"),  # 添加这一行定义颜色
             label_opts=opts.LabelOpts(is_show=False),
         )
@@ -289,7 +289,7 @@ def chart_table_data(zjlx_data=None, rzrq_data=None):
 
     tab = Tab()
 
-    tab.add(line_zjlx_sh_sz_value(zjlx_data), "大盘资金流向与上综深综量对比-没有累计")
+    tab.add(line_zjlx_sh_sz_value(zjlx_data), "大盘资金流向与上综深综量对比-原始值")
     tab.add(line_zjlx_standardize_sh_sz_value(zjlx_data, rzrq_data), "融资和大盘资金流向与上综深综量对比-标准化")
     tab.render(f'{show_templates_comm_html_path}/zjlx_rzrq_line.html')
 
