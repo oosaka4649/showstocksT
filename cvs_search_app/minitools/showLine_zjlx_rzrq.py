@@ -125,10 +125,10 @@ def line_zjlx_sh_sz_value(zjlx_data) -> Line:
     c = (Line()
         .add_xaxis(xaxis_data=zjlx_date)
         .add_yaxis(
-            series_name="主力净流入",
+            series_name="主力净流入-汇总",
             y_axis=zjlx_data['main'],
             is_smooth=True,
-            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
+            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5, type_="dashed"),
             itemstyle_opts=opts.ItemStyleOpts(color="#0000FF"),  # 添加这一行定义颜色
             label_opts=opts.LabelOpts(is_show=False),
         )
