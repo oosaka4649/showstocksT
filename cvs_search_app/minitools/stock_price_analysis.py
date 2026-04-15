@@ -419,7 +419,7 @@ def draw_distribution_charts_by_bfclose(start_date, stock_code='', stock_name=''
         .add(
             series_name="涨跌价格分布",
             data_pair=pie_data,
-            center=["20%", "53%"],
+            center=["20%", "53%"], #饼图的中心位置坐标，调整为左侧，以便显示更多的区间
             radius=["15%", "70%"], #饼图的半径调整为 内径15% 外径60%，以便显示更多的区间
             # 小于这个角度（0 ~ 360）的扇区，不显示标签（label 和 labelLine）。
             #    min_show_label_angle: types.Numeric = 0,
