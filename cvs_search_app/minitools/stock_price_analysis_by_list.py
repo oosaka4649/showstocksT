@@ -272,7 +272,11 @@ def draw_distribution_charts_by_bfclose(start_date, stock_code='', stock_name=''
         )
         .set_global_opts(
             title_opts=opts.TitleOpts(title=f"{stock_name}---统计次数={len(price_changes)}---开始日期={start_date}", pos_left="center"),
-            tooltip_opts=opts.TooltipOpts(trigger="item", formatter=JsCode("function(params){ return params.seriesName + '<br/>' + params.name + ': ' + params.value + '<br/>日期: ' + params.data.dates.join(', ')+ '<br/>差价: ' + params.data.values.join(', '); }")),
+            tooltip_opts=opts.TooltipOpts(trigger="item", formatter=JsCode("function(params){ info = '<br/>日期: --------- 差价:' ;" \
+            " for (let i = 0; i < params.data.values.length; i++) { " \
+            " info +='<br/>' +  params.data.dates[i] + ': ' + params.data.values[i] ;" \
+            " } " \
+            " return params.seriesName + '<br/>' + params.name + ': ' + params.value + '<br/>' + info ; }")),
             legend_opts=opts.LegendOpts(pos_bottom="1px"),
         )
         .set_series_opts(label_opts=opts.LabelOpts(formatter="{b}: {c}"))
