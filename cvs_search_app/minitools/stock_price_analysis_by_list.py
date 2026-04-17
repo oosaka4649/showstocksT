@@ -226,42 +226,23 @@ def page_simple_layout(page, chart_data, start_date, stock_code, tdx_datas):
         draw_distribution_charts_by_bfclose(start_date, stock_code, tdx_datas.stock_name, price_changes, price_max_close_pct, price_min_close_pct, price_changes_with_dates, price_max_close_with_dates, price_min_close_with_dates, first_close_price)    
     )
 
-    print("分析完成，图表已生成, 统计天数:", len(price_changes))    
+    print("分析完成，图表已生成, 统计天数:", len(price_changes))
+    return len(price_changes)
 
 def main():
-    stock_code = '300215'  # 可以根据需要修改为其他股票代码 by test
-    start_date = '2026-01-06'  # 可以根据需要设置开始日期
-    
+    start_date = '2026-04-06'  # 可以根据需要设置开始日期
+    price_day_length = 0
     page = Page(layout=Page.SimplePageLayout)
     for stock_code in ucfg.my_stocks_min_max_list:
         tdx_datas = tdx(stock_code)
         tdx_datas.getStockDayFile()
         tdx_datas.creatstocKDataList()
         chart_data = tdx_datas.getTDXStockKDatas()  # 获取日线数据
-        page_simple_layout(page,chart_data, start_date, stock_code, tdx_datas)
+        price_day_length = page_simple_layout(page,chart_data, start_date, stock_code, tdx_datas)
 
     # 保存图表
-    page.render(f'{show_templates_html_path}/price_analysis-list.html')
+    page.render(f'{show_templates_html_path}/{price_day_length}_price_analysis-list.html')
 
 if __name__ == "__main__":
-    '''
-    if len(sys.argv) < 3:
-        print("用法: python stock_price_analysis.py <股票代码> <开始日期 YYYY-MM-DD> <结束日期 YYYY-MM-DD>")
-        sys.exit(1)
-    '''
-    #stock_code = sys.argv[1]
-    
-    stock_code = '300215'  # 可以根据需要修改为其他股票代码 by test
-    start_date = '2026-01-06'  # 可以根据需要设置开始日期
-
-    end_date = None  # 可以根据需要设置结束日期
-
-    if len(sys.argv) >= 3:
-        start_date = sys.argv[2]
-        if start_date == 'other' or start_date == '':
-            start_date = ucfg.stocks_analysis_start_date
-    if len(sys.argv) >= 4:
-        end_date = sys.argv[3]
-
     main()
     
