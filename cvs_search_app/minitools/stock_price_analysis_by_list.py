@@ -2,7 +2,7 @@ from tdxcomm import TDXData as tdx
 import user_config as ucfg
 
 from pyecharts import options as opts
-from pyecharts.charts import Bar, Pie, Grid
+from pyecharts.charts import Bar, Pie, Page, Grid
 from pyecharts.commons.utils import JsCode
 
 import numpy as np
@@ -150,7 +150,7 @@ def create_pie_data_and_custom(bin_centers, hist, bin_to_dates, bin_to_dates_Val
     return pie_data, data_custom
     
 
-def draw_distribution_charts_by_bfclose(start_date, stock_code='', stock_name='', price_changes=[], price_max_close_pct=[], price_min_close_pct=[], price_changes_with_dates=None, price_max_close_with_dates=None, price_min_close_with_dates=None, first_close_price=None):
+def draw_distribution_charts_by_bfclose(start_date, stock_code='', stock_name='', price_changes=[], price_max_close_pct=[], price_min_close_pct=[], price_changes_with_dates=None, price_max_close_with_dates=None, price_min_close_with_dates=None, first_close_price=None) -> Pie:
     '''
     绘制涨跌价格和涨跌幅分布图表（直方图）
     '''
@@ -184,7 +184,7 @@ def draw_distribution_charts_by_bfclose(start_date, stock_code='', stock_name=''
         .add(
             series_name="最高价相对前收盘价分布",
             data_pair=data_custom_m_c,
-            center=["35%", "63%"], #饼图的中心位置坐标，调整为左侧，以便显示更多的区间
+            center=["45%", "63%"], #饼图的中心位置坐标，调整为左侧，以便显示更多的区间
             radius=["15%", "70%"], #饼图的半径调整为 内径15% 外径60%，以便显示更多的区间
             # 小于这个角度（0 ~ 360）的扇区，不显示标签（label 和 labelLine）。
             #    min_show_label_angle: types.Numeric = 0,
@@ -194,7 +194,7 @@ def draw_distribution_charts_by_bfclose(start_date, stock_code='', stock_name=''
         .add(
             series_name="最低价相对前收盘价分布",
             data_pair=data_custom_m_m,
-            center=["70%", "63%"],
+            center=["75%", "63%"],
             radius=["15%", "70%"],
             # 小于这个角度（0 ~ 360）的扇区，不显示标签（label 和 labelLine）。
             #    min_show_label_angle: types.Numeric = 0,
@@ -214,9 +214,34 @@ def draw_distribution_charts_by_bfclose(start_date, stock_code='', stock_name=''
         .set_series_opts(label_opts=opts.LabelOpts(formatter="{b}: {c}"))
     )
 
-    # 保存图表
-    bar_price.render(f'{show_templates_html_path}/{stock_name}_{stock_code}_price_analysis-list.html')
+    return bar_price
 
+
+
+def page_simple_layout(page, chart_data, start_date, stock_code, tdx_datas):
+
+    price_changes, price_max_close_pct, price_min_close_pct, price_changes_with_dates, price_max_close_with_dates, price_min_close_with_dates, first_close_price = calculate_price_changes_by_bfclose(chart_data, start_date)
+
+    page.add(
+        draw_distribution_charts_by_bfclose(start_date, stock_code, tdx_datas.stock_name, price_changes, price_max_close_pct, price_min_close_pct, price_changes_with_dates, price_max_close_with_dates, price_min_close_with_dates, first_close_price)    
+    )
+
+    print("分析完成，图表已生成, 统计天数:", len(price_changes))    
+
+def main():
+    stock_code = '300215'  # 可以根据需要修改为其他股票代码 by test
+    start_date = '2026-01-06'  # 可以根据需要设置开始日期
+    
+    page = Page(layout=Page.SimplePageLayout)
+    for stock_code in ucfg.my_stocks_min_max_list:
+        tdx_datas = tdx(stock_code)
+        tdx_datas.getStockDayFile()
+        tdx_datas.creatstocKDataList()
+        chart_data = tdx_datas.getTDXStockKDatas()  # 获取日线数据
+        page_simple_layout(page,chart_data, start_date, stock_code, tdx_datas)
+
+    # 保存图表
+    page.render(f'{show_templates_html_path}/price_analysis-list.html')
 
 if __name__ == "__main__":
     '''
@@ -237,13 +262,6 @@ if __name__ == "__main__":
             start_date = ucfg.stocks_analysis_start_date
     if len(sys.argv) >= 4:
         end_date = sys.argv[3]
-    
-    tdx_datas = tdx(stock_code)
-    tdx_datas.getStockDayFile()
-    tdx_datas.creatstocKDataList()
-    chart_data = tdx_datas.getTDXStockKDatas()  # 获取日线数据
 
-    price_changes, price_max_close_pct, price_min_close_pct, price_changes_with_dates, price_max_close_with_dates, price_min_close_with_dates, first_close_price = calculate_price_changes_by_bfclose(chart_data, start_date)
-    draw_distribution_charts_by_bfclose(start_date, stock_code, tdx_datas.stock_name, price_changes, price_max_close_pct, price_min_close_pct, price_changes_with_dates, price_max_close_with_dates, price_min_close_with_dates, first_close_price)
+    main()
     
-    print("分析完成，图表已生成, 统计天数:", len(price_changes))
