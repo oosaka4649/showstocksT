@@ -85,152 +85,83 @@ def get_bin_width(price):
     else:
         return 1
         
-def draw_distribution_charts_by_bfclose(start_date, stock_code='', stock_name='', price_changes=[], price_max_close_pct=[], price_min_close_pct=[], price_changes_with_dates=None, price_max_close_with_dates=None, price_min_close_with_dates=None, first_close_price=None):
-    '''
-    绘制涨跌价格和涨跌幅分布图表（直方图）
-    '''
-    '''
-    # 涨跌价格分布：动态区间宽度
-    if price_changes:
-        min_price = min(price_changes) # 计算 price_changes 列表中的最小值 (min_price) 和最大值 (max_price)。
-        max_price = max(price_changes)
 
-        # 根据第一个有效的前收盘价来确定区间宽度，确保图表的可读性和适应性
+def calculate_histogram_and_dates(price_list, price_with_dates, first_close_price, label):
+    '''
+    计算价格列表的直方图和日期映射
+    price_list: 价格变化列表
+    price_with_dates: 带日期的价格变化列表 [(change, date_str), ...]
+    first_close_price: 用于确定区间宽度
+    label: 打印标签
+    返回: bin_centers, hist, bin_to_dates, bin_to_dates_Values
+    '''
+    if price_list:
+        min_price = min(price_list)
+        max_price = max(price_list)
         bin_width = get_bin_width(first_close_price) if first_close_price is not None else 0.1
-        # 计算价格区间的边界，确保覆盖所有数据点，并且区间宽度为 bin_width 的倍数
-        # 使用 NumPy 的 np.arange 创建直方图的区间数组 (bins_price)，从最小值向下取整到最大值向上取整，确保区间覆盖所有数据。
         bins_price = np.arange(np.floor(min_price / bin_width) * bin_width, np.ceil(max_price / bin_width) * bin_width + bin_width, bin_width)
-
-        # 调用 np.histogram 计算价格变化在这些区间内的分布，返回每个区间的计数 (hist_price) 和区间边缘 (bin_edges_price)。
-        hist_price, bin_edges_price = np.histogram(price_changes, bins=bins_price)\
-        # 计算每个区间的中心点 (bin_centers_price)，用于后续绘图时显示标签。
-        #bin_centers_price = (bin_edges_price[:-1] + bin_edges_price[1:]) / 2
-        bin_centers_price = bin_edges_price
+        hist, bin_edges = np.histogram(price_list, bins=bins_price)
+        bin_centers = bin_edges
 
         # 保留每个区间内的日期
         bin_to_dates = {}
         bin_to_dates_Values = {}
-        if price_changes_with_dates:
-            for change, date_str in price_changes_with_dates:
-                # 找到change对应的bin索引
+        if price_with_dates:
+            for change, date_str in price_with_dates:
                 bin_index = np.digitize(change, bins_price) - 1
-                if 0 <= bin_index < len(bin_centers_price):
-                    bin_center = bin_centers_price[bin_index]
+                if 0 <= bin_index < len(bin_centers):
+                    bin_center = bin_centers[bin_index]
                     if bin_center not in bin_to_dates:
                         bin_to_dates[bin_center] = []
                     bin_to_dates[bin_center].append(date_str)
                     bin_to_dates_Values[date_str] = change
-            # 打印或保存bin_to_dates
-            print("\n收盘对于前收盘价-每个价格区间内的日期：")
+            print(f"\n{label}-每个价格区间内的日期：")
             for bin_center, dates in sorted(bin_to_dates.items()):
                 print(f"区间中心 {bin_center:.2f} 元，个数{len(dates)}: {dates}")
+        return bin_centers, hist, bin_to_dates, bin_to_dates_Values
     else:
-        bin_centers_price = []
-        hist_price = []
-    ''' 
+        return [], [], {}, {}
 
-    if price_max_close_pct:
-        # 计算 price_changes 列表中的最小值 (min_price) 和最大值 (max_price)。
-        min_price = min(price_max_close_pct)
-        max_price = max(price_max_close_pct)
-        # 根据第一个有效的前收盘价来确定区间宽度，确保图表的可读性和适应性
-        bin_width = get_bin_width(first_close_price) if first_close_price is not None else 0.1
-        # 计算价格区间的边界，确保覆盖所有数据点，并且区间宽度为 bin_width 的倍数
-        # 使用 NumPy 的 np.arange 创建直方图的区间数组 (bins_price)，从最小值向下取整到最大值向上取整，确保区间覆盖所有数据。        
-        bins_price = np.arange(np.floor(min_price / bin_width) * bin_width, np.ceil(max_price / bin_width) * bin_width + bin_width, bin_width)
-        # 调用 np.histogram 计算价格变化在这些区间内的分布，返回每个区间的计数 (hist_price) 和区间边缘 (bin_edges_price)。        
-        hist_price_m_c, bin_edges_price_m_c = np.histogram(price_max_close_pct, bins=bins_price)
-        # 计算每个区间的中心点 (bin_centers_price)，用于后续绘图时显示标签。
-        # bin_centers_price_m_c = (bin_edges_price_m_c[:-1] + bin_edges_price_m_c[1:]) / 2
-        bin_centers_price_m_c = bin_edges_price_m_c
 
-        # 保留每个区间内的日期 for price_max_close_pct
-        bin_to_dates_m_o = {}
-        bin_to_dates_Values_m_o = {}
-        if price_max_close_with_dates:
-            for change, date_str in price_max_close_with_dates:
-                bin_index = np.digitize(change, bins_price) - 1
-                if 0 <= bin_index < len(bin_centers_price_m_c):
-                    bin_center = bin_centers_price_m_c[bin_index]
-                    if bin_center not in bin_to_dates_m_o:
-                        bin_to_dates_m_o[bin_center] = []
-                    bin_to_dates_m_o[bin_center].append(date_str)
-                    bin_to_dates_Values_m_o[date_str] = change
-            print("\n最高价与前收盘价之差-每个价格区间内的日期：")
-            for bin_center, dates in sorted(bin_to_dates_m_o.items()):
-                print(f"区间中心 {bin_center:.2f} 元，个数{len(dates)}: {dates}")
-    else:
-        bin_centers_price_m_c = []
-        hist_price_m_c = []
+# 创建饼图数据和自定义字段,
+# bin_centers 是区间中心点列表，hist 是每个区间的计数列表，
+# bin_to_dates 是一个字典，键是区间中心点，值是该区间内的日期列表，
+# bin_to_dates_Values 是一个字典，键是日期字符串，值是对应的价格变化值
+# 这个函数将这些数据整合成适合 pyecharts 饼图的数据格式，同时将日期和价格变化值注入到每个数据项的 opts 字典中，以便在 tooltip 中使用
+# 实现，当鼠标悬停在饼图的某个扇区时，tooltip 能显示该区间内的所有日期和对应的价格变化值
+def create_pie_data_and_custom(bin_centers, hist, bin_to_dates, bin_to_dates_Values):
+    pie_data = [
+        {
+            "name": f"{x:.2f}",
+            "value": int(y),
+            "dates": bin_to_dates.get(x, []),
+            "values": [f"{bin_to_dates_Values[d]:.2f}" for d in bin_to_dates.get(x, [])],
+        }
+        for x, y in zip(bin_centers, hist)
+    ]
+    
+    data_custom = []
+    for d in pie_data:
+        item = opts.PieItem(name=d["name"], value=d["value"])
+        item.opts["dates"] = d["dates"]
+        item.opts["values"] = d["values"]
+        data_custom.append(item)
+    
+    return pie_data, data_custom
+    
 
-    if price_min_close_pct:
-        min_price = min(price_min_close_pct)
-        max_price = max(price_min_close_pct)
-        bin_width = get_bin_width(first_close_price) if first_close_price is not None else 0.1
-        bins_price = np.arange(np.floor(min_price / bin_width) * bin_width, np.ceil(max_price / bin_width) * bin_width + bin_width, bin_width)
-        hist_price_m_m, bin_edges_price_m_m = np.histogram(price_min_close_pct, bins=bins_price)
-        #bin_centers_price_m_m = (bin_edges_price_m_m[:-1] + bin_edges_price_m_m[1:]) / 2
-        bin_centers_price_m_m = bin_edges_price_m_m
+def draw_distribution_charts_by_bfclose(start_date, stock_code='', stock_name='', price_changes=[], price_max_close_pct=[], price_min_close_pct=[], price_changes_with_dates=None, price_max_close_with_dates=None, price_min_close_with_dates=None, first_close_price=None):
+    '''
+    绘制涨跌价格和涨跌幅分布图表（直方图）
+    '''
 
-        # 保留每个区间内的日期 for price_min_close_pct
-        bin_to_dates_m_m = {}
-        bin_to_dates_Values_m_m = {}
-        if price_min_close_with_dates:
-            for change, date_str in price_min_close_with_dates:
-                bin_index = np.digitize(change, bins_price) - 1
-                if 0 <= bin_index < len(bin_centers_price_m_m):
-                    bin_center = bin_centers_price_m_m[bin_index]
-                    if bin_center not in bin_to_dates_m_m:
-                        bin_to_dates_m_m[bin_center] = []
-                    bin_to_dates_m_m[bin_center].append(date_str)
-                    bin_to_dates_Values_m_m[date_str] = change
-            print("\n最低价与前收盘价之差-每个价格区间内的日期：")
-            for bin_center, dates in sorted(bin_to_dates_m_m.items()):
-                print(f"区间中心 {bin_center:.2f} 元，个数{len(dates)}: {dates}")
-    else:
-        bin_centers_price_m_m = []
-        hist_price_m_m = []        
+    bin_centers_price_m_c, hist_price_m_c, bin_to_dates_m_o, bin_to_dates_Values_m_o = calculate_histogram_and_dates(price_max_close_pct, price_max_close_with_dates, first_close_price, "最高价与前收盘价之差")
+
+    bin_centers_price_m_m, hist_price_m_m, bin_to_dates_m_m, bin_to_dates_Values_m_m = calculate_histogram_and_dates(price_min_close_pct, price_min_close_with_dates, first_close_price, "最低价与前收盘价之差")        
 
     # 价格分布图 - 改为饼图
-    #pie_data = [(f"{x:.2f}", int(y)) for x, y in zip(bin_centers_price, hist_price)]
-    pie_data_m_c = [
-        {
-            "name": f"{x:.2f}",
-            "value": int(y),
-            "dates": bin_to_dates_m_o.get(x, []),
-            "values": [f"{bin_to_dates_Values_m_o[d]:.2f}" for d in bin_to_dates_m_o.get(x, [])],
-        }
-        for x, y in zip(bin_centers_price_m_c, hist_price_m_c)
-    ]
-
-    data_custom_m_c = []
-    for d in pie_data_m_c:
-        # 创建标准的 PieItem
-        item = opts.PieItem(name=d["name"], value=d["value"])
-        # 【核心点】将额外字段注入到 item 的 opts 字典中
-        item.opts["dates"] = d["dates"]
-        item.opts["values"] = d["values"]
-        data_custom_m_c.append(item) 
-
-    #pie_data_m_m = [(f"{x:.2f}", int(y)) for x, y in zip(bin_centers_price_m_m, hist_price_m_m)]
-    pie_data_m_m = [
-        {
-            "name": f"{x:.2f}",
-            "value": int(y),
-            "dates": bin_to_dates_m_m.get(x, []),
-            "values": [f"{bin_to_dates_Values_m_m[d]:.2f}" for d in bin_to_dates_m_m.get(x, [])],
-        }
-        for x, y in zip(bin_centers_price_m_m, hist_price_m_m)
-    ]
-
-    data_custom_m_m = []
-    for d in pie_data_m_m:
-        # 创建标准的 PieItem
-        item = opts.PieItem(name=d["name"], value=d["value"])
-        # 【核心点】将额外字段注入到 item 的 opts 字典中
-        item.opts["dates"] = d["dates"]
-        item.opts["values"] = d["values"]
-        data_custom_m_m.append(item)     
+    pie_data_m_c, data_custom_m_c = create_pie_data_and_custom(bin_centers_price_m_c, hist_price_m_c, bin_to_dates_m_o, bin_to_dates_Values_m_o)
+    pie_data_m_m, data_custom_m_m = create_pie_data_and_custom(bin_centers_price_m_m, hist_price_m_m, bin_to_dates_m_m, bin_to_dates_Values_m_m)     
 
     ''' 
     # 2. 处理数据：使用 PieItem 并手动注入自定义字段
@@ -251,9 +182,9 @@ def draw_distribution_charts_by_bfclose(start_date, stock_code='', stock_name=''
     bar_price = (
         Pie()
         .add(
-            series_name="涨跌价格分布",
+            series_name="最高价相对前收盘价分布",
             data_pair=data_custom_m_c,
-            center=["20%", "53%"], #饼图的中心位置坐标，调整为左侧，以便显示更多的区间
+            center=["35%", "63%"], #饼图的中心位置坐标，调整为左侧，以便显示更多的区间
             radius=["15%", "70%"], #饼图的半径调整为 内径15% 外径60%，以便显示更多的区间
             # 小于这个角度（0 ~ 360）的扇区，不显示标签（label 和 labelLine）。
             #    min_show_label_angle: types.Numeric = 0,
@@ -261,9 +192,9 @@ def draw_distribution_charts_by_bfclose(start_date, stock_code='', stock_name=''
             #label_opts=opts.LabelOpts(formatter="{b}: {c}", position="outside"),
         )
         .add(
-            series_name="最高价相对前收盘价分布",
+            series_name="最低价相对前收盘价分布",
             data_pair=data_custom_m_m,
-            center=["50%", "53%"],
+            center=["70%", "63%"],
             radius=["15%", "70%"],
             # 小于这个角度（0 ~ 360）的扇区，不显示标签（label 和 labelLine）。
             #    min_show_label_angle: types.Numeric = 0,
@@ -272,9 +203,10 @@ def draw_distribution_charts_by_bfclose(start_date, stock_code='', stock_name=''
         )
         .set_global_opts(
             title_opts=opts.TitleOpts(title=f"{stock_name}---统计次数={len(price_changes)}---开始日期={start_date}", pos_left="center"),
-            tooltip_opts=opts.TooltipOpts(trigger="item", formatter=JsCode("function(params){ info = '<br/>日期: --------- 差价:' ;" \
+            tooltip_opts=opts.TooltipOpts(trigger="item", formatter=JsCode("function(params){ info = '日期: --------- 差价:' ;" \
             " for (let i = 0; i < params.data.values.length; i++) { " \
-            " info +='<br/>' +  params.data.dates[i] + ': ' + params.data.values[i] ;" \
+            "     b = i +1 ;"
+            "     info += '<br/>' +  b +  '    ' + params.data.dates[i] + ': ' + params.data.values[i] ;" \
             " } " \
             " return params.seriesName + '<br/>' + params.name + ': ' + params.value + '<br/>' + info ; }")),
             legend_opts=opts.LegendOpts(pos_bottom="1px"),
