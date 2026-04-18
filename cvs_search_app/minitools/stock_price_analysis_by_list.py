@@ -184,8 +184,8 @@ def draw_distribution_charts_by_bfclose(start_date, stock_code='', stock_name=''
         .add(
             series_name="最高价相对前收盘价分布",
             data_pair=data_custom_m_c,
-            center=["45%", "63%"], #饼图的中心位置坐标，调整为左侧，以便显示更多的区间
-            radius=["15%", "70%"], #饼图的半径调整为 内径15% 外径60%，以便显示更多的区间
+            center=["45%", "50%"], #饼图的中心位置坐标，调整为左侧，以便显示更多的区间
+            radius=["15%", "65%"], #饼图的半径调整为 内径15% 外径60%，以便显示更多的区间
             # 小于这个角度（0 ~ 360）的扇区，不显示标签（label 和 labelLine）。
             #    min_show_label_angle: types.Numeric = 0,
             min_show_label_angle = 1,            
@@ -194,8 +194,8 @@ def draw_distribution_charts_by_bfclose(start_date, stock_code='', stock_name=''
         .add(
             series_name="最低价相对前收盘价分布",
             data_pair=data_custom_m_m,
-            center=["75%", "63%"],
-            radius=["15%", "70%"],
+            center=["75%", "50%"],
+            radius=["15%", "65%"],
             # 小于这个角度（0 ~ 360）的扇区，不显示标签（label 和 labelLine）。
             #    min_show_label_angle: types.Numeric = 0,
             min_show_label_angle = 1,
@@ -205,11 +205,14 @@ def draw_distribution_charts_by_bfclose(start_date, stock_code='', stock_name=''
             title_opts=opts.TitleOpts(title=f"{stock_name}---统计次数={len(price_changes)}---开始日期={start_date}", pos_left="center"),
             tooltip_opts=opts.TooltipOpts(trigger="item", formatter=JsCode("function(params){ info = '日期: --------- 差价:' ;" \
             " for (let i = 0; i < params.data.values.length; i++) { " \
-            "     b = i +1 ;"
-            "     info += '<br/>' +  b +  '    ' + params.data.dates[i] + ': ' + params.data.values[i] ;" \
+            "     b = i +1 ;" \
+            "     if (i%4 == 0) { " \
+            "         info += '<br/>' +  b +  '    ' + params.data.dates[i] + ': ' + params.data.values[i] ;" \
+            "     } else {" \
+            "         info += ' -- ' +  b +  '    ' + params.data.dates[i] + ': ' + params.data.values[i] ;" \
+            "     }" \
             " } " \
             " return params.seriesName + '<br/>' + params.name + ': ' + params.value + '<br/>' + info ; }")),
-            legend_opts=opts.LegendOpts(pos_bottom="1px"),
         )
         .set_series_opts(label_opts=opts.LabelOpts(formatter="{b}: {c}"))
     )
@@ -230,9 +233,9 @@ def page_simple_layout(page, chart_data, start_date, stock_code, tdx_datas):
     return len(price_changes)
 
 def main():
-    start_date = '2026-04-06'  # 可以根据需要设置开始日期
+    start_date = '2025-04-06'  # 可以根据需要设置开始日期
     price_day_length = 0
-    page = Page(layout=Page.SimplePageLayout)
+    page = Page(layout=Page.DraggablePageLayout)
     for stock_code in ucfg.my_stocks_min_max_list:
         tdx_datas = tdx(stock_code)
         tdx_datas.getStockDayFile()
@@ -241,7 +244,7 @@ def main():
         price_day_length = page_simple_layout(page,chart_data, start_date, stock_code, tdx_datas)
 
     # 保存图表
-    page.render(f'{show_templates_html_path}/{price_day_length}_price_analysis-list.html')
+    page.render(f'{show_templates_html_path}/{price_day_length}_day_price_analysis-list.html')
 
 if __name__ == "__main__":
     main()
