@@ -188,113 +188,42 @@ def draw_distribution_charts_by_bfclose(start_date, x_axis_list, pice_data_list)
     def get_name(item, info_key):
         return item['tdx_datas'].stock_name + '-------------------------------' + info_key
     
-    bar_price = (
-        Pie()
-        .add(
-            series_name=get_name(pice_data_list[0], "max_收盘价分布"),
-            data_pair=create_pie_data_and_custom(calculate_histogram_and_dates(pice_data_list[0]['price_data']['price_max_close_pct'], pice_data_list[0]['price_data']['price_max_close_with_dates'], pice_data_list[0]['price_data']['first_close_price'], "最高价与前收盘价之差")),
-            center=[f"{x_axis_list[0]}%", "30%"], #饼图的中心位置坐标，调整为左侧，以便显示更多的区间
+    bar_price = Pie()
+    stock_name_str = ''
+    for index, (item) in enumerate(pice_data_list):
+        bar_price.add(
+            series_name=get_name(pice_data_list[index], "max_收盘价分布"),
+            data_pair=create_pie_data_and_custom(calculate_histogram_and_dates(pice_data_list[index]['price_data']['price_max_close_pct'], pice_data_list[index]['price_data']['price_max_close_with_dates'], pice_data_list[index]['price_data']['first_close_price'], "最高价与前收盘价之差")),
+            center=[f"{x_axis_list[index]}%", "30%"], #饼图的中心位置坐标，调整为左侧，以便显示更多的区间
             radius=["10%", "30%"], #饼图的半径调整为 内径15% 外径60%，以便显示更多的区间
             # 小于这个角度（0 ~ 360）的扇区，不显示标签（label 和 labelLine）。
             #    min_show_label_angle: types.Numeric = 0,
             min_show_label_angle = 1,            
-        )
-        .add(
-            series_name=get_name(pice_data_list[0], "min_收盘价分布"),
-            data_pair=create_pie_data_and_custom(calculate_histogram_and_dates(pice_data_list[0]['price_data']['price_min_close_pct'], pice_data_list[0]['price_data']['price_min_close_with_dates'], pice_data_list[0]['price_data']['first_close_price'], "最低价与前收盘价之差")),
-            center=[f"{x_axis_list[0]}%", "75%"],
+        ).add(
+            series_name=get_name(pice_data_list[index], "min_收盘价分布"),
+            data_pair=create_pie_data_and_custom(calculate_histogram_and_dates(pice_data_list[index]['price_data']['price_min_close_pct'], pice_data_list[index]['price_data']['price_min_close_with_dates'], pice_data_list[index]['price_data']['first_close_price'], "最低价与前收盘价之差")),
+            center=[f"{x_axis_list[index]}%", "75%"],
             radius=["10%", "30%"],
             # 小于这个角度（0 ~ 360）的扇区，不显示标签（label 和 labelLine）。
             #    min_show_label_angle: types.Numeric = 0,
             min_show_label_angle = 1,
         )
-        .add(
-            series_name=get_name(pice_data_list[1], "max_收盘价分布"),
-            data_pair=create_pie_data_and_custom(calculate_histogram_and_dates(pice_data_list[1]['price_data']['price_max_close_pct'], pice_data_list[1]['price_data']['price_max_close_with_dates'], pice_data_list[1]['price_data']['first_close_price'], "最高价与前收盘价之差")),
-            center=[f"{x_axis_list[1]}%", "30%"], #饼图的中心位置坐标，调整为左侧，以便显示更多的区间
-            radius=["10%", "30%"], #饼图的半径调整为 内径15% 外径60%，以便显示更多的区间
-            # 小于这个角度（0 ~ 360）的扇区，不显示标签（label 和 labelLine）。
-            #    min_show_label_angle: types.Numeric = 0,
-            min_show_label_angle = 1,            
-        )
-        .add(
-            series_name=get_name(pice_data_list[1], "min_收盘价分布"),
-            data_pair=create_pie_data_and_custom(calculate_histogram_and_dates(pice_data_list[1]['price_data']['price_min_close_pct'], pice_data_list[1]['price_data']['price_min_close_with_dates'], pice_data_list[1]['price_data']['first_close_price'], "最低价与前收盘价之差")),
-            center=[f"{x_axis_list[1]}%", "75%"],
-            radius=["10%", "30%"],
-            # 小于这个角度（0 ~ 360）的扇区，不显示标签（label 和 labelLine）。
-            #    min_show_label_angle: types.Numeric = 0,
-            min_show_label_angle = 1,
-        ) 
-        .add(
-            series_name=get_name(pice_data_list[2], "max_收盘价分布"),
-            data_pair=create_pie_data_and_custom(calculate_histogram_and_dates(pice_data_list[2]['price_data']['price_max_close_pct'], pice_data_list[2]['price_data']['price_max_close_with_dates'], pice_data_list[2]['price_data']['first_close_price'], "最高价与前收盘价之差")),
-            center=[f"{x_axis_list[2]}%", "30%"], #饼图的中心位置坐标，调整为左侧，以便显示更多的区间
-            radius=["10%", "30%"], #饼图的半径调整为 内径15% 外径60%，以便显示更多的区间
-            # 小于这个角度（0 ~ 360）的扇区，不显示标签（label 和 labelLine）。
-            #    min_show_label_angle: types.Numeric = 0,
-            min_show_label_angle = 1,            
-        )
-        .add(
-            series_name=get_name(pice_data_list[2], "min_收盘价分布"),
-            data_pair=create_pie_data_and_custom(calculate_histogram_and_dates(pice_data_list[2]['price_data']['price_min_close_pct'], pice_data_list[2]['price_data']['price_min_close_with_dates'], pice_data_list[2]['price_data']['first_close_price'], "最低价与前收盘价之差")),
-            center=[f"{x_axis_list[2]}%", "75%"], #饼图的中心位置坐标，调整为左侧，以便显示更多的区间
-            radius=["10%", "30%"], #饼图的半径调整为 内径15% 外径60%，以便显示更多的区间
-            # 小于这个角度（0 ~ 360）的扇区，不显示标签（label 和 labelLine）。
-            #    min_show_label_angle: types.Numeric = 0,
-            min_show_label_angle = 1,            
-        )
-        .add(
-            series_name=get_name(pice_data_list[3], "max_收盘价分布"),
-            data_pair=create_pie_data_and_custom(calculate_histogram_and_dates(pice_data_list[3]['price_data']['price_max_close_pct'], pice_data_list[3]['price_data']['price_max_close_with_dates'], pice_data_list[3]['price_data']['first_close_price'], "最高价与前收盘价之差")),
-            center=[f"{x_axis_list[3]}%", "30%"],
-            radius=["10%", "30%"],
-            # 小于这个角度（0 ~ 360）的扇区，不显示标签（label 和 labelLine）。
-            #    min_show_label_angle: types.Numeric = 0,
-            min_show_label_angle = 1,
-        )          
-        .add(
-            series_name=get_name(pice_data_list[3], "min_收盘价分布"),
-            data_pair=create_pie_data_and_custom(calculate_histogram_and_dates(pice_data_list[3]['price_data']['price_min_close_pct'], pice_data_list[3]['price_data']['price_min_close_with_dates'], pice_data_list[3]['price_data']['first_close_price'], "最低价与前收盘价之差")),
-            center=[f"{x_axis_list[3]}%", "75%"],
-            radius=["10%", "30%"],
-            # 小于这个角度（0 ~ 360）的扇区，不显示标签（label 和 labelLine）。
-            #    min_show_label_angle: types.Numeric = 0,
-            min_show_label_angle = 1,
-        )
-        .add(
-            series_name=get_name(pice_data_list[4], "max_收盘价分布"),
-            data_pair=create_pie_data_and_custom(calculate_histogram_and_dates(pice_data_list[4]['price_data']['price_max_close_pct'], pice_data_list[4]['price_data']['price_max_close_with_dates'], pice_data_list[4]['price_data']['first_close_price'], "最高价与前收盘价之差")),
-            center=[f"{x_axis_list[4]}%", "30%"],
-            radius=["10%", "30%"],
-            # 小于这个角度（0 ~ 360）的扇区，不显示标签（label 和 labelLine）。
-            #    min_show_label_angle: types.Numeric = 0,
-            min_show_label_angle = 1,
-        )          
-        .add(
-            series_name=get_name(pice_data_list[4], "min_收盘价分布"),
-            data_pair=create_pie_data_and_custom(calculate_histogram_and_dates(pice_data_list[4]['price_data']['price_min_close_pct'], pice_data_list[4]['price_data']['price_min_close_with_dates'], pice_data_list[4]['price_data']['first_close_price'], "最低价与前收盘价之差")),
-            center=[f"{x_axis_list[4]}%", "75%"],
-            radius=["10%", "30%"],
-            # 小于这个角度（0 ~ 360）的扇区，不显示标签（label 和 labelLine）。
-            #    min_show_label_angle: types.Numeric = 0,
-            min_show_label_angle = 1,
-        )                      
-        .set_global_opts(
-            title_opts=opts.TitleOpts(title=f"{get_name(pice_data_list[0], '-')}{get_name(pice_data_list[1], '-')}{get_name(pice_data_list[2], '-')}{get_name(pice_data_list[3], '-')}{get_name(pice_data_list[4], '-')} \n 统计次数={len(pice_data_list[0]['price_data']['price_changes'])}---开始日期={start_date}", pos_left="center"),
-            tooltip_opts=opts.TooltipOpts(trigger="item", formatter=JsCode("function(params){ info = '日期: --------- 差价:' ;" \
-            " for (let i = 0; i < params.data.values.length; i++) { " \
-            "     b = i +1 ;" \
-            "     if (i%3 == 0) { " \
-            "         info += '<br/>' +  b +  '    ' + params.data.dates[i] + ': ' + params.data.values[i] ;" \
-            "     } else {" \
-            "         info += ' -- ' +  b +  '    ' + params.data.dates[i] + ': ' + params.data.values[i] ;" \
-            "     }" \
-            " } " \
-            " return params.seriesName + '<br/>' + params.name + ': ' + params.value + '<br/>' + info ; }")),
-        )
-        .set_series_opts(label_opts=opts.LabelOpts(formatter="{b}: {c}"))
+        stock_name_str += get_name(pice_data_list[index], '-') + '  '
+                
+    bar_price.set_global_opts(
+        title_opts=opts.TitleOpts(title=f"{stock_name_str} \n 统计次数={len(pice_data_list[0]['price_data']['price_changes'])}---开始日期={start_date}", pos_left="center"),
+        tooltip_opts=opts.TooltipOpts(trigger="item", formatter=JsCode("function(params){ info = '日期: --------- 差价:' ;" \
+        " for (let i = 0; i < params.data.values.length; i++) { " \
+        "     b = i +1 ;" \
+        "     if (i%3 == 0) { " \
+        "         info += '<br/>' +  b +  '    ' + params.data.dates[i] + ': ' + params.data.values[i] ;" \
+        "     } else {" \
+        "         info += ' -- ' +  b +  '    ' + params.data.dates[i] + ': ' + params.data.values[i] ;" \
+        "     }" \
+        " } " \
+        " return params.seriesName + '<br/>' + params.name + ': ' + params.value + '<br/>' + info ; }")),
     )
+    bar_price.set_series_opts(label_opts=opts.LabelOpts(formatter="{b}: {c}"))
 
     return bar_price
 
@@ -302,10 +231,11 @@ def draw_distribution_charts_by_bfclose(start_date, x_axis_list, pice_data_list)
 
 def page_simple_layout(page, start_date, stock_chart_list, x_axis_list):
     pice_data_list = []
-
+    temp_count = 0
     for index, (tdx_datas, chart_data) in enumerate(stock_chart_list):
         pice_data_list.append({'tdx_datas': tdx_datas, 'price_data': calculate_price_changes_by_bfclose(chart_data, start_date)})  # 计算相对于前收盘价的涨跌价格和涨跌幅
-        if (len(pice_data_list) == len(x_axis_list)):
+        temp_count  += 1
+        if (len(pice_data_list) == len(x_axis_list)) or temp_count == len(stock_chart_list):
             page.add(
                 draw_distribution_charts_by_bfclose(start_date, x_axis_list, pice_data_list)    
             )
