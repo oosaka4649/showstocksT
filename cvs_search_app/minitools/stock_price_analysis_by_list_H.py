@@ -158,6 +158,8 @@ def create_pie_data_and_custom(price_data):
         item = opts.PieItem(name=d["name"], value=d["value"])
         item.opts["dates"] = d["dates"]
         item.opts["values"] = d["values"]
+        item.opts["vmax"] = max(d["values"]) if d["values"] else 0  # 添加一个字段，记录该区间内的最大价格变化值，后续可以用于 tooltip 中的显示优化
+        item.opts["vmin"] = min(d["values"]) if d["values"] else 0  # 添加一个字段，记录该区间内的最小价格变化值，后续可以用于 tooltip 中的显示优化
         data_custom.append(item)
     
     return data_custom
@@ -212,7 +214,7 @@ def draw_distribution_charts_by_bfclose(start_date, x_axis_list, pice_data_list)
                 
     bar_price.set_global_opts(
         title_opts=opts.TitleOpts(title=f"{stock_name_str} \n 统计次数={len(pice_data_list[0]['price_data']['price_changes'])}---开始日期={start_date}", pos_left="center"),
-        tooltip_opts=opts.TooltipOpts(trigger="item", formatter=JsCode("function(params){ info = '日期: --------- 差价:' ;" \
+        tooltip_opts=opts.TooltipOpts(trigger="item", formatter=JsCode("function(params){ info = '日期: --------- 差价: ' + params.data.vmax + ' ~ ' + params.data.vmin ;" \
         " for (let i = 0; i < params.data.values.length; i++) { " \
         "     b = i +1 ;" \
         "     if (i%3 == 0) { " \
@@ -221,6 +223,7 @@ def draw_distribution_charts_by_bfclose(start_date, x_axis_list, pice_data_list)
         "         info += ' -- ' +  b +  '    ' + params.data.dates[i] + ': ' + params.data.values[i] ;" \
         "     }" \
         " } " \
+        " info += '<br/> <p style=\"color: red;\"> 差价: ' + params.data.vmin + ' ~ ' + params.data.vmax + '</p>'; " \
         " return params.seriesName + '<br/>' + params.name + ': ' + params.value + '<br/>' + info ; }")),
     )
     bar_price.set_series_opts(label_opts=opts.LabelOpts(formatter="{b}: {c}"))
