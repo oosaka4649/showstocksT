@@ -263,4 +263,8 @@ python
 
 买卖计划：
 
+
+https://jubt13.xyz/cn/1fuli/20260512.html
+https://github.com/thcp/stemdeck
+音频分离工具，支持将音频分割成最多六个音轨（人声、鼓、贝斯、吉他、钢琴、其他），并在多轨混音器中播放
 '''
