@@ -267,4 +267,22 @@ python
 https://jubt13.xyz/cn/1fuli/20260512.html
 https://github.com/thcp/stemdeck
 音频分离工具，支持将音频分割成最多六个音轨（人声、鼓、贝斯、吉他、钢琴、其他），并在多轨混音器中播放
+
+
+https://algebrica.org/
+https://github.com/antoniolupetti/algebrica
+免费、无广告的大学数学知识库
+
+https://jubt13.xyz/cn/study.html
+
+
+https://www.movieffm.net
+s在线影视站
+
+
+
+
+基于浏览器的 EPUB 阅读器，带有文本转语音功能
+https://github.com/roy2100/readbook
+https://jubt13.xyz/cn/books.html#%E7%94%B5%E5%AD%90%E4%B9%A6%E5%B7%A5%E5%85%B7
 '''
