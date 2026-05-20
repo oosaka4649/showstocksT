@@ -264,9 +264,7 @@ python
 买卖计划：
 
 
-https://jubt13.xyz/cn/1fuli/20260512.html
-https://github.com/thcp/stemdeck
-音频分离工具，支持将音频分割成最多六个音轨（人声、鼓、贝斯、吉他、钢琴、其他），并在多轨混音器中播放
+
 
 
 https://algebrica.org/
@@ -276,10 +274,26 @@ https://github.com/antoniolupetti/algebrica
 https://jubt13.xyz/cn/study.html
 
 
+======================================================== 影视 =========================================================
+
 https://www.movieffm.net
 s在线影视站
 
+Korean18x
+https://korean18x.com/
+韩国色情片
 
+
+https://jubt13.xyz/cn/1fuli/20260512.html
+https://github.com/thcp/stemdeck
+音频分离工具，支持将音频分割成最多六个音轨（人声、鼓、贝斯、吉他、钢琴、其他），并在多轨混音器中播放
+
+======================================================== 工具 =========================================================
+
+
+Universal Video Downloader
+https://github.com/Dinesh6777/Universal-Video-Downloader-GUI
+基于 yt-dlp 的通用下载器
 
 
 基于浏览器的 EPUB 阅读器，带有文本转语音功能
