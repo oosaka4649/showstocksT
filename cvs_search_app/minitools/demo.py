@@ -299,14 +299,16 @@ https://github.com/Dinesh6777/Universal-Video-Downloader-GUI
 基于浏览器的 EPUB 阅读器，带有文本转语音功能
 https://github.com/roy2100/readbook
 https://jubt13.xyz/cn/books.html#%E7%94%B5%E5%AD%90%E4%B9%A6%E5%B7%A5%E5%85%B7
+
+
+
+https://github.com/shidenggui
+实时获取免费股票行情，支持新浪 / 腾讯(港股) / 集思录
+ easyquotation  https://github.com/shidenggui/easyquotation
+
+提供同花顺客户端/miniqmt/雪球的股票量化交易，支持跟踪 joinquant /ricequant 模拟交易 和 实盘雪球组合
+ easytrader
 '''
-
-
-
-
-
-
-
 
 
 
