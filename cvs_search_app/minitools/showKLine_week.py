@@ -35,6 +35,9 @@ def split_data(data):
     volumes = []
     closes = []
 
+    values_macd = [] # 这个是为了计算 macd 用的，输入为量值，看看能不能生成一个和 macd 类似的曲线，观察成交量和 macd 的关系
+
+
     '''
         date         开        收        最低       最高       量
     ["2004-01-02", 10452.74, 10409.85, 10367.41, 10554.96, 168890000],
@@ -47,8 +50,18 @@ def split_data(data):
         values.append(tick) # 全部内容
         closes.append(tick[2]) # 收盘价
         # 元代码 是 tick 4 错了，应该是 tick 5 因为 4是 最高价，5才是量
+        values_macd.append(tick[5]) # 这个是为了计算 macd 用的，输入为量值，看看能不能生成一个和 macd 类似的曲线，观察成交量和 macd 的关系
         volumes.append([i, tick[5], 1 if tick[1] > tick[2] else -1])  # i 是序号 从 0 开始，如果 开始大于收盘 1 ，反之 -1 估计是标 量线颜色用 红 绿
-    return {"categoryData": category_data, "values": values, "volumes": volumes, "closes": closes}
+    return {"categoryData": category_data, "values": values, "volumes": volumes, "closes": closes, "values_macd": values_macd}
+
+#计算macd指标
+def calculate_macd(data):
+    '''
+      ta lib 使用 np.array 作为输入，但 pyecharts 需要 list 作为输出，所以这里做了转换，而且 数据类型为 double
+    '''
+    
+    result = talib.MACD(np.array(data, dtype='double'), fastperiod=12, slowperiod=26, signalperiod=9) #macd 返回三个值，macd线 dif，信号线 dea，柱状图，这里我们只取 macd 线
+    return result
 
 '''
   手动算出 均线， day count是输入要算的几日均线 tudo 后面要搞搞 其他macd，rsi，cci，bolling什么的
@@ -141,13 +154,13 @@ def draw_charts(stock_code='', stock_name=''):
                 opts.DataZoomOpts(   # https://pyecharts.org/#/zh-cn/global_options?id=datazoomopts%ef%bc%9a%e5%8c%ba%e5%9f%9f%e7%bc%a9%e6%94%be%e9%85%8d%e7%bd%ae%e9%a1%b9
                     is_show=False,
                     type_="inside",
-                    xaxis_index=[0, 1],
+                    xaxis_index=[0, 1, 2],  # 0 是 k线图，1 是成交量，2 是成交量macd关系线 修改这个参数可以控制哪个图表有缩放功能
                     range_start=98,
                     range_end=100,
                 ),
                 opts.DataZoomOpts(
                     is_show=True,
-                    xaxis_index=[0, 1],
+                    xaxis_index=[0, 1, 2], # 0 是 k线图，1 是成交量，2 是成交量macd关系线 修改这个参数可以控制哪个图表有缩放功能
                     type_="slider",
                     pos_top="85%",
                     range_start=98,
@@ -278,6 +291,44 @@ def draw_charts(stock_code='', stock_name=''):
             legend_opts=opts.LegendOpts(is_show=False),
         )
     )
+    
+    macd_array = calculate_macd(data=chart_data["closes"])
+    vol_macd_array = calculate_macd(data=chart_data["values_macd"])
+    #显示成交量和macd的关系
+    #思路：将macd的计算公式输入为量值，这样会生成一个和macd类似的曲线，看能否添加进k线图中，最好是随滑动条缩放
+    line_V_MACD = (
+        Line()
+        .add_xaxis(xaxis_data=chart_data["categoryData"])
+        .add_yaxis(
+            series_name="MACD DIF",
+            y_axis=tdx.standardize_macd(macd_array[0]),  # macd_array[0] 是 macd 线，macd_array[1] 是 dea 线，macd_array[2] 是柱状图
+            is_smooth=True,
+            is_hover_animation=False,
+            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
+            itemstyle_opts=opts.ItemStyleOpts(color="#0000FF"),  # 添加这一行定义颜色
+            xaxis_index=2,
+            yaxis_index=2,
+            label_opts=opts.LabelOpts(is_show=False),
+        )
+        .add_yaxis(
+            series_name="Volumes MACD DIF",
+            y_axis=tdx.standardize_macd(vol_macd_array[0]),
+            is_smooth=True,
+            is_hover_animation=False,
+            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
+            itemstyle_opts=opts.ItemStyleOpts(color="#FF008C"),  # 添加这一行定义颜色
+            xaxis_index=2,
+            yaxis_index=2,
+            label_opts=opts.LabelOpts(is_show=False),
+        )  
+        #
+        .set_global_opts(
+            xaxis_opts=opts.AxisOpts(type_="category", grid_index=2),
+            yaxis_opts=opts.AxisOpts(grid_index=2, is_scale=True, axislabel_opts=opts.LabelOpts(is_show=False)), 
+            # 0 是 k线图，1 是成交量，2 是成交量macd关系线 修改这个参数可以控制哪个图表有缩放功能
+            #要点: 为 line_V_MACD 的各 add_yaxis 加上 xaxis_index=2, yaxis_index=2，并把 datazoom_opts 的 xaxis_index 改为 [0,1,2]，同时为该图指定 grid_index 相关的轴配置，确保随滑动条同步缩放。
+        )
+    )
 
     # Kline And Line
     overlap_kline_line = kline.overlap(line)
@@ -297,7 +348,13 @@ def draw_charts(stock_code='', stock_name=''):
     grid_chart.add(
         bar,
         grid_opts=opts.GridOpts(
-            pos_left="10%", pos_right="8%", pos_top="63%", height="16%"
+            pos_left="10%", pos_right="8%", pos_top="66%", height="20%"
+        ),
+    )
+    grid_chart.add(
+        line_V_MACD,
+        grid_opts=opts.GridOpts(
+            pos_left="10%", pos_right="8%", pos_top="61%", height="20%"
         ),
     )
     create_date = datetime.today().strftime("%Y%m%d%H%M%S")
@@ -307,7 +364,7 @@ def draw_charts(stock_code='', stock_name=''):
 
 if __name__ == "__main__":
     #s_codes = ucfg.my_stocks_list
-    #s_codes = ['002303']
+    #s_codes = ['688981']
     print("Executing showKLine_week.py with arguments:", sys.argv)
     s_codes = [sys.argv[1]]
 

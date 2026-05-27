@@ -321,6 +321,28 @@ class TDXData:
                     month_ma_dataes.append(np.float64(np.nan))
         return month_ma_dataes
 
+    #由于下面的函数，如果输入数据中有 np.nan，计算结果会全是 np.nan，所以在计算前先对数据进行标准化或归一化处理，处理后再计算 macd，这样就不会因为输入数据中有 np.nan 导致计算结果全是 np.nan
+    def standardize_macd( arr):
+        arr = np.asarray(arr, dtype=float)
+        mask = np.isnan(arr)
+
+        if mask.all():
+            return arr
+
+        mean = np.nanmean(arr)
+        std = np.nanstd(arr)
+
+        if std == 0:
+            result = np.zeros_like(arr)
+            result[mask] = np.nan
+            return result
+
+        result = (arr - mean) / std
+        result[mask] = np.nan
+        return result
+
+
+
     def standardize(arr):
         """
         Z-score 标准化：将数组转换为均值为 0、标准差为 1 的分布。
