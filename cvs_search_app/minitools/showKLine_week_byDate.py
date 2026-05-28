@@ -27,9 +27,19 @@ show_templates_comm_html_path = os.path.join(parent_dir, 'templates', ucfg.commo
 已经实现，将周线数据也绘制在图表上ma5上面
 
 用作app，调用，显示html上面
+
+这脚本是在week基础上进行了 修改，
+
+修改内容是，添加一个日期，就是k线图显示的不是该股票全部数据，而是从某个日期开始显示，
+
+原因就是这次添加了 将量线进行macd计算，和 本身macd进行统一化显示时，发现macd和股价有时显示近似直线，看不出明显的起伏，
+感觉就是要么股价很久前有大起伏，最近的幅度相对以前太小，
+要么是股价本身最近的波动幅度就很小，导致macd线也很平，感觉没有什么意义了，
+
+
 '''
 
-def split_data(data):
+def split_data(data, start_date=None):
     category_data = []
     values = []
     volumes = []
@@ -46,6 +56,9 @@ def split_data(data):
     '''
 
     for i, tick in enumerate(data):
+        date_str = tick[0]
+        if start_date and date_str < start_date:
+            continue
         category_data.append(tick[0]) # 日期
         values.append(tick) # 全部内容
         closes.append(tick[2]) # 收盘价
@@ -365,35 +378,47 @@ def draw_charts(stock_code='', stock_name=''):
     )
     grid_chart.add(
         overlap_kline_line,
-        grid_opts=opts.GridOpts(pos_left="10%", pos_right="8%", height="50%"),
+        grid_opts=opts.GridOpts(pos_left="10%", pos_right="8%", height="42%"),
     )
     grid_chart.add(
         bar,
         grid_opts=opts.GridOpts(
-            pos_left="10%", pos_right="8%", pos_top="66%", height="20%"
+            pos_left="10%", pos_right="8%", pos_top="45%", height="20%"
         ),
     )
     grid_chart.add(
         line_V_MACD,
         grid_opts=opts.GridOpts(
-            pos_left="10%", pos_right="8%", pos_top="61%", height="20%"
+            pos_left="10%", pos_right="8%", pos_top="65%", height="20%"
         ),
     )
     create_date = datetime.today().strftime("%Y%m%d%H%M%S")
     #grid_chart.render(f'{show_html_path}/{stock_code}_kline_{create_date}.html')
-    grid_chart.render(f'{show_templates_html_path}/{stock_name}_{stock_code}_kline.html')
-    grid_chart.render(f'{show_templates_comm_html_path}/{stock_name}_{stock_code}_kline.html')
+    grid_chart.render(f'{show_templates_html_path}/{stock_name}_{stock_code}_kline_{start_date}.html')
 
 if __name__ == "__main__":
     #s_codes = ucfg.my_stocks_list
-    #s_codes = ['688981', '002303'] # 测试用，单个股票，后续改成批量
+    start_date = '2024-04-06'  # 可以根据需要设置开始日期
+    s_codes = [#'002739',
+                #'002585', 
+                #'001337',
+                #'000686',
+               #'600745',
+                #'300215',
+                #'002218',
+               # '300006',
+                #'600526',
+                #'300251',
+                #'000807',
+                '002386'
+                ] # 测试用，单个股票，后续改成批量
     print("Executing showKLine_week.py with arguments:", sys.argv)
-    s_codes = [sys.argv[1]]
+    #s_codes = [sys.argv[1]]
 
     for stock_code in s_codes:
         tdx_datas = tdx(stock_code)
         tdx_datas.getStockDayFile()
         tdx_datas.creatstocKDataList()
         all_data = tdx_datas.getTDXStockDWMDatas()
-        chart_data = split_data(tdx_datas.getTDXStockKDatas())
+        chart_data = split_data(tdx_datas.getTDXStockKDatas(), start_date=start_date)
         draw_charts(stock_code, tdx_datas.stock_name)

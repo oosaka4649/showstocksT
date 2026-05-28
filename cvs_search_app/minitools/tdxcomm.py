@@ -166,8 +166,15 @@ class TDXData:
         self.stock_code_list = pd.Series(df1[1].values,index=df1[0]).to_dict()
         return self.stock_code_list
     
+    def sanitize_stock_name(self, name: str) -> str:
+        if not isinstance(name, str):
+            return name
+        invalid_chars = '<>:"/\\|?*'
+        return ''.join('x' if ch in invalid_chars else ch for ch in name)
+
     def get_stock_names(self):
-        return self.read_stock_names().get(self.stock_code, 'xx')
+        stock_name = self.read_stock_names().get(self.stock_code, 'xx')
+        return self.sanitize_stock_name(stock_name)
     '''
     utile end
     '''
