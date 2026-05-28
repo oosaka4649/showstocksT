@@ -367,6 +367,42 @@ class TDXData:
         return (arr - mean) / std
 
 
+    def normalize_macd(arr, feature_range=(0, 1)):
+        """
+        Min-Max 归一化：将数组缩放到指定的特征范围（默认 [0, 1]）。
+        
+        参数:
+            arr (array-like): 输入数组
+            feature_range (tuple): 目标范围，默认为 (0, 1)
+        
+        返回:
+            np.ndarray: 归一化后的数组，形状与输入相同
+        
+        处理特殊情况：
+            - 如果最大值等于最小值，返回全 0 数组（或全为 feature_range[0]）。
+            - 如果输入中包含 nan，则保留 nan 位点，并忽略它们的影响。
+        """
+        arr = np.asarray(arr, dtype=float)
+        mask = np.isnan(arr)
+
+        if mask.all():
+            return arr
+
+        min_val = np.nanmin(arr)
+        max_val = np.nanmax(arr)
+        a, b = feature_range
+
+        if max_val == min_val:
+            result = np.full_like(arr, a)
+            result[mask] = np.nan
+            return result
+
+        scaled = (arr - min_val) / (max_val - min_val)
+        result = scaled * (b - a) + a
+        result[mask] = np.nan
+        return result
+    
+
     def normalize(arr, feature_range=(0, 1)):
         """
         Min-Max 归一化：将数组缩放到指定的特征范围（默认 [0, 1]）。
@@ -392,8 +428,7 @@ class TDXData:
         
         # 线性缩放公式
         scaled = (arr - min_val) / (max_val - min_val)  # 先缩放到 [0, 1]
-        return scaled * (b - a) + a
-    
+        return scaled * (b - a) + a    
 
 if __name__ == "__main__":
     data = TDXData()

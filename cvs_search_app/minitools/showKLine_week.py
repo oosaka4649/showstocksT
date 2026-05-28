@@ -301,7 +301,7 @@ def draw_charts(stock_code='', stock_name=''):
         .add_xaxis(xaxis_data=chart_data["categoryData"])
         .add_yaxis(
             series_name="MACD DIF",
-            y_axis=tdx.standardize_macd(macd_array[0]),  # macd_array[0] 是 macd 线，macd_array[1] 是 dea 线，macd_array[2] 是柱状图
+            y_axis=tdx.normalize_macd(macd_array[0]),  # macd_array[0] 是 macd 线，macd_array[1] 是 dea 线，macd_array[2] 是柱状图
             is_smooth=True,
             is_hover_animation=False,
             linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
@@ -312,7 +312,7 @@ def draw_charts(stock_code='', stock_name=''):
         )
         .add_yaxis(
             series_name="Volumes MACD DIF",
-            y_axis=tdx.standardize_macd(vol_macd_array[0]),
+            y_axis=tdx.normalize_macd(vol_macd_array[0]),
             is_smooth=True,
             is_hover_animation=False,
             linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
@@ -321,6 +321,28 @@ def draw_charts(stock_code='', stock_name=''):
             yaxis_index=2,
             label_opts=opts.LabelOpts(is_show=False),
         )  
+        .add_yaxis(
+            series_name="Volumes MACD DEA",
+            y_axis=tdx.normalize_macd(vol_macd_array[1]),
+            is_smooth=True,
+            is_hover_animation=False,
+            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
+            itemstyle_opts=opts.ItemStyleOpts(color="#D9FF00"),  # 添加这一行定义颜色
+            xaxis_index=2,
+            yaxis_index=2,
+            label_opts=opts.LabelOpts(is_show=False),
+        )
+        .add_yaxis(
+            series_name="Close MACD DIF",
+            y_axis=tdx.normalize_macd(chart_data["closes"]),  # 这个是为了计算 macd 用的，输入为量值，看看能不能生成一个和 macd 类似的曲线，观察成交量和 macd 的关系
+            is_smooth=True,
+            is_hover_animation=False,
+            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
+            itemstyle_opts=opts.ItemStyleOpts(color="#00FF73"),  # 添加这一行定义颜色
+            xaxis_index=2,
+            yaxis_index=2,
+            label_opts=opts.LabelOpts(is_show=False),
+        )              
         #
         .set_global_opts(
             xaxis_opts=opts.AxisOpts(type_="category", grid_index=2),
@@ -364,9 +386,9 @@ def draw_charts(stock_code='', stock_name=''):
 
 if __name__ == "__main__":
     #s_codes = ucfg.my_stocks_list
-    #s_codes = ['688981']
+    s_codes = ['688981', '002303'] # 测试用，单个股票，后续改成批量
     print("Executing showKLine_week.py with arguments:", sys.argv)
-    s_codes = [sys.argv[1]]
+    #s_codes = [sys.argv[1]]
 
     for stock_code in s_codes:
         tdx_datas = tdx(stock_code)
