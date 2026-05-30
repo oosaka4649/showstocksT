@@ -313,11 +313,13 @@ https://github.com/shidenggui
 
 提供同花顺客户端/miniqmt/雪球的股票量化交易，支持跟踪 joinquant /ricequant 模拟交易 和 实盘雪球组合
  easytrader
+
+
+How to Train Your GPT
+https://github.com/raiyanyahya/how-to-train-your-gpt
+从零开始构建 LLM 课程。每行代码都附有注释。讲解方式通俗易懂，就像给五岁小孩讲课一样。
+
 '''
-
-
-
-
 
 '''
 收藏网址 https://金坷垃.com
