@@ -46,7 +46,10 @@ def split_data(data, start_date=None):
     closes = []
 
     values_macd = [] # 这个是为了计算 macd 用的，输入为量值，看看能不能生成一个和 macd 类似的曲线，观察成交量和 macd 的关系
-
+    # 看看效果
+    values_macd_1 = [] #里面装的是量值，但已经根据开盘价和收盘价的关系，修改为上涨为正，下跌为负，这样在显示时，macd线和量线就能统一化显示了，
+    closes_1 = [] # 里面装是当天收盘价 - 开盘价的差值
+    
 
     '''
         date         开        收        最低       最高       量
@@ -64,8 +67,17 @@ def split_data(data, start_date=None):
         closes.append(tick[2]) # 收盘价
         # 元代码 是 tick 4 错了，应该是 tick 5 因为 4是 最高价，5才是量
         values_macd.append(tick[5]) # 这个是为了计算 macd 用的，输入为量值，看看能不能生成一个和 macd 类似的曲线，观察成交量和 macd 的关系
+
+        #做一个尝试，将values值，由全部为正，修改为上涨为正，下跌为负，这样在显示时，macd线和量线就能统一化显示了，看看效果
+        if tick[1] > tick[2]:
+            values_macd_1.append('-' + str(tick[5])) 
+        else:
+            values_macd_1.append(tick[5]) 
+
+        closes_1.append(float(tick[2]) - float(tick[1]))  # 计算收盘价与开盘价的差值
+
         volumes.append([i, tick[5], 1 if tick[1] > tick[2] else -1])  # i 是序号 从 0 开始，如果 开始大于收盘 1 ，反之 -1 估计是标 量线颜色用 红 绿
-    return {"categoryData": category_data, "values": values, "volumes": volumes, "closes": closes, "values_macd": values_macd}
+    return {"categoryData": category_data, "values": values, "volumes": volumes, "closes": closes, "values_macd": values_macd, "values_macd_1": values_macd_1, "closes_1": closes_1}
 
 #计算macd指标
 def calculate_macd(data):
@@ -305,6 +317,8 @@ def draw_charts(stock_code='', stock_name=''):
         )
     )
     
+    ''' 
+    #这是一个可以使用的，正确的模板，下面的使用的 line_V_MACD 是用于改进用
     macd_array = calculate_macd(data=chart_data["closes"])
     vol_macd_array = calculate_macd(data=chart_data["values_macd"])
     #显示成交量和macd的关系
@@ -364,6 +378,60 @@ def draw_charts(stock_code='', stock_name=''):
             #要点: 为 line_V_MACD 的各 add_yaxis 加上 xaxis_index=2, yaxis_index=2，并把 datazoom_opts 的 xaxis_index 改为 [0,1,2]，同时为该图指定 grid_index 相关的轴配置，确保随滑动条同步缩放。
         )
     )
+    '''
+
+    macd_array = calculate_macd(data=chart_data["closes"])
+    vol_macd_array = calculate_macd(data=chart_data["values_macd"])
+    vol_macd_array1 = calculate_macd(data=chart_data["values_macd_1"])
+
+
+    p_z, v_z = tdx.calculate_rolling_zscore(chart_data["closes"], chart_data["values_macd"], window=20)
+    #显示成交量和macd的关系
+    #思路：将macd的计算公式输入为量值，这样会生成一个和macd类似的曲线，看能否添加进k线图中，最好是随滑动条缩放
+    line_V_MACD = (
+        Line()
+        .add_xaxis(xaxis_data=chart_data["categoryData"])
+        .add_yaxis(
+            series_name="Volumes MACD DIF",
+            y_axis=v_z,
+            is_smooth=True,
+            is_hover_animation=False,
+            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
+            itemstyle_opts=opts.ItemStyleOpts(color="#FF008C"),  # 添加这一行定义颜色
+            xaxis_index=2,
+            yaxis_index=2,
+            label_opts=opts.LabelOpts(is_show=False),
+        )   
+        .add_yaxis(
+            series_name="MACD DIF",
+            y_axis=tdx.standardize_macd(macd_array[0]),
+            is_smooth=True,
+            is_hover_animation=False,
+            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
+            itemstyle_opts=opts.ItemStyleOpts(color="#C8FF00"),  # 添加这一行定义颜色
+            xaxis_index=2,
+            yaxis_index=2,
+            label_opts=opts.LabelOpts(is_show=False),
+        )                 
+        .add_yaxis(
+            series_name="Close MACD DIF",
+            y_axis=p_z,  #直接用closes值，就是看看时间区间内最大值的位置
+            is_smooth=True,
+            is_hover_animation=False,
+            linestyle_opts=opts.LineStyleOpts(width=3, opacity=0.5),
+            itemstyle_opts=opts.ItemStyleOpts(color="#00FF73"),  # 添加这一行定义颜色
+            xaxis_index=2,
+            yaxis_index=2,
+            label_opts=opts.LabelOpts(is_show=False),
+        )              
+        #
+        .set_global_opts(
+            xaxis_opts=opts.AxisOpts(type_="category", grid_index=2),
+            yaxis_opts=opts.AxisOpts(grid_index=2, is_scale=True, axislabel_opts=opts.LabelOpts(is_show=False)), 
+            # 0 是 k线图，1 是成交量，2 是成交量macd关系线 修改这个参数可以控制哪个图表有缩放功能
+            #要点: 为 line_V_MACD 的各 add_yaxis 加上 xaxis_index=2, yaxis_index=2，并把 datazoom_opts 的 xaxis_index 改为 [0,1,2]，同时为该图指定 grid_index 相关的轴配置，确保随滑动条同步缩放。
+        )
+    )    
 
     # Kline And Line
     overlap_kline_line = kline.overlap(line)
@@ -398,19 +466,19 @@ def draw_charts(stock_code='', stock_name=''):
 
 if __name__ == "__main__":
     #s_codes = ucfg.my_stocks_list
-    start_date = '2024-04-06'  # 可以根据需要设置开始日期
+    start_date = '2025-04-07'  # 可以根据需要设置开始日期
     s_codes = [#'002739',
                 #'002585', 
-                #'001337',
-                #'000686',
+               # '001337',
+               # '000686',
                #'600745',
-                #'300215',
-                #'002218',
+              # '300215',
+               # '002218',
                # '300006',
-                #'600526',
-                #'300251',
-                #'000807',
-                '002386'
+              #  '600526',
+                '300251',
+              #  '000807',
+              #  '002386'
                 ] # 测试用，单个股票，后续改成批量
     print("Executing showKLine_week.py with arguments:", sys.argv)
     #s_codes = [sys.argv[1]]

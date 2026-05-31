@@ -350,6 +350,12 @@ class TDXData:
 
 
 
+    '''
+    Z-score 标准化Z-score 标准化基于原始数据的均值（Mean）和标准差（Standard Deviation）进行转换。
+    它将数据转化为均值为 (0)、方差为 (1) 的正态分布（或标准分布）。
+    数学公式：(Z=frac{x-mu }{sigma })其中 (x) 为原始数据，(mu) 为全体数据的均值，(sigma ) 为全体数据的标准差。
+    数据范围：没有固定的理论上下限，转换后的数据通常集中在 ([-3, 3]) 之间。
+    '''
     def standardize(arr):
         """
         Z-score 标准化：将数组转换为均值为 0、标准差为 1 的分布。
@@ -376,6 +382,7 @@ class TDXData:
 
     def normalize_macd(arr, feature_range=(0, 1)):
         """
+        相较于没有macd的函数，这个函数只是，对输入数据进行归一化处理时，就不会因为输入数据中有 np.nan 导致计算结果全是 np.nan
         Min-Max 归一化：将数组缩放到指定的特征范围（默认 [0, 1]）。
         
         参数:
@@ -410,6 +417,12 @@ class TDXData:
         return result
     
 
+    '''
+    Min-Max 归一化Min-Max 归一化（线性归一化）基于原始数据的最大值（Max）和最小值（Min）进行缩放。它将原始数据线性映射到指定的区间内。
+    数据范围：严格限定在固定的区间，通常为 ([0, 1]) 或 ([-1, 1])
+    
+    '''
+
     def normalize(arr, feature_range=(0, 1)):
         """
         Min-Max 归一化：将数组缩放到指定的特征范围（默认 [0, 1]）。
@@ -436,6 +449,97 @@ class TDXData:
         # 线性缩放公式
         scaled = (arr - min_val) / (max_val - min_val)  # 先缩放到 [0, 1]
         return scaled * (b - a) + a    
+
+
+
+    '''
+    成交量为什么不使用和股价一样的处理细节？
+    因为由于突发事件，成交量也会比平时多出数倍您的直觉非常敏锐！
+    这正是量化金融中一个非常经典且深刻的数据特征问题。
+    
+    结论先行：成交量不使用股价那套“偏离度”处理，恰恰就是因为成交量的“突发放大数倍”是脉冲式的、会自我修正的；
+    而股价的上涨是累积式的、不会轻易回头。
+    以下从数学结构和金融逻辑两个维度，为您拆解为什么成交量可以直接做 Z-score，
+    而股价必须拐个弯：1. 数据的数学结构不同（随机游走 vs. 均值回归）股价是“非平稳的”（随机游走）：股价具有时间累积效应。
+                       如果一只股票从 10 元涨到 100 元，它会产生一个新的价格平台，永远都不会再回到 10 元。
+                       如果您直接对绝对股价做 20 日滚动 Z-score，在持续暴涨的牛市里，每天的价格都会踩着前期的价格往上爬，导致连续几周的 Price_Z 都卡死在 +2 或 +3 的上限，指标出现严重钝化，失去灵敏度。
+                       因此，我们必须用“偏离度”把这个长期趋势剥离掉。
+                成交量是“天生均值回归的”（脉冲式）：成交量无论因为突发事件放大到多少倍（比如平时 1 万手，今天突发利好爆量到 50 万手），它绝对不可能长期维持在 50 万手。
+                过几天热度散去，成交量一定会重新掉落回 1 万手或 2 万手附近。也就是说，成交量虽然有突发的高峰，但它的中枢（均值）在短期内是相对稳定的。
+                这种天生会“吐故纳新、回到原点”的数据，直接做 Z-score 就能完美捕捉到那次突发的脉冲。
+                    2. 我们对两者的“分析目的”完全不同对成交量：我们需要捕捉“绝对的异常”突发事件导致成交量放大数倍，这正是我们梦寐以求想要捕捉的信号！
+                    如果直接对成交量做 Z-score，今天爆量，Volume_Z 就会立刻飙升到 +4 甚至 +6。这个高额的数值会像一个明亮的警报灯一样告诉程序：“注意，这地方出大事了！”这正是我们需要的反馈。
+                    对股价：我们需要剔除“绝对幅度的干扰”股价由于基数不同，绝对涨幅的威力不同。比如股票 A 从 10 元涨到 11 元（涨 10%），股票 B 从 100 元涨到 101 元（涨 1%）。
+                    如果我们不用“偏离度（百分比）”消除基数影响，直接对股价绝对值做 Z-score，高价股和小幅波动就会产生严重的数学扭曲。
+    
+    '''
+    def calculate_rolling_zscore(prices, volumes, window=20):
+        """使用 NumPy 数组计算股价和成交量的滚动 Z-score。
+
+        :param prices: 股价数组 (List 或 NumPy Array)
+        :param volumes: 成交量数组 (List 或 NumPy Array)
+        :param window: 滚动窗口大小（默认20天）
+        :return: (price_z, volume_z) 两个与其等长的 NumPy 数组，前 window-1
+        个元素为 np.nan
+        """
+        # 转换为 numpy 浮点数数组，方便处理缺失值
+        p = np.array(prices, dtype=float)
+        v = np.array(volumes, dtype=float)
+        n = len(p)
+
+        # 初始化结果数组，默认填充为 nan
+        price_z = np.full(n, np.nan)
+        volume_z = np.full(n, np.nan)
+
+        if n < window:
+            return price_z, volume_z
+
+        # 1. 计算成交量的滚动 Z-score
+        # 2. 计算股价偏离度 (Price Deviation) 的滚动 Z-score
+        for i in range(window - 1, n):
+            # 截取当前窗口内的数据
+            window_v = v[i - window + 1 : i + 1]
+            window_p = p[i - window + 1 : i + 1]
+
+            # --- 成交量计算 (直接 Z-score) ---
+            v_mean = np.mean(window_v)
+            v_std = np.std(window_v, ddof=0)  # ddof=0 为总体标准差
+            if v_std > 0:
+                volume_z[i] = (v[i] - v_mean) / v_std
+            else:
+                volume_z[i] = 0.0  # 若标准差为0（数据完全一样），Z-score 设为 0
+
+            # --- 股价计算 (基于滑动窗口内的偏离度再做 Z-score) ---
+            # 计算窗口内每天的股价，偏离【各自过去20天均线】的比例
+            # 为了严格保证不引入未来数据，这里动态计算该窗口内部的偏离度序列
+            sub_deviations = []
+            for j in range(window):
+                # 找到当前考察点 j 在原数组中的实际索引
+                actual_idx = i - window + 1 + j
+                if actual_idx < window - 1:
+                    continue
+                # 计算这一天的移动平均线
+                current_ma = np.mean(p[actual_idx - window + 1 : actual_idx + 1])
+                if current_ma > 0:
+                    dev = (p[actual_idx] - current_ma) / current_ma
+                    sub_deviations.append(dev)
+
+            # 对当前的偏离度序列计算 Z-score
+            if len(sub_deviations) > 0:
+                sub_deviations = np.array(sub_deviations)
+                p_mean = np.mean(sub_deviations)
+                p_std = np.std(sub_deviations, ddof=0)
+
+                if p_std > 0:
+                    price_z[i] = (sub_deviations[-1] - p_mean) / p_std
+                else:
+                    price_z[i] = 0.0
+
+        return price_z, volume_z
+
+
+
+
 
 if __name__ == "__main__":
     data = TDXData()

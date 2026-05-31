@@ -50,6 +50,9 @@ scripts_get_rzrq_path = os.path.join(current_dir, 'scripts', 'getRzRq.py')
 scripts_mystocks_zjlx_line_path = os.path.join(current_dir, 'minitools', 'showLine_zjlx.py')
 scripts_get_zjlx_path = os.path.join(current_dir, 'scripts', 'getZJLX.py')
 
+scripts_mystocks_ai_bt_count_path = os.path.join(current_dir, 'minitools', 'ai_count_backtest.py')
+scripts_mystocks_ai_bt_quant_path = os.path.join(current_dir, 'minitools', 'ai_quant_backtest.py') #统计股票价格涨跌分布的脚本
+
 scripts_mystocks_zjlx_rzrq_line_path = os.path.join(current_dir, 'minitools', 'showLine_zjlx_rzrq.py')
 scripts_mystocks_price_analysis_path = os.path.join(current_dir, 'minitools', 'stock_price_analysis.py') #统计股票价格涨跌分布的脚本
 
@@ -347,6 +350,41 @@ def vectorbt_bt_strategy_D_W():
         html_files = [f'{ucfg.common_html_folder_name}/{f}' for f in os.listdir(folder_path) if f == html_file_name]
         return render_template("vbt_bt_result.html", files_list=html_files, results_detail=backtest_detail.to_html(classes="table"), back_test_div=stock_back_test_div,
                                script_output=f"{str(sum_result)}")
+    except Exception as e:
+        return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, htmlitems=show_html_items, 
+                               start_date_items=stock_price_analysis_start_date_items,
+                               script_output=f"执行失败: {str(e)}")
+
+
+#####  ################################ 使用策略 通过ai生成的 ##################################################
+@app.route("/ai_bt_strategy", methods=["GET", "POST"])
+def ai_bt_strategy():
+
+    folder_path = os.path.join(current_dir, 'templates', ucfg.common_html_folder_name) # 目标文件夹路径
+    extension = '.html' # 指定后缀名
+    try:
+        output = None
+        #取得输入的股票代码
+        stock_code = request.form.get("stock_key")
+        if (stock_code is not None and stock_code != ''):
+        # 调用 ai_quant_backtest.py 生成我关注的股票的 结果
+            result = subprocess.run(
+                ["python", scripts_mystocks_ai_bt_quant_path , stock_code], 
+                capture_output=True, 
+                text=True
+            )
+            output = result.stdout if result.returncode == 0 else f"错误: {result.stderr}"
+            print(f"ai_quant_backtest.py output: {output}")
+        # 调用 ai_count_backtest.py 生成我关注的股票的 结果
+            result = subprocess.run(
+                ["python", scripts_mystocks_ai_bt_count_path , stock_code], 
+                capture_output=True, 
+                text=True
+            )
+            output2 = result.stdout if result.returncode == 0 else f"错误: {result.stderr}"
+            print(f"ai_count_backtest.py output: {output2}")            
+    
+        return render_template("ai_bt_result.html", script_output=f"{str(output)}", script_output2=f"{str(output2)}")
     except Exception as e:
         return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, htmlitems=show_html_items, 
                                start_date_items=stock_price_analysis_start_date_items,

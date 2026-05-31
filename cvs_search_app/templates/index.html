@@ -81,6 +81,18 @@
         <!-- 脚本执行部分 -->
         <h2>显示股票K线图</h2>
         <div style="width: 700px;">
+            <div class="my-div">   
+                <form action="{{ url_for('ai_bt_strategy') }}" method="POST">
+                        <div>
+                            <label>这是通过Ai生成的回测策略，观察一段时间</label>
+                            <label>观察内容，成功率，收益率，交易次数等</label>
+                        </div>                  
+                    <div class="input-group" style="width: 600px; margin-top: 20px;">
+                        <input type="text" name="stock_key" placeholder="必须选策略并输入股票代码后，再点击回测..." class="form-control">
+                        <button type="submit" class="btn btn-primary" style="margin-left: 30px;">执行回测</button>
+                    </div>                    
+                </form>
+            </div>            
             <div  class="my-div">
                 <!-- 只显示上面已经生成的 html 融资融券数据 主力资金流向 等，每天只执行一次上面的脚本，后面就不用再执行了，直接显示已经生成好了的 -->
                 <form action="{{ url_for('showallhtml') }}" method="POST">
