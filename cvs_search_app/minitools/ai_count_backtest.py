@@ -14,21 +14,45 @@ show_templates_comm_html_path = os.path.join(parent_dir, 'templates', ucfg.commo
 
 # ==============================================================================
 # 1. 核心数学计算引擎 (Model)  https://share.google/aimode/n9SjEjk4ckJDR88qJ
+#
+#该模型的核心作用是把原始价格和成交量数据，转换为一组可直接用于交易信号判定的量化特征。
+# 它的输出主要用于后续 VP_SignalGenerator / VP_SignalGenerator_pulse 中的买卖逻辑判断。
 # ==============================================================================
 class Advanced_VP_KineticModel:
-    """量价动态引力场模型（纯向量化高速版）"""
+    """量价动态引力场模型（纯向量化高速版）
+
+    该类基于价格与成交量的 Z-score 特征，构建量价动能指数 (VPKI)、
+    向量余弦相似度 (Cosine_Similarity) 和市场象限分类 (Quadrant)。
+    这是后续信号生成器的核心输入。
+    """
 
     def __init__(self, p_window=20, v_window=20):
+        # p_window: 价格移动平均与偏离度计算窗口
+        # v_window: 成交量 Z-score 和中位数窗口
         self.p_window = p_window
         self.v_window = v_window
 
     def _rolling_window(self, a, window):
-        """利用 Stride 机制生成滚动窗口视图 (无内存复制，百倍加速)"""
+        """利用 NumPy stride 生成滚动窗口视图。
+
+        该方法不复制原始数组数据，直接构造一个新的视图，
+        可以显著提高批量计算效率。但要注意：输入数组必须是连续内存，
+        并且 window 不能大于数组长度。
+        """
         shape = a.shape[:-1] + (a.shape[-1] - window + 1, window)
         strides = a.strides + (a.strides[-1],)
         return np.lib.stride_tricks.as_strided(a, shape=shape, strides=strides)
 
     def analyze(self, prices, volumes):
+        """计算价格与成交量相关特征。
+
+        返回值包含：
+        - Price_Z: 价格偏离度的 Z-score
+        - Volume_Z: 成交量的 Z-score
+        - VPKI: 量价动能强弱指数
+        - Cosine_Similarity: 量价动能方向变化的余弦相似度
+        - Quadrant: 市场象限分类 (1~4)
+        """
         p = np.array(prices, dtype=float)
         v = np.array(volumes, dtype=float)
         n = len(p)
@@ -49,6 +73,7 @@ class Advanced_VP_KineticModel:
             }
 
         # 1. 向量化计算成交量的 Z-score 和中位数
+        #    每个时刻用过去 v_window 个成交量计算均值、标准差和中位数。
         v_windows = self._rolling_window(v, self.v_window)
         v_means = np.mean(v_windows, axis=1)
         v_stds = np.std(v_windows, axis=1, ddof=0)
@@ -56,10 +81,12 @@ class Advanced_VP_KineticModel:
 
         volume_z = np.full(n, np.nan)
         v_valid_slice = slice(self.v_window - 1, n)
+        # 防止标准差为 0 导致除零异常
         v_stds_safe = np.where(v_stds == 0, 1.0, v_stds)
         volume_z[v_valid_slice] = (v[v_valid_slice] - v_means) / v_stds_safe
 
         # 2. 向量化计算股价偏离度 (Deviation) 的 Z-score
+        #    先计算价格的移动平均，再求当前价格相对于该均值的偏离比例。
         p_ma_windows = self._rolling_window(p, self.p_window)
         p_mas = np.mean(p_ma_windows, axis=1)
         p_valid_slice = slice(self.p_window - 1, n)
@@ -68,6 +95,7 @@ class Advanced_VP_KineticModel:
         price_deviation = np.full(n, 0.0)
         price_deviation[p_valid_slice] = (p[p_valid_slice] - p_mas) / p_mas_safe
 
+        # 再对偏离度本身做滚动标准化，得到更加稳定的 price_z
         dev_windows = self._rolling_window(price_deviation, self.p_window)
         dev_means = np.mean(dev_windows, axis=1)
         dev_stds = np.std(dev_windows, axis=1, ddof=0)
@@ -80,10 +108,13 @@ class Advanced_VP_KineticModel:
             price_deviation[dev_valid_slice] - dev_means[self.p_window - 1 :]
         ) / dev_stds_safe[self.p_window - 1 :]
 
+        # 记录成交量中位数，用于判断当期成交量是高于还是低于历史中位数
         full_v_median = np.full(n, np.nan)
         full_v_median[v_valid_slice] = v_medians
 
         # 3. 交叉特征生成
+        #    VPKI 代表量价动能指数：价格偏离度 * 成交量强度 * 量比方向
+        #    如果当前成交量大于中位数，则 vol_sign 为 +1，否则为 -1。
         vpki = np.full(n, np.nan)
         cos_theta = np.full(n, np.nan)
         market_quadrant = np.zeros(n, dtype=int)
@@ -99,6 +130,11 @@ class Advanced_VP_KineticModel:
             * vol_sign[start_idx:]
         )
 
+        # 市场象限分类：
+        # 1: 价格和成交量同时走强 (主升共振)
+        # 2: 价格下跌但成交量放大 (左侧建仓)
+        # 3: 价格和成交量同时走弱 (弱势下跌)
+        # 4: 价格上涨但成交量萎缩 (高位诱多)
         q1 = (price_z >= 0) & (volume_z >= 0)
         q2 = (price_z < 0) & (volume_z >= 0)
         q3 = (price_z < 0) & (volume_z < 0)
@@ -110,6 +146,8 @@ class Advanced_VP_KineticModel:
         market_quadrant[q4] = 4
         market_quadrant[:start_idx] = 0
 
+        # 计算余弦相似度：表示量价动能变化方向是否平稳
+        # 若余弦接近 1，则方向一致；若接近 -1，则发生钝转。
         p_prev, p_curr = price_z[start_idx:-1], price_z[start_idx + 1 :]
         v_prev, v_curr = volume_z[start_idx:-1], volume_z[start_idx + 1 :]
 
@@ -159,7 +197,11 @@ class Advanced_VP_KineticModel:
 # 余弦夹角的反转信号才算真正有效。
 # ==============================================================================
 class VP_SignalGenerator_pulse:
-    """升级版：具备『真假动能逆转甄别引擎』的信号生成器"""
+    """升级版：具备『真假动能逆转甄别引擎』的信号生成器。
+
+    该类在传统多因子信号基础上，额外引入成交量确认与动能耗散判断，
+    用于区分“真逆转出局”与“假逆转洗盘持股”。
+    """
 
     def __init__(self, v_bottom_threshold=-2.0, v_volume_threshold=2.5, momentum_cosine=0.8, divergence_volume=-1.0):
         self.v_bottom_threshold = v_bottom_threshold
@@ -168,6 +210,11 @@ class VP_SignalGenerator_pulse:
         self.divergence_volume = divergence_volume
 
     def generate_signals(self, metrics_dict):
+        """根据模型特征生成交易信号和标签。
+
+        metrics_dict 必须含有 Advanced_VP_KineticModel.analyze() 输出的字段。
+        返回信号数组与标签数组，供后续回测逻辑使用。
+        """
         p_z = metrics_dict["Price_Z"]
         v_z = metrics_dict["Volume_Z"]
         vpki = metrics_dict["VPKI"]
@@ -178,17 +225,20 @@ class VP_SignalGenerator_pulse:
         combined_signals = np.zeros(n, dtype=int)
         signal_labels = np.full(n, "观望", dtype=object)
 
-        # 信号 1：左侧爆量抄底 (保持不变)
+        # 信号 1：左侧爆量抄底
+        #   场景：价格下跌、成交量放大，属于震荡反转的潜在买点。
         buy_left_mask = (quadrant == 2) & (p_z <= self.v_bottom_threshold) & (v_z >= self.v_volume_threshold)
         combined_signals[buy_left_mask] = 1
         signal_labels[buy_left_mask] = "BUY_左侧爆量抄底"
 
-        # 信号 2：右侧顺势加仓 (保持不变)
+        # 信号 2：右侧顺势加仓
+        #   场景：价格和成交量同时向好，方向一致且动能保持正向。
         buy_right_mask = (quadrant == 1) & (cos_theta >= self.momentum_cosine) & (vpki > 0)
         combined_signals[buy_right_mask & (combined_signals == 0)] = 1
         signal_labels[buy_right_mask & (signal_labels == "观望")] = "BUY_右侧顺势加仓"
 
-        # 信号 3：高位缩量诱多减仓 (保持不变)
+        # 信号 3：高位缩量诱多减仓
+        #   场景：股价继续上涨但成交量萎缩，高位诱多风险升高。
         sell_left_mask = (quadrant == 4) & (p_z >= 1.5) & (v_z <= self.divergence_volume)
         combined_signals[sell_left_mask] = -1
         signal_labels[sell_left_mask] = "SELL_高位缩量诱多"
@@ -214,10 +264,10 @@ class VP_SignalGenerator_pulse:
         
         combined_signals[sell_right_mask & (combined_signals == 0)] = -1
         
-        # 为了方便调试，我们细分标签，让你在日志里一眼看清
+        # 为了方便调试，我们细分标签，让你在日志里一眼看清真逆转出局。
         signal_labels[sell_right_mask & (signal_labels == "观望")] = "SELL_动能逆转真出局"
         
-        # 我们可以顺便记录一下哪些天成功识别了“假逆转”
+        # 识别假逆转：满足方向掉头但不满足放量/能量耗尽条件，判断为洗盘而非出局。
         fake_reverse_mask = base_reverse & ~sell_right_mask
         signal_labels[fake_reverse_mask & (signal_labels == "观望")] = "🔍识别：主力缩量洗盘持股"
 
@@ -228,7 +278,10 @@ class VP_SignalGenerator_pulse:
 # 2. 策略信号生成器 (Generator)
 # ==============================================================================
 class VP_SignalGenerator:
-    """基于引力场多维统计阈值生成交易信号"""
+    """基于引力场多维统计阈值生成交易信号。
+
+    这是基础版本的信号生成器，仅使用象限、余弦和 VPKI 来判定买入/卖出。
+    """
 
     def __init__(self, v_bottom_threshold=-2.0, v_volume_threshold=2.5, momentum_cosine=0.8, divergence_volume=-1.0):
         self.v_bottom_threshold = v_bottom_threshold
@@ -237,6 +290,7 @@ class VP_SignalGenerator:
         self.divergence_volume = divergence_volume
 
     def generate_signals(self, metrics_dict):
+        """从模型特征生成基础交易信号和标签。"""
         p_z = metrics_dict["Price_Z"]
         v_z = metrics_dict["Volume_Z"]
         vpki = metrics_dict["VPKI"]
@@ -274,15 +328,17 @@ class VP_SignalGenerator:
 # 3. 回测统计内核 (Engine)
 # ==============================================================================
 class VP_BacktestEngine:
-    """处理开平仓逻辑并输出绩效报表"""
+    """回测统计内核：模拟头寸、计算策略绩效并生成交易明细。"""
 
     @staticmethod
     def evaluate(prices, dates, signals, labels):
+        """评估策略表现并返回完整回测报告。"""
         p = np.array(prices, dtype=float)
         sig = np.array(signals, dtype=int)
         n = len(p)
 
         # 1. 开平仓状态模拟
+        #   当信号为 1 时建仓，信号为 -1 时平仓；否则沿用上一日持仓状态。
         position = np.zeros(n, dtype=int)
         current_pos = 0
         for i in range(n):
@@ -293,6 +349,7 @@ class VP_BacktestEngine:
             position[i] = current_pos
 
         # 2. 收益率计算 (次日享受收益)
+        #   策略持仓在当日收盘后确认，因此实际收益从下一日开始。
         price_returns = np.zeros(n)
         price_returns[1:] = (p[1:] - p[:-1]) / p[:-1]
         strategy_returns = np.zeros(n)
@@ -305,6 +362,7 @@ class VP_BacktestEngine:
         max_drawdown = np.min(drawdowns) if len(drawdowns) > 0 else 0.0
 
         # 4. 交易明细生命周期统计
+        #   记录建仓、平仓以及最后强制平仓的交易日志。
         trades = []
         in_trade = False
         buy_price = 0.0
@@ -351,10 +409,10 @@ class VP_BacktestEngine:
 # 4. 🎛️ 新增：量化总调度大脑 (Facade 门面类) —— 负责整合与完善使用流程
 # ==============================================================================
 class VP_QuantRunner:
-    """引力场系统的大脑。用户只需调用此类，即可完成整个量化流程。"""
+    """引力场系统的大脑。将数据准备、特征提取、信号生成和回测串成一个闭环。"""
 
     def __init__(self, p_window=15, v_window=20, v_bottom=-2.0, v_volume=2.5, momentum_cos=0.8, divergence_vol=-1.0):
-        """在这里统一管理全系统的参数，彻底解决参数分散问题"""
+        """统一管理模型参数并建立与信号生成器的关联。"""
         self.model = Advanced_VP_KineticModel(p_window=p_window, v_window=v_window)
         ''' 
         self.generator = VP_SignalGenerator(
@@ -372,6 +430,10 @@ class VP_QuantRunner:
         )
 
     def split_data(self, data, start_date=None):
+        """从原始 K 线数据中提取日期、收盘价和成交量。
+
+        该函数兼容 TDX 数据结构，返回用于后续分析的字典。
+        """
         category_data = []
         values = []
         volumes = []
@@ -401,11 +463,12 @@ class VP_QuantRunner:
         return {"categoryData": category_data, "values": values, "volumes": volumes, "closes": closes, "volumes_macd": volumes_macd}        
 
     def load_stock_data(self, stock_data):
+        """读取拆分后的股票数据，返回日期、收盘价和成交量序列。"""
         dates, prices, volumes = stock_data["categoryData"], stock_data["closes"], stock_data["volumes_macd"]  # 注意这里我们用的是 volumes_macd 来观察成交量和 macd 的关系
         return dates, prices, volumes
 
     def run_pipeline(self, stock_data):
-        """一键运行整个量化回测流水线，并自动输出高级 Markdown 报表"""
+        """运行模型、生成信号并回测，最终输出报告。"""
         # Step 1: 加载数据
         dates, prices, volumes = self.load_stock_data(stock_data)
         # Step 2: 提取统计特征
@@ -419,7 +482,7 @@ class VP_QuantRunner:
         return report
 
     def _print_markdown_report(self, report):
-        """输出标准量化研究格式的 Markdown 看板"""
+        """输出标准量化研究格式的 Markdown 看板。"""
         print("\n" + "="*60)
         print(f"   {tdx_datas.stock_name}      量价动态引力场策略 终极绩效看板          ")
         print("="*60)
