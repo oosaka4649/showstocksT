@@ -30,7 +30,17 @@
         </div>
     <!-- 脚本执行结果输出 -->
     <div>
-        
+        {% if script_output3 %}
+        <div style="margin-top: 20px; margin-left: 130px;">
+            <div style="float: left; width: 50%;">
+               <pre>{{ script_output3 }}</pre>
+            </div>
+            <div style="float: left; width: 50%;">
+               <!-- 这里可以放置其他内容，比如图表等 -->
+                <p>ai_quant_backtest_tmp 结果，比较适用于平时比较温和，低价的股票，有均线约束</p>
+            </div>
+        </div>
+        {% endif %}          
         {% if script_output %}
         <div style="margin-top: 20px; margin-left: 130px;">
             <div style="float: left; width: 50%;">
@@ -38,6 +48,7 @@
             </div>
             <div style="float: left; width: 50%;">
                <!-- 这里可以放置其他内容，比如图表等 -->
+                <p>ai_quant_backtest 结果，比较适用于比较活跃，高价的股票</p>
             </div>
         </div>
         {% endif %}
@@ -48,6 +59,7 @@
             </div>
             <div style="float: left; width: 50%;">
                <!-- 这里可以放置其他内容，比如图表等 -->
+                <p>ai_count_backtest 结果，主要是和其他的比较用</p>
             </div>
         </div>
         {% endif %}        

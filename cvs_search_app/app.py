@@ -52,6 +52,7 @@ scripts_get_zjlx_path = os.path.join(current_dir, 'scripts', 'getZJLX.py')
 
 scripts_mystocks_ai_bt_count_path = os.path.join(current_dir, 'minitools', 'ai_count_backtest.py')
 scripts_mystocks_ai_bt_quant_path = os.path.join(current_dir, 'minitools', 'ai_quant_backtest.py') #统计股票价格涨跌分布的脚本
+scripts_mystocks_ai_bt_quant_tmp_path = os.path.join(current_dir, 'minitools', 'ai_quant_backtest_tmp.py')
 
 scripts_mystocks_zjlx_rzrq_line_path = os.path.join(current_dir, 'minitools', 'showLine_zjlx_rzrq.py')
 scripts_mystocks_price_analysis_path = os.path.join(current_dir, 'minitools', 'stock_price_analysis.py') #统计股票价格涨跌分布的脚本
@@ -382,9 +383,16 @@ def ai_bt_strategy():
                 text=True
             )
             output2 = result.stdout if result.returncode == 0 else f"错误: {result.stderr}"
-            print(f"ai_count_backtest.py output: {output2}")            
+            print(f"ai_count_backtest.py output: {output2}")   
+            result = subprocess.run(
+                ["python", scripts_mystocks_ai_bt_quant_tmp_path , stock_code], 
+                capture_output=True, 
+                text=True
+            )
+            output3 = result.stdout if result.returncode == 0 else f"错误: {result.stderr}"
+            print(f"ai_quant_backtest_tmp.py output: {output}")                     
     
-        return render_template("ai_bt_result.html", script_output=f"{str(output)}", script_output2=f"{str(output2)}")
+        return render_template("ai_bt_result.html", script_output=f"{str(output)}", script_output2=f"{str(output2)}", script_output3=f"{str(output3)}")
     except Exception as e:
         return render_template("index.html", items=checkbox_items, vbtitems=strategy_items, htmlitems=show_html_items, 
                                start_date_items=stock_price_analysis_start_date_items,
