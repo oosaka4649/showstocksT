@@ -390,7 +390,7 @@ def chart_table_data(sh_data=None, sz_data=None, rzrq_data=None):
     tab.add(line_rzrq_sh_sz_value(sh_data, sz_data, rzrq_data), "融资融券量和市场量")
     tab.add(line_rzrq_sh_value(sh_data, sz_data, rzrq_data), "融资和上证量及上证指数对比标准化")
     tab.add(line_rzrq_sz_value(sh_data, sz_data, rzrq_data), "融资和深证量及深证指数对比标准化")
-    tab.add(line_rzrq_all_value(sh_data, sz_data, rzrq_data), "归一化后的融资和上证、深证量及指数对比")
+    tab.add(line_rzrq_all_value(sh_data, sz_data, rzrq_data), "归一化后的融资和上证、深证量及指数对比，上深量和")
 
     tab.add(line_sh_all(sh_all_data), "上证量及金额对比标准化")
     tab.add(line_sz_all(sz_all_data), "深证量及金额对比标准化")
@@ -458,6 +458,7 @@ def line_rzrq_all_value(sh_data, sz_data, rzrq_data=None) -> Line:
                                     splitline_opts=opts.SplitLineOpts(is_show=True),
                                 ),
                                 xaxis_opts=opts.AxisOpts(type_="category", boundary_gap=False),
+                                datazoom_opts=[DataZoomOpts(), DataZoomOpts(type_="inside")],  # 添加缩放功能，包括鼠标滑轮缩放
                          )        
     )
     return c
