@@ -62,6 +62,13 @@ class Advanced_VP_KineticModel(BaseModel):
         self.ma_long = ma_long
 
     def analyze(self, prices, volumes):
+        """返回值包含：
+        - Price_Z: 价格偏离度的 Z-score
+        - Volume_Z: 成交量的 Z-score
+        - VPKI: 量价动能强弱指数
+        - Cosine_Similarity: 量价动能方向变化的余弦相似度
+        - Quadrant: 市场象限分类 (1~4)
+        """        
         p = np.array(prices, dtype=float)
         v = np.array(volumes, dtype=float)
         n = len(p)
@@ -78,6 +85,7 @@ class Advanced_VP_KineticModel(BaseModel):
             ma_l_arr[self.ma_long - 1:] = np.mean(self._rolling_window(p, self.ma_long), axis=1)
 
         # 1. 向量化计算成交量的 Z-score 和中位数
+        #    每个时刻用过去 v_window 个成交量计算均值、标准差和中位数。        
         v_windows = self._rolling_window(v, self.v_window)
         v_means = np.mean(v_windows, axis=1)
         v_stds = np.std(v_windows, axis=1, ddof=0)
@@ -85,18 +93,21 @@ class Advanced_VP_KineticModel(BaseModel):
 
         volume_z = np.full(n, np.nan)
         v_valid_slice = slice(self.v_window - 1, n)
+        # 防止标准差为 0 导致除零异常
         v_stds_safe = np.where(v_stds == 0, 1.0, v_stds)
         volume_z[v_valid_slice] = (v[v_valid_slice] - v_means) / v_stds_safe
 
         # 2. 向量化计算股价偏离度 (Deviation) 的 Z-score
+        #    先计算价格的移动平均，再求当前价格相对于该均值的偏离比例。        
         p_ma_windows = self._rolling_window(p, self.p_window)
         p_mas = np.mean(p_ma_windows, axis=1)
         p_valid_slice = slice(self.p_window - 1, n)
+        # 防止标准差为 0 导致除零异常
         p_mas_safe = np.where(p_mas == 0, 1.0, p_mas)
 
         price_deviation = np.full(n, 0.0)
         price_deviation[p_valid_slice] = (p[p_valid_slice] - p_mas) / p_mas_safe
-
+        # 再对偏离度本身做滚动标准化，得到更加稳定的 price_z
         dev_windows = self._rolling_window(price_deviation, self.p_window)
         dev_means = np.mean(dev_windows, axis=1)
         dev_stds = np.std(dev_windows, axis=1, ddof=0)
@@ -108,6 +119,7 @@ class Advanced_VP_KineticModel(BaseModel):
         price_z[dev_valid_slice] = (
             price_deviation[dev_valid_slice] - dev_means[self.p_window - 1 :]
         ) / dev_stds_safe[self.p_window - 1 :]
+
 
         full_v_median = np.full(n, np.nan)
         full_v_median[v_valid_slice] = v_medians
@@ -121,6 +133,9 @@ class Advanced_VP_KineticModel(BaseModel):
         if n <= start_idx:
             return {"Price_Z": price_z, "Volume_Z": volume_z, "VPKI": vpki, "Cosine_Similarity": cos_theta, "Quadrant": market_quadrant, "MA_Short": ma_s_arr, "MA_Long": ma_l_arr, "Raw_Price": p}
 
+        # 3. 交叉特征生成
+        #    VPKI 代表量价动能指数：价格偏离度 * 成交量强度 * 量比方向
+        #    如果当前成交量大于中位数，则 vol_sign 为 +1，否则为 -1。
         vol_sign = np.where(v >= full_v_median, 1.0, -1.0)
         vpki[start_idx:] = (
             price_z[start_idx:]
@@ -128,6 +143,11 @@ class Advanced_VP_KineticModel(BaseModel):
             * vol_sign[start_idx:]
         )
 
+        # 市场象限分类：
+        # 1: 价格和成交量同时走强 (主升共振)
+        # 2: 价格下跌但成交量放大 (左侧建仓)
+        # 3: 价格和成交量同时走弱 (弱势下跌)
+        # 4: 价格上涨但成交量萎缩 (高位诱多)
         q1 = (price_z >= 0) & (volume_z >= 0)
         q2 = (price_z < 0) & (volume_z >= 0)
         q3 = (price_z < 0) & (volume_z < 0)
@@ -138,7 +158,8 @@ class Advanced_VP_KineticModel(BaseModel):
         market_quadrant[q3] = 3
         market_quadrant[q4] = 4
         market_quadrant[:start_idx] = 0
-
+        # 计算余弦相似度：表示量价动能变化方向是否平稳
+        # 若余弦接近 1，则方向一致；若接近 -1，则发生钝转。
         p_prev, p_curr = price_z[start_idx:-1], price_z[start_idx + 1 :]
         v_prev, v_curr = volume_z[start_idx:-1], volume_z[start_idx + 1 :]
 
@@ -198,16 +219,19 @@ class VP_SignalGenerator:
         signal_labels = np.full(n, "观望", dtype=object)
 
         # 信号 1：左侧爆量抄底 (保持硬核统计过滤)
+        #   场景：价格下跌、成交量放大，属于震荡反转的潜在买点。        
         buy_left_mask = (quadrant == 2) & (p_z <= self.v_bottom_threshold) & (v_z >= self.v_volume_threshold)
         combined_signals[buy_left_mask] = 1
         signal_labels[buy_left_mask] = "BUY_左侧爆量抄底"
 
         # 信号 2：右侧顺势加仓
+        #   场景：价格和成交量同时向好，方向一致且动能保持正向。        
         buy_right_mask = (quadrant == 1) & (cos_theta >= self.momentum_cosine) & (vpki > 0)
         combined_signals[buy_right_mask & (combined_signals == 0)] = 1
         signal_labels[buy_right_mask & (signal_labels == "观望")] = "BUY_右侧顺势加仓"
 
         # 信号 3：高位缩量诱多减仓
+        #   场景：价格上升但成交量萎缩，属于高位诱多的潜在卖点。
         sell_left_mask = (quadrant == 4) & (p_z >= 1.5) & (v_z <= self.divergence_volume)
         combined_signals[sell_left_mask] = -1
         signal_labels[sell_left_mask] = "SELL_高位缩量诱多"
@@ -215,9 +239,11 @@ class VP_SignalGenerator:
         # ----------------------------------------------------------------------
         # 🔥 终极进化：信号 4 【动能逆转突变出局】—— 融入空间生命线防线
         # ----------------------------------------------------------------------
+        # 基础条件：夹角余弦极度为负，方向发生钝化掉头        
         base_reverse = (cos_theta <= -0.7) & (quadrant != 2)
 
         # 过滤阀 1：量价行为确认（放量下跌才走）
+        # 过滤阀 1：放量下跌才是真见顶 (V_Z > 0 代表今天成交量高于20日均量，排除缩量洗盘)        
         volume_confirm = (v_z > 0.0)
         
         # 过滤阀 2：惯性高能区保护
