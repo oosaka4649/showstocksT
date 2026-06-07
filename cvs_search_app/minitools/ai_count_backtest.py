@@ -4,6 +4,10 @@ from tdxcomm import TDXData as tdx
 from typing import List, Union
 import user_config as ucfg
 import sys
+try:
+    from minitools.ai_backtest_base import BaseModel, VP_BacktestEngine
+except Exception:
+    from ai_backtest_base import BaseModel, VP_BacktestEngine
 
 # 脚本常量
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -18,7 +22,7 @@ show_templates_comm_html_path = os.path.join(parent_dir, 'templates', ucfg.commo
 #该模型的核心作用是把原始价格和成交量数据，转换为一组可直接用于交易信号判定的量化特征。
 # 它的输出主要用于后续 VP_SignalGenerator / VP_SignalGenerator_pulse 中的买卖逻辑判断。
 # ==============================================================================
-class Advanced_VP_KineticModel:
+class Advanced_VP_KineticModel(BaseModel):
     """量价动态引力场模型（纯向量化高速版）
 
     该类基于价格与成交量的 Z-score 特征，构建量价动能指数 (VPKI)、
@@ -32,16 +36,6 @@ class Advanced_VP_KineticModel:
         self.p_window = p_window
         self.v_window = v_window
 
-    def _rolling_window(self, a, window):
-        """利用 NumPy stride 生成滚动窗口视图。
-
-        该方法不复制原始数组数据，直接构造一个新的视图，
-        可以显著提高批量计算效率。但要注意：输入数组必须是连续内存，
-        并且 window 不能大于数组长度。
-        """
-        shape = a.shape[:-1] + (a.shape[-1] - window + 1, window)
-        strides = a.strides + (a.strides[-1],)
-        return np.lib.stride_tricks.as_strided(a, shape=shape, strides=strides)
 
     def analyze(self, prices, volumes):
         """计算价格与成交量相关特征。
@@ -327,82 +321,6 @@ class VP_SignalGenerator:
 # ==============================================================================
 # 3. 回测统计内核 (Engine)
 # ==============================================================================
-class VP_BacktestEngine:
-    """回测统计内核：模拟头寸、计算策略绩效并生成交易明细。"""
-
-    @staticmethod
-    def evaluate(prices, dates, signals, labels):
-        """评估策略表现并返回完整回测报告。"""
-        p = np.array(prices, dtype=float)
-        sig = np.array(signals, dtype=int)
-        n = len(p)
-
-        # 1. 开平仓状态模拟
-        #   当信号为 1 时建仓，信号为 -1 时平仓；否则沿用上一日持仓状态。
-        position = np.zeros(n, dtype=int)
-        current_pos = 0
-        for i in range(n):
-            if sig[i] == 1:
-                current_pos = 1
-            elif sig[i] == -1:
-                current_pos = 0
-            position[i] = current_pos
-
-        # 2. 收益率计算 (次日享受收益)
-        #   策略持仓在当日收盘后确认，因此实际收益从下一日开始。
-        price_returns = np.zeros(n)
-        price_returns[1:] = (p[1:] - p[:-1]) / p[:-1]
-        strategy_returns = np.zeros(n)
-        strategy_returns[1:] = position[:-1] * price_returns[1:]
-
-        # 3. 资金曲线与最大回撤
-        equity_curve = np.cumprod(1.0 + strategy_returns)
-        running_max = np.maximum.accumulate(equity_curve)
-        drawdowns = (equity_curve - running_max) / running_max
-        max_drawdown = np.min(drawdowns) if len(drawdowns) > 0 else 0.0
-
-        # 4. 交易明细生命周期统计
-        #   记录建仓、平仓以及最后强制平仓的交易日志。
-        trades = []
-        in_trade = False
-        buy_price = 0.0
-        trade_logs = []
-
-        for i in range(n):
-            if sig[i] == 1 and not in_trade:
-                in_trade = True
-                buy_price = p[i]
-                trade_logs.append({"type": "BUY", "date": dates[i], "price": p[i], "reason": labels[i], "return": 0.0})
-            elif sig[i] == -1 and in_trade:
-                in_trade = False
-                sell_price = p[i]
-                trade_return = (sell_price - buy_price) / buy_price
-                trades.append(trade_return)
-                trade_logs.append({"type": "SELL", "date": dates[i], "price": p[i], "reason": labels[i], "return": trade_return * 100})
-
-        if in_trade:
-            trade_return = (p[-1] - buy_price) / buy_price
-            trades.append(trade_return)
-            trade_logs.append({"type": "CLOSE_MANDATORY", "date": dates[-1], "price": p[-1], "reason": "历史数据结束强制平仓", "return": trade_return * 100})
-
-        trades = np.array(trades)
-        total_trades = len(trades)
-        winning_trades = np.sum(trades > 0)
-        win_rate = winning_trades / total_trades if total_trades > 0 else 0.0
-
-        # 基准买入持有收益率
-        benchmark_return = (p[-1] - p[0]) / p[0]
-
-        return {
-            "total_return": (equity_curve[-1] - 1.0) * 100,
-            "benchmark_return": benchmark_return * 100,
-            "total_trades": total_trades,
-            "win_rate": win_rate * 100,
-            "max_drawdown": max_drawdown * 100,
-            "max_win": np.max(trades) * 100 if total_trades > 0 else 0.0,
-            "max_loss": np.min(trades) * 100 if total_trades > 0 else 0.0,
-            "trade_logs": trade_logs,
-        }
 
 
 # ==============================================================================

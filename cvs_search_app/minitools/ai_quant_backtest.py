@@ -44,11 +44,15 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 show_templates_html_path = os.path.join(parent_dir, 'templates', ucfg.my_stocks_html_folder_name)
 show_templates_comm_html_path = os.path.join(parent_dir, 'templates', ucfg.common_html_folder_name)
+try:
+    from minitools.ai_backtest_base import BaseModel, VP_BacktestEngine
+except Exception:
+    from ai_backtest_base import BaseModel, VP_BacktestEngine
 
 # ==============================================================================
 # 1. 核心数学计算引擎 (Model) —— 已加入多周期移动平均线
 # ==============================================================================
-class Advanced_VP_KineticModel:
+class Advanced_VP_KineticModel(BaseModel):
     """量价动态引力场模型（纯向量化高速版 - 融合生命线防线）"""
 
     def __init__(self, p_window=15, v_window=20, ma_short=20, ma_long=60):
@@ -56,12 +60,6 @@ class Advanced_VP_KineticModel:
         self.v_window = v_window
         self.ma_short = ma_short
         self.ma_long = ma_long
-
-    def _rolling_window(self, a, window):
-        """利用 Stride 机制生成滚动窗口视图 (无内存复制，百倍加速)"""
-        shape = a.shape[:-1] + (a.shape[-1] - window + 1, window)
-        strides = a.strides + (a.strides[-1],)
-        return np.lib.stride_tricks.as_strided(a, shape=shape, strides=strides)
 
     def analyze(self, prices, volumes):
         p = np.array(prices, dtype=float)
@@ -249,65 +247,7 @@ class VP_SignalGenerator:
 # ==============================================================================
 # 3. 回测统计内核 (Engine) —— 维持原样保持严谨
 # ==============================================================================
-class VP_BacktestEngine:
-    @staticmethod
-    def evaluate(prices, dates, signals, labels):
-        p = np.array(prices, dtype=float)
-        sig = np.array(signals, dtype=int)
-        n = len(p)
 
-        position = np.zeros(n, dtype=int)
-        current_pos = 0
-        for i in range(n):
-            if sig[i] == 1:
-                current_pos = 1
-            elif sig[i] == -1:
-                current_pos = 0
-            position[i] = current_pos
-
-        price_returns = np.zeros(n)
-        price_returns[1:] = (p[1:] - p[:-1]) / p[:-1]
-        strategy_returns = np.zeros(n)
-        strategy_returns[1:] = position[:-1] * price_returns[1:]
-
-        equity_curve = np.cumprod(1.0 + strategy_returns)
-        running_max = np.maximum.accumulate(equity_curve)
-        drawdowns = (equity_curve - running_max) / running_max if len(equity_curve) > 0 else np.zeros(n)
-        max_drawdown = np.min(drawdowns) if len(drawdowns) > 0 else 0.0
-
-        trades = []
-        in_trade = False
-        buy_price = 0.0
-        trade_logs = []
-
-        for i in range(n):
-            if sig[i] == 1 and not in_trade:
-                in_trade = True
-                buy_price = p[i]
-                trade_logs.append({"type": "BUY", "date": dates[i], "price": p[i], "reason": labels[i], "return": 0.0})
-            elif sig[i] == -1 and in_trade:
-                in_trade = False
-                sell_price = p[i]
-                trade_return = (sell_price - buy_price) / buy_price
-                trades.append(trade_return)
-                trade_logs.append({"type": "SELL", "date": dates[i], "price": p[i], "reason": labels[i], "return": trade_return * 100})
-        if in_trade:
-            trade_return = (p[-1] - buy_price) / buy_price
-            trades.append(trade_return)
-            trade_logs.append({"type": "CLOSE_MANDATORY", "date": dates[-1], "price": p[-1], "reason": "历史数据结束强制平仓", "return": trade_return * 100})
-        trades = np.array(trades)
-        total_trades = len(trades)
-        winning_trades = np.sum(trades > 0)
-        win_rate = winning_trades / total_trades if total_trades > 0 else 0.0
-        benchmark_return = (p[-1] - p[0]) / p[0]
-        return {"total_return": (equity_curve[-1] - 1.0) * 100 if len(equity_curve) > 0 else 0.0,
-                "benchmark_return": benchmark_return * 100,
-                "total_trades": total_trades,
-                "win_rate": win_rate * 100,
-                "max_drawdown": max_drawdown * 100,
-                "max_win": np.max(trades) * 100 if total_trades > 0 else 0.0,
-                "max_loss": np.min(trades) * 100 if total_trades > 0 else 0.0,
-                "trade_logs": trade_logs,}
     
 #==============================================================================
 #4. 量化总调度大脑 (Facade 门面类) —— 已接入自适应优化流
