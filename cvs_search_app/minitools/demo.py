@@ -323,6 +323,13 @@ How to Train Your GPT
 https://github.com/raiyanyahya/how-to-train-your-gpt
 从零开始构建 LLM 课程。每行代码都附有注释。讲解方式通俗易懂，就像给五岁小孩讲课一样。
 
+
+天天磁力
+https://www.xinxincilikp.top
+https://www.cilishanc.top
+https://www.xinxinciliwl.top
+https://www.xinxincilikk.com
+
 '''
 
 '''

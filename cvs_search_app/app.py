@@ -33,6 +33,16 @@ project/
     ├── index.html        # 主页面
     └── results.html      # CSV查询结果页
 
+当机器上安装的Chrome浏览器自动升级时，使用Selenium会报错，原因是ChromeDriver版本与Chrome浏览器版本不匹配。
+解决方法是下载与当前Chrome浏览器版本匹配的ChromeDriver，并替换掉原有的ChromeDriver。exe文件。
+
+https://googlechromelabs.github.io/chrome-for-testing/#stable
+
+ChromeバージョンアップによるSeleniumエラーのトラブルシューティング
+https://zenn.dev/ykesamaru/articles/a1a4fd5eae8563
+
+    
+
 '''
 app = Flask(__name__)
 
