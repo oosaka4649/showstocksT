@@ -5,7 +5,7 @@
 import os
 import pandas as pd
 from struct import unpack
-import user_config as ucfg
+from minitools import user_config as ucfg
 import talib
 import numpy as np
 

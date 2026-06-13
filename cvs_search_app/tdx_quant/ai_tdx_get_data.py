@@ -1,8 +1,6 @@
 import os
 import numpy as np
-from tdxcomm import TDXData as tdx
 from typing import List, Union
-import user_config as ucfg
 import sys
 import requests
 import json
@@ -11,6 +9,11 @@ import json
 current_dir = os.path.dirname(os.path.abspath(__file__))
 # 上一级目录（父目录）
 parent_dir = os.path.dirname(current_dir)
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from minitools.tdxcomm import TDXData as tdx
+from minitools import user_config as ucfg
 show_templates_html_path = os.path.join(parent_dir, 'templates', ucfg.my_stocks_html_folder_name)
 show_templates_comm_html_path = os.path.join(parent_dir, 'templates', ucfg.common_html_folder_name)
 

@@ -258,8 +258,7 @@ class VP_SignalGenerator:
         below_long_ma = np.where(np.isnan(ma_long), True, raw_p < ma_long)
         
         # 数学结合：只有在『基础逆转成立』+『放量或能量耗尽』的同时，价格还【跌破了短线生命线或长线均线】，才执行真出局
-        #sell_right_mask = base_reverse & (volume_confirm | energy_depleted) & (below_short_ma | below_long_ma)  #相对于 ai_quant_backtest 的改动点,就是修改了这一行
-        sell_right_mask = base_reverse & (volume_confirm | energy_depleted) & (below_long_ma)
+        sell_right_mask = base_reverse & (volume_confirm | energy_depleted) & (below_short_ma | below_long_ma)
 
         combined_signals[sell_right_mask & (combined_signals == 0)] = -1
         signal_labels[sell_right_mask & (signal_labels == "观望")] = "SELL_动能逆转真出局"

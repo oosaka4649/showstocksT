@@ -26,9 +26,14 @@
 🛠️ 统合后具备“双重生命线防御”的终极 Python 程序以下是为您重构并完善后的完整代码。
 我直接在 Advanced_VP_KineticModel 中向量化计算了均线，并在 VP_SignalGenerator 中加入了这道核心防线。
 
+准备在这个基础上进行改进和优化，期待您的新思路和新数据！
+1 修改计算均线的方式，使用 tblib库
+2 添加一个新的信号：当日股价在5日上且均线是多头排列，才可以买入
+3 确认卖出是否跌破5日线有效
 
-适用于高价股，或很活跃的股票，指标比较敏感，进出快，能做到大赚小亏。
-使用时和tmp一起对比，比较好
+
+这个版本的代码已经完全重构，加入了双重均线防御系统，并且在信号生成器中加入了对5日均线的严格检查。
+适用于低价股，不是很活跃的股票，指标比较敏感，进出快，能做到大赚小亏。
 '''
 
 import os
@@ -44,38 +49,32 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 show_templates_html_path = os.path.join(parent_dir, 'templates', ucfg.my_stocks_html_folder_name)
 show_templates_comm_html_path = os.path.join(parent_dir, 'templates', ucfg.common_html_folder_name)
-try:
-    from minitools.ai_backtest_base import BaseModel, VP_BacktestEngine
-except Exception:
-    from ai_backtest_base import BaseModel, VP_BacktestEngine
 
 # ==============================================================================
 # 1. 核心数学计算引擎 (Model) —— 已加入多周期移动平均线
 # ==============================================================================
-class Advanced_VP_KineticModel(BaseModel):
+import numpy as np
+
+class Advanced_VP_KineticModel:
     """量价动态引力场模型（纯向量化高速版 - 融合生命线防线）"""
 
-    def __init__(self, p_window=15, v_window=20, ma_short=20, ma_long=60):
+    def __init__(self, p_window=15, v_window=20, ma_short=5, ma_long=20, v_ratio_threshold=2.0):
         self.p_window = p_window
         self.v_window = v_window
         self.ma_short = ma_short
         self.ma_long = ma_long
+        self.v_ratio_threshold = v_ratio_threshold  
+
+    def _rolling_window(self, a, window):
+        shape = a.shape[:-1] + (a.shape[-1] - window + 1, window)
+        strides = a.strides + (a.strides[-1],)
+        return np.lib.stride_tricks.as_strided(a, shape=shape, strides=strides)
 
     def analyze(self, prices, volumes):
-        """返回值包含：
-        - Price_Z: 价格偏离度的 Z-score
-        - Volume_Z: 成交量的 Z-score
-        - VPKI: 量价动能强弱指数
-        - Cosine_Similarity: 量价动能方向变化的余弦相似度
-        - Quadrant: 市场象限分类 (1~4)
-        """        
         p = np.array(prices, dtype=float)
         v = np.array(volumes, dtype=float)
         n = len(p)
 
-        # ----------------------------------------------------------------------
-        # 新增核心：向量化计算 20日与60日趋势生命线
-        # ----------------------------------------------------------------------
         ma_s_arr = np.full(n, np.nan)
         ma_l_arr = np.full(n, np.nan)
         
@@ -84,30 +83,33 @@ class Advanced_VP_KineticModel(BaseModel):
         if n >= self.ma_long:
             ma_l_arr[self.ma_long - 1:] = np.mean(self._rolling_window(p, self.ma_long), axis=1)
 
-        # 1. 向量化计算成交量的 Z-score 和中位数
-        #    每个时刻用过去 v_window 个成交量计算均值、标准差和中位数。        
+        ma_l_slope = np.full(n, np.nan)
+        if n > self.ma_long:
+            ma_l_slope[1:] = np.diff(ma_l_arr)
+
         v_windows = self._rolling_window(v, self.v_window)
         v_means = np.mean(v_windows, axis=1)
         v_stds = np.std(v_windows, axis=1, ddof=0)
         v_medians = np.median(v_windows, axis=1)
 
         volume_z = np.full(n, np.nan)
+        v_ratio = np.full(n, np.nan)
+        
         v_valid_slice = slice(self.v_window - 1, n)
-        # 防止标准差为 0 导致除零异常
         v_stds_safe = np.where(v_stds == 0, 1.0, v_stds)
+        v_means_safe = np.where(v_means == 0, 1.0, v_means)
+        
         volume_z[v_valid_slice] = (v[v_valid_slice] - v_means) / v_stds_safe
+        v_ratio[v_valid_slice] = v[v_valid_slice] / v_means_safe
 
-        # 2. 向量化计算股价偏离度 (Deviation) 的 Z-score
-        #    先计算价格的移动平均，再求当前价格相对于该均值的偏离比例。        
         p_ma_windows = self._rolling_window(p, self.p_window)
         p_mas = np.mean(p_ma_windows, axis=1)
         p_valid_slice = slice(self.p_window - 1, n)
-        # 防止标准差为 0 导致除零异常
         p_mas_safe = np.where(p_mas == 0, 1.0, p_mas)
 
         price_deviation = np.full(n, 0.0)
         price_deviation[p_valid_slice] = (p[p_valid_slice] - p_mas) / p_mas_safe
-        # 再对偏离度本身做滚动标准化，得到更加稳定的 price_z
+
         dev_windows = self._rolling_window(price_deviation, self.p_window)
         dev_means = np.mean(dev_windows, axis=1)
         dev_stds = np.std(dev_windows, axis=1, ddof=0)
@@ -120,22 +122,17 @@ class Advanced_VP_KineticModel(BaseModel):
             price_deviation[dev_valid_slice] - dev_means[self.p_window - 1 :]
         ) / dev_stds_safe[self.p_window - 1 :]
 
-
         full_v_median = np.full(n, np.nan)
         full_v_median[v_valid_slice] = v_medians
 
-        # 3. 交叉特征生成
         vpki = np.full(n, np.nan)
         cos_theta = np.full(n, np.nan)
         market_quadrant = np.zeros(n, dtype=int)
 
-        start_idx = self.p_window * 2 - 2
+        start_idx = max(self.p_window * 2 - 2, self.ma_long - 1)
         if n <= start_idx:
             return {"Price_Z": price_z, "Volume_Z": volume_z, "VPKI": vpki, "Cosine_Similarity": cos_theta, "Quadrant": market_quadrant, "MA_Short": ma_s_arr, "MA_Long": ma_l_arr, "Raw_Price": p}
 
-        # 3. 交叉特征生成
-        #    VPKI 代表量价动能指数：价格偏离度 * 成交量强度 * 量比方向
-        #    如果当前成交量大于中位数，则 vol_sign 为 +1，否则为 -1。
         vol_sign = np.where(v >= full_v_median, 1.0, -1.0)
         vpki[start_idx:] = (
             price_z[start_idx:]
@@ -143,11 +140,6 @@ class Advanced_VP_KineticModel(BaseModel):
             * vol_sign[start_idx:]
         )
 
-        # 市场象限分类：
-        # 1: 价格和成交量同时走强 (主升共振)
-        # 2: 价格下跌但成交量放大 (左侧建仓)
-        # 3: 价格和成交量同时走弱 (弱势下跌)
-        # 4: 价格上涨但成交量萎缩 (高位诱多)
         q1 = (price_z >= 0) & (volume_z >= 0)
         q2 = (price_z < 0) & (volume_z >= 0)
         q3 = (price_z < 0) & (volume_z < 0)
@@ -157,9 +149,19 @@ class Advanced_VP_KineticModel(BaseModel):
         market_quadrant[q2] = 2
         market_quadrant[q3] = 3
         market_quadrant[q4] = 4
+
+        is_bull_alignment = (ma_s_arr > ma_l_arr) & (ma_l_slope > -0.01)
+        
+        p_change = np.full(n, 0.0)
+        p_change[1:] = (p[1:] - p[:-1]) / p[:-1]
+        
+        is_downward_channel = (p < ma_l_arr) & (ma_s_arr <= ma_l_arr)
+        is_volume_burst = (v_ratio >= self.v_ratio_threshold) & (p_change > 0.01)
+        
+        v_turn_signal = is_downward_channel & is_volume_burst
+        market_quadrant[v_turn_signal] = 5
         market_quadrant[:start_idx] = 0
-        # 计算余弦相似度：表示量价动能变化方向是否平稳
-        # 若余弦接近 1，则方向一致；若接近 -1，则发生钝转。
+
         p_prev, p_curr = price_z[start_idx:-1], price_z[start_idx + 1 :]
         v_prev, v_curr = volume_z[start_idx:-1], volume_z[start_idx + 1 :]
 
@@ -185,15 +187,18 @@ class Advanced_VP_KineticModel(BaseModel):
             "Quadrant": market_quadrant,
             "MA_Short": ma_s_arr,
             "MA_Long": ma_l_arr,
+            "Is_Bull_Alignment": is_bull_alignment,
             "Raw_Price": p
         }
+
+
 
 
 # ==============================================================================
 # 2. 策略信号生成器 (Generator) —— 已注入空间价格防御过滤网
 # ==============================================================================
 class VP_SignalGenerator:
-    """具备『空间均线双重防御系统』与『真假动能甄别』的终极信号生成器"""
+    """具备『空间硬性均线破位下穿』与『纯向量化多维动能防御』的终极信号生成器"""
 
     def __init__(self, v_bottom_threshold=-2.0, v_volume_threshold=2.5, momentum_cosine=0.8, divergence_volume=-1.0):
         self.v_bottom_threshold = v_bottom_threshold
@@ -208,73 +213,141 @@ class VP_SignalGenerator:
         cos_theta = metrics_dict["Cosine_Similarity"]
         quadrant = metrics_dict["Quadrant"]
         
-        # 提取用于空间定位的原始数据和均线防线
         raw_p = metrics_dict["Raw_Price"]
         ma_short = metrics_dict["MA_Short"]
         ma_long = metrics_dict["MA_Long"]
+        is_bull_alignment = metrics_dict["Is_Bull_Alignment"]
         
         n = len(p_z)
 
         combined_signals = np.zeros(n, dtype=int)
         signal_labels = np.full(n, "观望", dtype=object)
 
-        # 信号 1：左侧爆量抄底 (保持硬核统计过滤)
-        #   场景：价格下跌、成交量放大，属于震荡反转的潜在买点。        
-        buy_left_mask = (quadrant == 2) & (p_z <= self.v_bottom_threshold) & (v_z >= self.v_volume_threshold)
-        combined_signals[buy_left_mask] = 1
-        signal_labels[buy_left_mask] = "BUY_左侧爆量抄底"
+        # 【买入信号 1-B】下降末端放量突围
+        buy_reversal_mask = (quadrant == 5)
+        combined_signals[buy_reversal_mask] = 1
+        signal_labels[buy_reversal_mask] = "BUY_下降末端放量突围"
 
-        # 信号 2：右侧顺势加仓
-        #   场景：价格和成交量同时向好，方向一致且动能保持正向。        
-        buy_right_mask = (quadrant == 1) & (cos_theta >= self.momentum_cosine) & (vpki > 0)
+        # 【买入信号 1-A】左侧爆量抄底
+        buy_left_mask = (quadrant == 2) & (p_z <= self.v_bottom_threshold) & (v_z >= self.v_volume_threshold)
+        combined_signals[buy_left_mask & (combined_signals == 0)] = 1
+        signal_labels[buy_left_mask & (signal_labels == "观望")] = "BUY_左侧爆量抄底"
+
+        # 【买入信号 2】右侧顺势加仓（引入均线多头拦截）
+        buy_right_mask = (quadrant == 1) & (cos_theta >= self.momentum_cosine) & (vpki > 0) & is_bull_alignment
         combined_signals[buy_right_mask & (combined_signals == 0)] = 1
         signal_labels[buy_right_mask & (signal_labels == "观望")] = "BUY_右侧顺势加仓"
 
-        # 信号 3：高位缩量诱多减仓
-        #   场景：价格上升但成交量萎缩，属于高位诱多的潜在卖点。
+        # 【卖出信号 3】高位缩量诱多减仓
         sell_left_mask = (quadrant == 4) & (p_z >= 1.5) & (v_z <= self.divergence_volume)
         combined_signals[sell_left_mask] = -1
         signal_labels[sell_left_mask] = "SELL_高位缩量诱多"
 
         # ----------------------------------------------------------------------
-        # 🔥 终极进化：信号 4 【动能逆转突变出局】—— 融入空间生命线防线
+        # 🔥 核心修改：双轨制卖出系统（彻底解决跌破5日线漏报问题）
         # ----------------------------------------------------------------------
-        # 基础条件：夹角余弦极度为负，方向发生钝化掉头        
-        base_reverse = (cos_theta <= -0.7) & (quadrant != 2)
+        # 检查当前是否有效计算了5日均线
+        ma_short_valid = ~np.isnan(ma_short)
+        
+        # 动态捕捉下穿5日均线（今日收盘价 < MA5）
+        is_break_short_ma = ma_short_valid & (raw_p < ma_short)
+        
+        # 轨道一：【硬破位止损信号】（只要价格跌破短线生命线，不问动能和象限，强制离场）
+        # 优先级最高，用于短线绝对风控
+        sell_break_mask = is_break_short_ma
+        combined_signals[sell_break_mask] = -1
+        signal_labels[sell_break_mask] = "SELL_硬破5日线离场"
 
-        # 过滤阀 1：量价行为确认（放量下跌才走）
-        # 过滤阀 1：放量下跌才是真见顶 (V_Z > 0 代表今天成交量高于20日均量，排除缩量洗盘)        
+        # 轨道二：【动能逆转出局】（原有的复杂量价/洗盘拦截，在未硬破位但动能衰竭时起作用）
+        # 去掉原代码中限制死第二象限的限制，允许在极端破坏中出局
+        base_reverse = (cos_theta <= -0.7) 
+
         volume_confirm = (v_z > 0.0)
         
-        # 过滤阀 2：惯性高能区保护
         energy_depleted = np.full(n, True, dtype=bool)
-        for i in range(1, n):
-            if not np.isnan(vpki[i-1]) and abs(vpki[i-1]) > 2.5: 
-                energy_depleted[i] = False
+        if n > 1:
+            prev_vpki_abs = np.abs(np.roll(vpki, 1))
+            prev_vpki_abs[0] = np.nan
+            energy_depleted = np.where(~np.isnan(prev_vpki_abs) & (prev_vpki_abs > 2.5), False, True)
                 
-        # 🚀 核心增加：过滤阀 3（空间生命线双重死守防线）
-        # 如果均线数据还没算出来(NaN)，默认不保护；一旦均线算出来，必须【跌破生命线】才允许被洗出局
-        below_short_ma = np.where(np.isnan(ma_short), True, raw_p < ma_short)
         below_long_ma = np.where(np.isnan(ma_long), True, raw_p < ma_long)
         
-        # 数学结合：只有在『基础逆转成立』+『放量或能量耗尽』的同时，价格还【跌破了短线生命线或长线均线】，才执行真出局
-        #sell_right_mask = base_reverse & (volume_confirm | energy_depleted) & (below_short_ma | below_long_ma)  #相对于 ai_quant_backtest 的改动点,就是修改了这一行
-        sell_right_mask = base_reverse & (volume_confirm | energy_depleted) & (below_long_ma)
+        # 动能逆转的组合条件（只有当前没有被硬破位触发时，才填充动能出局）
+        sell_right_mask = base_reverse & (volume_confirm | energy_depleted) & (is_break_short_ma | below_long_ma)
 
-        combined_signals[sell_right_mask & (combined_signals == 0)] = -1
-        signal_labels[sell_right_mask & (signal_labels == "观望")] = "SELL_动能逆转真出局"
+        # 写入未被硬破位覆盖的动能卖出点
+        dynamic_sell_final = sell_right_mask & (combined_signals == 0)
+        combined_signals[dynamic_sell_final] = -1
+        signal_labels[dynamic_sell_final] = "SELL_动能逆转真出局"
         
-        # 记录被成功拦截的“假摔/恶意洗盘”节点
-        fake_reverse_mask = base_reverse & ~sell_right_mask
+        # 记录被成功拦截的“假摔/恶意洗盘”节点（即：有逆转迹象，但既没破5日线也没破20日线，被识别为安全洗盘）
+        fake_reverse_mask = base_reverse & ~is_break_short_ma & ~below_long_ma
         signal_labels[fake_reverse_mask & (signal_labels == "观望")] = "🔍拦截：生命线上缩量洗盘(坚定持股)"
 
         return {"Signals": combined_signals, "Labels": signal_labels}
 
-
 # ==============================================================================
 # 3. 回测统计内核 (Engine) —— 维持原样保持严谨
 # ==============================================================================
+class VP_BacktestEngine:
+    @staticmethod
+    def evaluate(prices, dates, signals, labels):
+        p = np.array(prices, dtype=float)
+        sig = np.array(signals, dtype=int)
+        n = len(p)
 
+        position = np.zeros(n, dtype=int)
+        current_pos = 0
+        for i in range(n):
+            if sig[i] == 1:
+                current_pos = 1
+            elif sig[i] == -1:
+                current_pos = 0
+            position[i] = current_pos
+
+        price_returns = np.zeros(n)
+        price_returns[1:] = (p[1:] - p[:-1]) / p[:-1]
+        strategy_returns = np.zeros(n)
+        strategy_returns[1:] = position[:-1] * price_returns[1:]
+
+        equity_curve = np.cumprod(1.0 + strategy_returns)
+        running_max = np.maximum.accumulate(equity_curve)
+        drawdowns = (equity_curve - running_max) / running_max if len(equity_curve) > 0 else np.zeros(n)
+        max_drawdown = np.min(drawdowns) if len(drawdowns) > 0 else 0.0
+
+        trades = []
+        in_trade = False
+        buy_price = 0.0
+        trade_logs = []
+
+        for i in range(n):
+            if sig[i] == 1 and not in_trade:
+                in_trade = True
+                buy_price = p[i]
+                trade_logs.append({"type": "BUY", "date": dates[i], "price": p[i], "reason": labels[i], "return": 0.0})
+            elif sig[i] == -1 and in_trade:
+                in_trade = False
+                sell_price = p[i]
+                trade_return = (sell_price - buy_price) / buy_price
+                trades.append(trade_return)
+                trade_logs.append({"type": "SELL", "date": dates[i], "price": p[i], "reason": labels[i], "return": trade_return * 100})
+        if in_trade:
+            trade_return = (p[-1] - buy_price) / buy_price
+            trades.append(trade_return)
+            trade_logs.append({"type": "CLOSE_MANDATORY", "date": dates[-1], "price": p[-1], "reason": "历史数据结束强制平仓", "return": trade_return * 100})
+        trades = np.array(trades)
+        total_trades = len(trades)
+        winning_trades = np.sum(trades > 0)
+        win_rate = winning_trades / total_trades if total_trades > 0 else 0.0
+        benchmark_return = (p[-1] - p[0]) / p[0]
+        return {"total_return": (equity_curve[-1] - 1.0) * 100 if len(equity_curve) > 0 else 0.0,
+                "benchmark_return": benchmark_return * 100,
+                "total_trades": total_trades,
+                "win_rate": win_rate * 100,
+                "max_drawdown": max_drawdown * 100,
+                "max_win": np.max(trades) * 100 if total_trades > 0 else 0.0,
+                "max_loss": np.min(trades) * 100 if total_trades > 0 else 0.0,
+                "trade_logs": trade_logs,}
     
 #==============================================================================
 #4. 量化总调度大脑 (Facade 门面类) —— 已接入自适应优化流
@@ -337,7 +410,7 @@ class VP_QuantRunner:
         print("="*80)
         markdown_output = f"""
 核心绩效指标 (Performance Metrics)
-绩效评估维度    策略表现数值    基准对比 (买入持有) 阿尔法超额收益
+绩效评估维度    策略表现数值    基准对比 (买入持有)  阿尔法超额收益
 总收益率      {report['total_return']:.2f}%    {report['benchmark_return']:.2f}%   {report['total_return'] - report['benchmark_return']:.2f}%
 历史最大回撤  {report['max_drawdown']:.2f}%       --                                     --
 综合交易胜率  {report['win_rate']:.2f}%           --                                     --
@@ -380,7 +453,7 @@ if __name__ == "__main__":
     all_data = tdx_datas.getTDXStockDWMDatas()
 
 
-    runner = VP_QuantRunner(p_window=15, v_window=20, ma_short=20, ma_long=60)
+    runner = VP_QuantRunner(p_window=15, v_window=20, ma_short=5, ma_long=20)
     chart_data = runner.split_data(tdx_datas.getTDXStockKDatas(), start_date=start_date)
 
         # Step 1: 加载数据
