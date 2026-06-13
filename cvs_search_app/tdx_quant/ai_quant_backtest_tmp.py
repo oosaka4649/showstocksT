@@ -38,24 +38,27 @@
 
 import os
 import numpy as np
-from tdxcomm import TDXData as tdx
 from typing import List, Union
-import user_config as ucfg
 import sys
 
 # 脚本常量
 current_dir = os.path.dirname(os.path.abspath(__file__))
 # 上一级目录（父目录）
 parent_dir = os.path.dirname(current_dir)
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from minitools.tdxcomm import TDXData as tdx
+from minitools import user_config as ucfg
 show_templates_html_path = os.path.join(parent_dir, 'templates', ucfg.my_stocks_html_folder_name)
 show_templates_comm_html_path = os.path.join(parent_dir, 'templates', ucfg.common_html_folder_name)
+from ai_backtest_base import BaseModel, VP_BacktestEngine, VP_QuantRunner_BaseModel
 
 # ==============================================================================
 # 1. 核心数学计算引擎 (Model) —— 已加入多周期移动平均线
 # ==============================================================================
 import numpy as np
 
-class Advanced_VP_KineticModel:
+class Advanced_VP_KineticModel(BaseModel):
     """量价动态引力场模型（纯向量化高速版 - 融合生命线防线）"""
 
     def __init__(self, p_window=15, v_window=20, ma_short=5, ma_long=20, v_ratio_threshold=2.0):
@@ -64,11 +67,6 @@ class Advanced_VP_KineticModel:
         self.ma_short = ma_short
         self.ma_long = ma_long
         self.v_ratio_threshold = v_ratio_threshold  
-
-    def _rolling_window(self, a, window):
-        shape = a.shape[:-1] + (a.shape[-1] - window + 1, window)
-        strides = a.strides + (a.strides[-1],)
-        return np.lib.stride_tricks.as_strided(a, shape=shape, strides=strides)
 
     def analyze(self, prices, volumes):
         p = np.array(prices, dtype=float)
@@ -289,106 +287,14 @@ class VP_SignalGenerator:
 # ==============================================================================
 # 3. 回测统计内核 (Engine) —— 维持原样保持严谨
 # ==============================================================================
-class VP_BacktestEngine:
-    @staticmethod
-    def evaluate(prices, dates, signals, labels):
-        p = np.array(prices, dtype=float)
-        sig = np.array(signals, dtype=int)
-        n = len(p)
-
-        position = np.zeros(n, dtype=int)
-        current_pos = 0
-        for i in range(n):
-            if sig[i] == 1:
-                current_pos = 1
-            elif sig[i] == -1:
-                current_pos = 0
-            position[i] = current_pos
-
-        price_returns = np.zeros(n)
-        price_returns[1:] = (p[1:] - p[:-1]) / p[:-1]
-        strategy_returns = np.zeros(n)
-        strategy_returns[1:] = position[:-1] * price_returns[1:]
-
-        equity_curve = np.cumprod(1.0 + strategy_returns)
-        running_max = np.maximum.accumulate(equity_curve)
-        drawdowns = (equity_curve - running_max) / running_max if len(equity_curve) > 0 else np.zeros(n)
-        max_drawdown = np.min(drawdowns) if len(drawdowns) > 0 else 0.0
-
-        trades = []
-        in_trade = False
-        buy_price = 0.0
-        trade_logs = []
-
-        for i in range(n):
-            if sig[i] == 1 and not in_trade:
-                in_trade = True
-                buy_price = p[i]
-                trade_logs.append({"type": "BUY", "date": dates[i], "price": p[i], "reason": labels[i], "return": 0.0})
-            elif sig[i] == -1 and in_trade:
-                in_trade = False
-                sell_price = p[i]
-                trade_return = (sell_price - buy_price) / buy_price
-                trades.append(trade_return)
-                trade_logs.append({"type": "SELL", "date": dates[i], "price": p[i], "reason": labels[i], "return": trade_return * 100})
-        if in_trade:
-            trade_return = (p[-1] - buy_price) / buy_price
-            trades.append(trade_return)
-            trade_logs.append({"type": "CLOSE_MANDATORY", "date": dates[-1], "price": p[-1], "reason": "历史数据结束强制平仓", "return": trade_return * 100})
-        trades = np.array(trades)
-        total_trades = len(trades)
-        winning_trades = np.sum(trades > 0)
-        win_rate = winning_trades / total_trades if total_trades > 0 else 0.0
-        benchmark_return = (p[-1] - p[0]) / p[0]
-        return {"total_return": (equity_curve[-1] - 1.0) * 100 if len(equity_curve) > 0 else 0.0,
-                "benchmark_return": benchmark_return * 100,
-                "total_trades": total_trades,
-                "win_rate": win_rate * 100,
-                "max_drawdown": max_drawdown * 100,
-                "max_win": np.max(trades) * 100 if total_trades > 0 else 0.0,
-                "max_loss": np.min(trades) * 100 if total_trades > 0 else 0.0,
-                "trade_logs": trade_logs,}
     
 #==============================================================================
 #4. 量化总调度大脑 (Facade 门面类) —— 已接入自适应优化流
 # ==============================================================================
-class VP_QuantRunner:
+class VP_QuantRunner(VP_QuantRunner_BaseModel):
     def __init__(self, p_window=15, v_window=20, v_bottom=-2.0, v_volume=2.5, momentum_cos=0.8, divergence_vol=-1.0, ma_short=20, ma_long=60):
         self.model = Advanced_VP_KineticModel(p_window=p_window, v_window=v_window, ma_short=ma_short, ma_long=ma_long)
         self.generator = VP_SignalGenerator(v_bottom_threshold=v_bottom, v_volume_threshold=v_volume, momentum_cosine=momentum_cos, divergence_volume=divergence_vol)
-
-    def split_data(self, data, start_date=None):
-        category_data = []
-        values = []
-        volumes = []
-        closes = []
-
-        volumes_macd = [] # 这个是为了计算 macd 用的，输入为量值，看看能不能生成一个和 macd 类似的曲线，观察成交量和 macd 的关系
-
-
-        '''
-            date         开        收        最低       最高       量
-        ["2004-01-02", 10452.74, 10409.85, 10367.41, 10554.96, 168890000],
-        data 结构
-        
-        '''
-
-        for i, tick in enumerate(data):
-            date_str = tick[0]
-            if start_date and date_str < start_date:
-                continue
-            category_data.append(tick[0]) # 日期
-            values.append(tick) # 全部内容
-            closes.append(tick[2]) # 收盘价
-            # 元代码 是 tick 4 错了，应该是 tick 5 因为 4是 最高价，5才是量
-            volumes_macd.append(tick[5]) # 这个是为了计算 macd 用的，输入为量值，看看能不能生成一个和 macd 类似的曲线，观察成交量和 macd 的关系
-
-            volumes.append([i, tick[5], 1 if tick[1] > tick[2] else -1])  # i 是序号 从 0 开始，如果 开始大于收盘 1 ，反之 -1 估计是标 量线颜色用 红 绿
-        return {"categoryData": category_data, "values": values, "volumes": volumes, "closes": closes, "volumes_macd": volumes_macd}        
-
-    def load_stock_data(self, stock_data):
-        dates, prices, volumes = stock_data["categoryData"], stock_data["closes"], stock_data["volumes_macd"]  # 注意这里我们用的是 volumes_macd 来观察成交量和 macd 的关系
-        return dates, prices, volumes
 
     def run_pipeline(self, stock_data):
         """一键运行整个量化回测流水线，并自动输出高级 Markdown 报表"""
@@ -406,7 +312,7 @@ class VP_QuantRunner:
 
     def _print_markdown_report(self, report):
         print("\n" + "="*80)
-        print(f"   {tdx_datas.stock_name}          量价引力场 + 趋势生命线防线 终极绩效看板          ")
+        print(f"      ai quant backtest tmp      量价引力场 + 趋势生命线防线 终极绩效看板          ")
         print("="*80)
         markdown_output = f"""
 核心绩效指标 (Performance Metrics)
@@ -437,6 +343,23 @@ class VP_QuantRunner:
         v_pct = np.percentile(v_z, [5, 95])
         return {"v_bottom": p_pct[0], "v_volume": v_pct[1], "divergence_vol": v_pct[0]}
     
+    def run(self, chart_data):
+        # Step 1: 加载数据
+        dates, prices, volumes = self.load_stock_data(chart_data)
+        initial_metrics = self.model.analyze(prices, volumes)
+        # 第二阶段：提取这一年历史数据的个性化阈值，注入空间防护并开启精准回测
+        custom_params = self.customize_thresholds(initial_metrics)    
+        if custom_params:
+            print(f"\n[安全中心] 成功提取自适应标准差！空间短线生命线设为：20日均线，中线底仓生命线设为：60日均线。")
+            optimized_runner = VP_QuantRunner(p_window=15, v_window=20, ma_short=5, ma_long=20, # 注入双生命线
+                                            v_bottom=custom_params["v_bottom"],
+                                            v_volume=custom_params["v_volume"],
+                                            divergence_vol=custom_params["divergence_vol"],
+                                            momentum_cos=0.80 # 保持追涨的高协同要求
+                                            )
+            # 一键输出彻底消灭洗盘假信号后的终极绩效
+            optimized_runner.run_pipeline(chart_data)
+    
 #==============================================================================
 # 5. 使用流程主入口 (黄金窗口数据量建议：250 - 500 天)
 # ==============================================================================
@@ -445,7 +368,7 @@ if __name__ == "__main__":
     # 第一阶段：用默认配置获取股票基础特征
         # 指定你的实际股票数据
     stock_code = "300215"  # 替换为你想分析的股票代码
-    stock_code = sys.argv[1]
+    #stock_code = sys.argv[1]
     start_date = "2025-01-01" #日线级别最佳数据量：250 天 到 500 天（即 1 到 2 年的历史数据）。
     tdx_datas = tdx(stock_code)
     tdx_datas.getStockDayFile()
@@ -455,20 +378,6 @@ if __name__ == "__main__":
 
     runner = VP_QuantRunner(p_window=15, v_window=20, ma_short=5, ma_long=20)
     chart_data = runner.split_data(tdx_datas.getTDXStockKDatas(), start_date=start_date)
+    runner.run(chart_data)
+    runner.run_pipeline(chart_data)
 
-        # Step 1: 加载数据
-    dates, prices, volumes = runner.load_stock_data(chart_data)
-    initial_metrics = runner.model.analyze(prices, volumes)
-    # 第二阶段：提取这一年历史数据的个性化阈值，注入空间防护并开启精准回测
-    custom_params = runner.customize_thresholds(initial_metrics)    
-    if custom_params:
-        print(f"\n[安全中心] 成功提取自适应标准差！空间短线生命线设为：20日均线，中线底仓生命线设为：60日均线。")
-        print(tdx_datas.stock_name)
-        optimized_runner = VP_QuantRunner(p_window=15, v_window=20, ma_short=5, ma_long=20, # 注入双生命线
-                                         v_bottom=custom_params["v_bottom"],
-                                         v_volume=custom_params["v_volume"],
-                                         divergence_vol=custom_params["divergence_vol"],
-                                         momentum_cos=0.80 # 保持追涨的高协同要求
-                                         )
-        # 一键输出彻底消灭洗盘假信号后的终极绩效
-        optimized_runner.run_pipeline(chart_data)
