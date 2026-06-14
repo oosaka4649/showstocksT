@@ -1,4 +1,5 @@
 import numpy as np
+import time
 
 class BaseModel:
     """基础模型类，提供通用工具方法供子类复用。"""
@@ -44,6 +45,7 @@ class VP_QuantRunner_BaseModel:
         return dates, prices, volumes
     
     def _split_data_add_snapshot_data(self, data, snapshot_data, start_date=None):
+        time_str = time.strftime('%Y-%m-%d')
         category_data = []
         closes = []
         volumes = []
@@ -56,11 +58,35 @@ class VP_QuantRunner_BaseModel:
         #print(f"获取到的市场快照数据: {_snapshot_data}")
         # 将快照数据添加到 values 中，日期使用 "snapshot" 作为标识
         #snapshot_tick = ["snapshot", _snapshot_data["open"], _snapshot_data["close"], _snapshot_data["low"], _snapshot_data["high"], _snapshot_data["volume"]]
-        category_data.append("snapshot")  # 添加快照日期 
-        closes.append(_snapshot_data["close"])  # 添加快照的收盘价
-        volumes.append(_snapshot_data["volume"])  # 添加快照的成交量到 macd 数据中
+        if time_str > category_data[-1]:
+            category_data.append(time_str)  # 添加快照日期 
+            closes.append(_snapshot_data["close"])  # 添加快照的收盘价
+            volumes.append(_snapshot_data["volume"])  # 添加快照的成交量到 macd 数据中
         
         return {"categoryData": category_data, "closes": closes, "volumes": volumes}    
+    
+    def info2file(self, quant_result_file = None, quant_result_info = None):
+        if quant_result_file is None:
+            quant_result_file = 'ai_quant.txt'
+        if quant_result_info is None:
+            return
+        # 打开目标文件，后缀名为CSV
+        target_file = open(quant_result_file, 'a', encoding='utf-8')
+        target_file.write('\n')  # 换行
+        target_file.write(quant_result_info)
+        target_file.close()
+
+    def side_by_side_print_result(self, left_text, right_text, left_width=None, sep=' | '):
+        left_lines = left_text.splitlines()
+        right_lines = right_text.splitlines()
+        n = max(len(left_lines), len(right_lines))
+        if left_width is None:
+            left_width = max((len(l) for l in left_lines), default=0) + 2
+            left_width = min(left_width, 120)
+        for i in range(n):
+            L = left_lines[i] if i < len(left_lines) else ''
+            R = right_lines[i] if i < len(right_lines) else ''
+            self.info2file(quant_result_info=L.ljust(left_width) + sep + R)
 
 class VP_BacktestEngine:
     """通用回测统计内核，兼容两个脚本的 evaluate 实现。"""
