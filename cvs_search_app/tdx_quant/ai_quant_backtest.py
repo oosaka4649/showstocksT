@@ -43,7 +43,7 @@ parent_dir = os.path.dirname(current_dir)
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from minitools.tdxcomm import TDXData as tdx
+from minitools import tdxcomm as tdx
 from minitools import user_config as ucfg
 
 
@@ -359,7 +359,7 @@ if __name__ == "__main__":
     stock_code = "300215"  # 替换为你想分析的股票代码
     #stock_code = sys.argv[1]
     start_date = "2025-01-01" #日线级别最佳数据量：250 天 到 500 天（即 1 到 2 年的历史数据）。
-    tdx_datas = tdx(stock_code)
+    tdx_datas = tdx.TDXData(stock_code)
     tdx_datas.getStockDayFile()
     tdx_datas.creatstocKDataList()
     all_data = tdx_datas.getTDXStockDWMDatas()

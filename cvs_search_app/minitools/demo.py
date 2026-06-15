@@ -301,6 +301,18 @@ DYNAINFO(22)	内盘/板块指数跌停数
 DYNAINFO(23)	外盘/板块指数涨停数
 SELLVOL	内盘
 BUYVOL	外盘
+DYNA_NOW 现价
+DYNA_NOW  现价 即时行情数据 没有现价时(比如在开盘前),返回昨收盘价
+
+DYNA_ZAF 涨幅
+DYNA_ZAF 涨幅 即时行情数据(沪深京早盘竞价期间使用匹配价的涨幅) 转换成幅度需要乘100
+
+DYNA_LB 量比
+DYNA_LB 量比 即时行情数据
+
+DYNA_ZAS 涨速
+DYNA_ZAS  返回涨速 报价界面行情数据 转换成幅度需要乘100
+
 DYNAINFO(24)	涨速
 DYNAINFO(25)	几分钟前的价格
 DYNAINFO(26)	涨停价
@@ -447,5 +459,15 @@ https://www.xinxincilikk.com
 
 '''
 收藏网址 https://金坷垃.com
+
+
+
+
+
+2025-05
+漫画讲透国学智慧（全六册）2025-01.mobi
+https://url64.ctfile.com/f/2447364-1450419835-835d28?p=2171
+以交易为生II：卖出的艺术（珍藏版） 2024-01.epub
+https://url64.ctfile.com/f/2447364-1496809084-ebdd4b?p=2171
 
 '''

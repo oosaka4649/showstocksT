@@ -6,7 +6,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 if current_dir not in sys.path:
     sys.path.append(current_dir)
 
-from tdxcomm import TDXData as tdx
+import tdxcomm as tdx
 from typing import List, Union
 import user_config as ucfg
 
@@ -34,7 +34,7 @@ show_templates_comm_html_path = os.path.join(parent_dir, 'templates', ucfg.commo
 class StockMA_Strategy:
     def __init__(self, stock_code: str, startDay=None):
         self.stock_code = stock_code
-        self.tdx_data = tdx(stock_code)
+        self.tdx_data = tdx.TDXData(stock_code)
         self.tdx_data.getStockDayFile()
         self.tdx_data.creatstocKDataList(startDay)
         self.all_data = self.tdx_data.getTDXStockDWMDatas()

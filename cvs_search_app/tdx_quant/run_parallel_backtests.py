@@ -6,20 +6,23 @@ import contextlib
 import os
 import time
 
+# 脚本常量
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.append(current_dir)
+    # 上一级目录（父目录）
+parent_dir = os.path.dirname(current_dir)
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from minitools import tdxcomm as tdx
+from minitools import user_config as ucfg
+
+
+
+
+
 import ai_quant_backtest as a1
 import ai_quant_backtest_tmp as a2
 import ai_tdx_get_data as tdx_http_api
-
-
-# 脚本常量
-current_dir = os.path.dirname(os.path.abspath(__file__))
-# 上一级目录（父目录）
-parent_dir = os.path.dirname(current_dir)
-
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from minitools.tdxcomm import TDXData as tdx
-from minitools import user_config as ucfg
 
 STOCK_CODE_NUM = {'6':'.SH','3':'.SZ','0':'.SZ','4':'.BJ','8':'.BJ','9':'.BJ'}  # 股票代码前缀
 #特殊代码
@@ -64,7 +67,7 @@ def main(stock_code="300215", start_date="2025-01-01"):
     #stock_code = sys.argv[1]
     #start_date = sys.argv[2] if len(sys.argv) > 2 else '2025-01-01'
     # 准备数据（与原脚本流程一致）
-    tdx_datas = tdx(stock_code)
+    tdx_datas = tdx.TDXData(stock_code)
     tdx_datas.getStockDayFile()
     tdx_datas.creatstocKDataList()
 
@@ -100,38 +103,13 @@ if __name__ == '__main__':
         main(stock_code, start_date)
     '''
     stock_code_list = [
-'000048',
-'001359',
-'002119',
-'002378',
-'002409',
-'002617',
-'002654',
+'001257',
 '002842',
-'002965',
-'002971',
-'300054',
-'300131',
-'300263',
-'300666',
 '300706',
-'300894',
-'301161',
-'301500',
-'600500',
+'301373',
 '603120',
-'603175',
-'603283',
-'603324',
-'603916',
-'605589',
-'688010',
-'688167',
-'688233',
-'688530',
-'688662',
-'688729',
-'920015',
+'603399',
+'603738',
 ]
     for stock_code in stock_code_list:
         main(stock_code, start_date)

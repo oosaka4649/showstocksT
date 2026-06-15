@@ -3,13 +3,17 @@
 '''
 
 import os
+import sys
 import pandas as pd
 from struct import unpack
-from minitools import user_config as ucfg
 import talib
 import numpy as np
 
+# 脚本常量
 current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.append(current_dir)
+import user_config as ucfg
 # 上一级目录（父目录）
 parent_dir = os.path.dirname(current_dir)
 
