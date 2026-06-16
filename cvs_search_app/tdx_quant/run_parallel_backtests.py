@@ -56,6 +56,57 @@ def side_by_side_print(left_text, right_text, left_width=None, sep=' | '):
         print(L.ljust(left_width) + sep + R)
 
 
+def multi_column_print(*texts, col_widths=None, sep=' | '):
+    """
+    将多段多行文本并排打印到控制台（支持 3 列及以上任意多列）
+    
+    :param texts: 变长参数，传入多个多行字符串
+    :param col_widths: 列表或元组，手动指定每列的宽度。默认 None 则自动计算
+    :param sep: 列与列之间的分隔符
+    """
+    if not texts:
+        return
+
+    # 1. 将每段文本按行拆分，形成二维列表：columns_lines[列号][行号]
+    columns_lines = [text.splitlines() for text in texts]
+    num_columns = len(columns_lines)
+    
+    # 2. 计算最大行数，决定循环打印多少轮
+    max_lines = max(len(lines) for lines in columns_lines)
+    
+    # 3. 动态计算或解析每一列的对齐宽度
+    if col_widths is None:
+        col_widths = []
+        for lines in columns_lines:
+            # 自动计算当前列的最长行宽，+2 作为安全间距，最高限制 120
+            w = max((len(l) for l in lines), default=0) + 2
+            w = min(w, 120)
+            col_widths.append(w)
+    elif len(col_widths) < num_columns:
+        # 如果用户提供的宽度列表长度不足，用默认逻辑补齐
+        col_widths = list(col_widths) + [120] * (num_columns - len(col_widths))
+
+    # 4. 逐行拼接并打印
+    for i in range(max_lines):
+        row_cells = []
+        for col_idx in range(num_columns):
+            lines = columns_lines[col_idx]
+            width = col_widths[col_idx]
+            
+            # 安全取行，超出文本范围则视为空字符串
+            cell_text = lines[i] if i < len(lines) else ''
+            
+            # 最后一列通常不需要 padding 补白，避免右侧有无意义的空格
+            if col_idx == num_columns - 1:
+                row_cells.append(cell_text)
+            else:
+                row_cells.append(cell_text.ljust(width))
+                
+        # 用分隔符拼接当前行的所有列并打印
+        print(sep.join(row_cells))
+
+
+
 def main(stock_code="300215", start_date="2025-01-01"):
     time_str = time.strftime('%Y-%m-%d %H:%M:%S')
     code_ex = get_stock_prefix(stock_code)  # 获取股票代码前缀
@@ -83,7 +134,7 @@ def main(stock_code="300215", start_date="2025-01-01"):
     # 捕获两侧输出
     out1, rep1 = capture_stdout(r1.run, chart_data)
     out2, rep2 = capture_stdout(r2.run, chart_data)
-    r1.side_by_side_print_result(out1, out2)
+    r1.multi_column_print(out1, out2)
     #side_by_side_print(out1, out2)
 
 
@@ -103,13 +154,7 @@ if __name__ == '__main__':
         main(stock_code, start_date)
     '''
     stock_code_list = [
-'001257',
-'002842',
-'300706',
-'301373',
-'603120',
-'603399',
-'603738',
+'300263',
 ]
     for stock_code in stock_code_list:
         main(stock_code, start_date)

@@ -7,3 +7,7 @@ cvs_search_app/minitools/__pycache__/*.pyc
 .gitignore
 cvs_search_app/scripts/__pycache__/*.pyc
 scripts/__pycache__/*.pyc
+cvs_search_app/tdx_quant/__pycache__/*.pyc
+.gitignore
+cvs_search_app/__pycache__/*.pyc
+ai_quant.txt

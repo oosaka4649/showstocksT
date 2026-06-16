@@ -41,7 +41,7 @@ class VP_QuantRunner_BaseModel:
         return {"categoryData": category_data, "values": values, "volumes": volumes, "closes": closes, "volumes_macd": volumes_macd}
         
     def load_stock_data(self, stock_data):
-        dates, prices, volumes = stock_data["categoryData"], stock_data["closes"], stock_data["volumes"]  # 注意这里我们用的是 volumes_macd 来观察成交量和 macd 的关系
+        dates, prices, volumes = stock_data["categoryData"], stock_data["closes"], stock_data["volumes_macd"]  # 注意这里我们用的是 volumes_macd 来观察成交量和 macd 的关系
         return dates, prices, volumes
     
     def _split_data_add_snapshot_data(self, data, snapshot_data, start_date=None):
@@ -87,6 +87,55 @@ class VP_QuantRunner_BaseModel:
             L = left_lines[i] if i < len(left_lines) else ''
             R = right_lines[i] if i < len(right_lines) else ''
             self.info2file(quant_result_info=L.ljust(left_width) + sep + R)
+
+    def multi_column_print(self, *texts, col_widths=None, sep=' | '):
+        """
+        将多段多行文本并排打印到控制台（支持 3 列及以上任意多列）
+        
+        :param texts: 变长参数，传入多个多行字符串
+        :param col_widths: 列表或元组，手动指定每列的宽度。默认 None 则自动计算
+        :param sep: 列与列之间的分隔符
+        """
+        if not texts:
+            return
+
+        # 1. 将每段文本按行拆分，形成二维列表：columns_lines[列号][行号]
+        columns_lines = [text.splitlines() for text in texts]
+        num_columns = len(columns_lines)
+        
+        # 2. 计算最大行数，决定循环打印多少轮
+        max_lines = max(len(lines) for lines in columns_lines)
+        
+        # 3. 动态计算或解析每一列的对齐宽度
+        if col_widths is None:
+            col_widths = []
+            for lines in columns_lines:
+                # 自动计算当前列的最长行宽，+2 作为安全间距，最高限制 120
+                w = max((len(l) for l in lines), default=0) + 2
+                w = min(w, 120)
+                col_widths.append(w)
+        elif len(col_widths) < num_columns:
+            # 如果用户提供的宽度列表长度不足，用默认逻辑补齐
+            col_widths = list(col_widths) + [120] * (num_columns - len(col_widths))
+
+        # 4. 逐行拼接并打印
+        for i in range(max_lines):
+            row_cells = []
+            for col_idx in range(num_columns):
+                lines = columns_lines[col_idx]
+                width = col_widths[col_idx]
+                
+                # 安全取行，超出文本范围则视为空字符串
+                cell_text = lines[i] if i < len(lines) else ''
+                
+                # 最后一列通常不需要 padding 补白，避免右侧有无意义的空格
+                if col_idx == num_columns - 1:
+                    row_cells.append(cell_text)
+                else:
+                    row_cells.append(cell_text.ljust(width))
+                    
+            # 用分隔符拼接当前行的所有列并打印
+            self.info2file(quant_result_info=sep.join(row_cells))            
 
 class VP_BacktestEngine:
     """通用回测统计内核，兼容两个脚本的 evaluate 实现。"""
