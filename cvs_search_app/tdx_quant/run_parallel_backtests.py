@@ -130,7 +130,7 @@ def main(stock_code="300215", start_date="2025-01-01"):
     chart_data = r1._split_data_add_snapshot_data(tdx_datas.getTDXStockKDatas(), _snapshot_data, start_date=start_date)
     data_len = len(chart_data["categoryData"])
     r1.info2file(quant_result_info='='*20 + f' 并列输出：{time_str} {stock_code}  {tdx_datas.stock_name}' + '='*20 + '数据量: ' + str(data_len) + '='*10)
-    r1.info2file(quant_result_info= stock_code + ',' + str(chart_data['categoryData'][(data_len -4):]) + ',' + str(chart_data['closes'][(data_len -4):]) + ',' + str(chart_data['volumes'][(data_len -4):]))
+    r1.info2file(quant_result_info= stock_code + ',' + str(chart_data['categoryData'][(data_len -4):]) + ',' + str(chart_data['closes'][(data_len -4):]) + ',' + str(chart_data['volumes_macd'][(data_len -4):]))
     # 捕获两侧输出
     out1, rep1 = capture_stdout(r1.run, chart_data)
     out2, rep2 = capture_stdout(r2.run, chart_data)
@@ -154,6 +154,7 @@ if __name__ == '__main__':
         main(stock_code, start_date)
     '''
     stock_code_list = [
+'301303',
 '300263',
 ]
     for stock_code in stock_code_list:

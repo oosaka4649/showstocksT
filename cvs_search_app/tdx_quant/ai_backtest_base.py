@@ -63,7 +63,7 @@ class VP_QuantRunner_BaseModel:
             closes.append(_snapshot_data["close"])  # 添加快照的收盘价
             volumes.append(_snapshot_data["volume"])  # 添加快照的成交量到 macd 数据中
         
-        return {"categoryData": category_data, "closes": closes, "volumes": volumes}    
+        return {"categoryData": category_data, "closes": closes, "volumes_macd": volumes}    
     
     def info2file(self, quant_result_file = None, quant_result_info = None):
         if quant_result_file is None:
