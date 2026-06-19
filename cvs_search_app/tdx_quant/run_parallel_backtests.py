@@ -24,6 +24,8 @@ from minitools import user_config as ucfg
 import ai_quant_backtest as a1
 import ai_quant_backtest_tmp as a2
 import ai_quant_backtest_test as a3
+import ai_quant_backtest_test2 as a4
+
 import ai_tdx_get_data as tdx_http_api
 
 STOCK_CODE_NUM = {'6':'.SH','3':'.SZ','0':'.SZ','4':'.BJ','8':'.BJ','9':'.BJ'}  # 股票代码前缀
@@ -145,6 +147,7 @@ def main(stock_code="300215", start_date="2025-01-01", add_flg=False):
     r1 = a1.VP_QuantRunner()  # 传入 tdx_datas 用于报告显示
     r2 = a2.VP_QuantRunner()  # 传入 tdx_datas 用于报告显示
     r3 = a3.VP_QuantRunner()
+    r4 = a4.VP_QuantRunner()
     api_model = tdx_http_api.TDX_HTTP_API_BaseModel(start_date=start_date)
     _snapshot_data = api_model._tdx_get_market_snapshot(stock_code + code_ex)  # 获取市场快照数据
     chart_data = r1._split_data_add_snapshot_data(tdx_datas.getTDXStockKDatas(), _snapshot_data, start_date=start_date, add_data_flg=add_flg)
@@ -155,7 +158,8 @@ def main(stock_code="300215", start_date="2025-01-01", add_flg=False):
     out1, rep1 = capture_stdout(r1.run, chart_data)
     out2, rep2 = capture_stdout(r2.run, chart_data)
     out3, rep3 = capture_stdout(r3.run, chart_data)
-    r1.multi_column_print(out1, out2, out3)
+    out4, rep3 = capture_stdout(r4.run, chart_data)
+    r1.multi_column_print(out1, out3, out4, out2)
     #side_by_side_print(out1, out2)
 
 
@@ -176,8 +180,7 @@ if __name__ == '__main__':
         main(stock_code, start_date)
     '''
     stock_code_list = [
-'002741',
-'002910',
+'002739',
 ]
     for stock_code in stock_code_list:
         main(stock_code, start_date, add_flg)
