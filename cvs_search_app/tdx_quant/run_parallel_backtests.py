@@ -3,6 +3,7 @@
 import sys
 import io
 import contextlib
+import unicodedata
 import os
 import time
 
@@ -22,6 +23,7 @@ from minitools import user_config as ucfg
 
 import ai_quant_backtest as a1
 import ai_quant_backtest_tmp as a2
+import ai_quant_backtest_test as a3
 import ai_tdx_get_data as tdx_http_api
 
 STOCK_CODE_NUM = {'6':'.SH','3':'.SZ','0':'.SZ','4':'.BJ','8':'.BJ','9':'.BJ'}  # 股票代码前缀
@@ -43,17 +45,34 @@ def capture_stdout(func, *args, **kwargs):
     return buf.getvalue(), res
 
 
+def _display_width(text):
+    """计算文本在等宽终端中的显示宽度，中文、全角字符视为 2 个宽度。"""
+    width = 0
+    for ch in text:
+        if unicodedata.east_asian_width(ch) in ('F', 'W'):
+            width += 2
+        else:
+            width += 1
+    return width
+
+
+def _pad_text(text, width):
+    """按显示宽度补齐文本。"""
+    padding = width - _display_width(text)
+    return text + ' ' * padding if padding > 0 else text
+
+
 def side_by_side_print(left_text, right_text, left_width=None, sep=' | '):
     left_lines = left_text.splitlines()
     right_lines = right_text.splitlines()
     n = max(len(left_lines), len(right_lines))
     if left_width is None:
-        left_width = max((len(l) for l in left_lines), default=0) + 2
+        left_width = max((_display_width(l) for l in left_lines), default=0) + 2
         left_width = min(left_width, 120)
     for i in range(n):
         L = left_lines[i] if i < len(left_lines) else ''
         R = right_lines[i] if i < len(right_lines) else ''
-        print(L.ljust(left_width) + sep + R)
+        print(_pad_text(L, left_width) + sep + R)
 
 
 def multi_column_print(*texts, col_widths=None, sep=' | '):
@@ -79,7 +98,7 @@ def multi_column_print(*texts, col_widths=None, sep=' | '):
         col_widths = []
         for lines in columns_lines:
             # 自动计算当前列的最长行宽，+2 作为安全间距，最高限制 120
-            w = max((len(l) for l in lines), default=0) + 2
+            w = max((_display_width(l) for l in lines), default=0) + 2
             w = min(w, 120)
             col_widths.append(w)
     elif len(col_widths) < num_columns:
@@ -100,14 +119,14 @@ def multi_column_print(*texts, col_widths=None, sep=' | '):
             if col_idx == num_columns - 1:
                 row_cells.append(cell_text)
             else:
-                row_cells.append(cell_text.ljust(width))
+                row_cells.append(_pad_text(cell_text, width))
                 
         # 用分隔符拼接当前行的所有列并打印
         print(sep.join(row_cells))
 
 
 
-def main(stock_code="300215", start_date="2025-01-01"):
+def main(stock_code="300215", start_date="2025-01-01", add_flg=False):
     time_str = time.strftime('%Y-%m-%d %H:%M:%S')
     code_ex = get_stock_prefix(stock_code)  # 获取股票代码前缀
 
@@ -125,16 +144,18 @@ def main(stock_code="300215", start_date="2025-01-01"):
     # 构造两个 runner
     r1 = a1.VP_QuantRunner()  # 传入 tdx_datas 用于报告显示
     r2 = a2.VP_QuantRunner()  # 传入 tdx_datas 用于报告显示
+    r3 = a3.VP_QuantRunner()
     api_model = tdx_http_api.TDX_HTTP_API_BaseModel(start_date=start_date)
     _snapshot_data = api_model._tdx_get_market_snapshot(stock_code + code_ex)  # 获取市场快照数据
-    chart_data = r1._split_data_add_snapshot_data(tdx_datas.getTDXStockKDatas(), _snapshot_data, start_date=start_date)
+    chart_data = r1._split_data_add_snapshot_data(tdx_datas.getTDXStockKDatas(), _snapshot_data, start_date=start_date, add_data_flg=add_flg)
     data_len = len(chart_data["categoryData"])
     r1.info2file(quant_result_info='='*20 + f' 并列输出：{time_str} {stock_code}  {tdx_datas.stock_name}' + '='*20 + '数据量: ' + str(data_len) + '='*10)
-    r1.info2file(quant_result_info= stock_code + ',' + str(chart_data['categoryData'][(data_len -4):]) + ',' + str(chart_data['closes'][(data_len -4):]) + ',' + str(chart_data['volumes_macd'][(data_len -4):]))
+    #r1.info2file(quant_result_info= stock_code + ',' + str(chart_data['categoryData'][(data_len -4):]) + ',' + str(chart_data['closes'][(data_len -4):]) + ',' + str(chart_data['volumes_macd'][(data_len -4):]))
     # 捕获两侧输出
     out1, rep1 = capture_stdout(r1.run, chart_data)
     out2, rep2 = capture_stdout(r2.run, chart_data)
-    r1.multi_column_print(out1, out2)
+    out3, rep3 = capture_stdout(r3.run, chart_data)
+    r1.multi_column_print(out1, out2, out3)
     #side_by_side_print(out1, out2)
 
 
@@ -149,13 +170,14 @@ def main(stock_code="300215", start_date="2025-01-01"):
 if __name__ == '__main__':
     stock_code = "300215"
     start_date = "2025-01-01"
+    add_flg = False
     '''可以在这里修改 stock_code 和 start_date 来测试不同的股票和起始日期
     for stock_code in ucfg.my_stocks_min_max_list:
         main(stock_code, start_date)
     '''
     stock_code_list = [
-'301303',
-'300263',
+'002741',
+'002910',
 ]
     for stock_code in stock_code_list:
-        main(stock_code, start_date)
+        main(stock_code, start_date, add_flg)

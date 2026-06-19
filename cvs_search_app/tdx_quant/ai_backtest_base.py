@@ -1,5 +1,6 @@
 import numpy as np
 import time
+import unicodedata
 
 class BaseModel:
     """基础模型类，提供通用工具方法供子类复用。"""
@@ -44,7 +45,7 @@ class VP_QuantRunner_BaseModel:
         dates, prices, volumes = stock_data["categoryData"], stock_data["closes"], stock_data["volumes_macd"]  # 注意这里我们用的是 volumes_macd 来观察成交量和 macd 的关系
         return dates, prices, volumes
     
-    def _split_data_add_snapshot_data(self, data, snapshot_data, start_date=None):
+    def _split_data_add_snapshot_data(self, data, snapshot_data, start_date=None, add_data_flg=False):
         time_str = time.strftime('%Y-%m-%d')
         category_data = []
         closes = []
@@ -58,7 +59,7 @@ class VP_QuantRunner_BaseModel:
         #print(f"获取到的市场快照数据: {_snapshot_data}")
         # 将快照数据添加到 values 中，日期使用 "snapshot" 作为标识
         #snapshot_tick = ["snapshot", _snapshot_data["open"], _snapshot_data["close"], _snapshot_data["low"], _snapshot_data["high"], _snapshot_data["volume"]]
-        if time_str > category_data[-1]:
+        if time_str > category_data[-1] and add_data_flg:
             category_data.append(time_str)  # 添加快照日期 
             closes.append(_snapshot_data["close"])  # 添加快照的收盘价
             volumes.append(_snapshot_data["volume"])  # 添加快照的成交量到 macd 数据中
@@ -88,6 +89,23 @@ class VP_QuantRunner_BaseModel:
             R = right_lines[i] if i < len(right_lines) else ''
             self.info2file(quant_result_info=L.ljust(left_width) + sep + R)
 
+    def _display_width(self, text):
+        """计算文本在等宽终端中的显示宽度，中文、全角字符视为 2 个宽度。"""
+        width = 0
+        for ch in text:
+            if unicodedata.east_asian_width(ch) in ('F', 'W'):
+                width += 2
+            else:
+                width += 1
+        return width
+
+
+    def _pad_text(self, text, width):
+        """按显示宽度补齐文本。"""
+        padding = width - self._display_width(text)
+        return text + ' ' * padding if padding > 0 else text
+
+
     def multi_column_print(self, *texts, col_widths=None, sep=' | '):
         """
         将多段多行文本并排打印到控制台（支持 3 列及以上任意多列）
@@ -111,7 +129,7 @@ class VP_QuantRunner_BaseModel:
             col_widths = []
             for lines in columns_lines:
                 # 自动计算当前列的最长行宽，+2 作为安全间距，最高限制 120
-                w = max((len(l) for l in lines), default=0) + 2
+                w = max((self._display_width(l) for l in lines), default=0) + 2
                 w = min(w, 120)
                 col_widths.append(w)
         elif len(col_widths) < num_columns:
@@ -132,10 +150,10 @@ class VP_QuantRunner_BaseModel:
                 if col_idx == num_columns - 1:
                     row_cells.append(cell_text)
                 else:
-                    row_cells.append(cell_text.ljust(width))
+                    row_cells.append(self._pad_text(cell_text, width))
                     
             # 用分隔符拼接当前行的所有列并打印
-            self.info2file(quant_result_info=sep.join(row_cells))            
+            self.info2file(quant_result_info=sep.join(row_cells))                   
 
 class VP_BacktestEngine:
     """通用回测统计内核，兼容两个脚本的 evaluate 实现。"""

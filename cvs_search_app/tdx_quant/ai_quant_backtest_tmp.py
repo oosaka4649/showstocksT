@@ -312,16 +312,16 @@ class VP_QuantRunner(VP_QuantRunner_BaseModel):
 
     def _print_markdown_report(self, report):
         print("\n" + "="*80)
-        print(f"      ai quant backtest tmp      量价引力场 + 趋势生命线防线 终极绩效看板          ")
+        print(f"ai quant backtest tmp      量价引力场 + 趋势生命线防线 终极绩效看板")
         print("="*80)
         markdown_output = f"""
 核心绩效指标 (Performance Metrics)
 绩效评估维度    策略表现数值    基准对比 (买入持有)  阿尔法超额收益
 总收益率      {report['total_return']:.2f}%    {report['benchmark_return']:.2f}%   {report['total_return'] - report['benchmark_return']:.2f}%
-历史最大回撤  {report['max_drawdown']:.2f}%       --                                     --
-综合交易胜率  {report['win_rate']:.2f}%           --                                     --
-总计开仓次数  {report['total_trades']} 次         --                                     --
-单笔极端极端极大盈利: +{report['max_win']:.2f}%   极大亏损: {report['max_loss']:.2f}%    --
+历史最大回撤  {report['max_drawdown']:.2f}%       --    --
+综合交易胜率  {report['win_rate']:.2f}%           --    --
+总计开仓次数  {report['total_trades']} 次         --    --
+单笔极端极端极大盈利: +{report['max_win']:.2f}%   极大亏损: {report['max_loss']:.2f}%   --
 
 策略历史开平仓动作明细 (Trade Logs)        
 | 动作序列 | 交易日期 | 执行价格 | 核心触发原因 | 本笔损益表现 |

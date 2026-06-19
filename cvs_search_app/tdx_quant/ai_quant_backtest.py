@@ -301,16 +301,16 @@ class VP_QuantRunner(VP_QuantRunner_BaseModel):
 
     def _print_markdown_report(self, report):
         print("\n" + "="*80)
-        print(f"        ai quant backtest     量价引力场 + 趋势生命线防线 终极绩效看板          ")
+        print(f"ai quant backtest     量价引力场 + 趋势生命线防线 终极绩效看板")
         print("="*80)
         markdown_output = f"""
 核心绩效指标 (Performance Metrics)
 绩效评估维度    策略表现数值    基准对比 (买入持有) 阿尔法超额收益
 总收益率      {report['total_return']:.2f}%    {report['benchmark_return']:.2f}%   {report['total_return'] - report['benchmark_return']:.2f}%
-历史最大回撤  {report['max_drawdown']:.2f}%       --                                     --
-综合交易胜率  {report['win_rate']:.2f}%           --                                     --
-总计开仓次数  {report['total_trades']} 次         --                                     --
-单笔极端极端极大盈利: +{report['max_win']:.2f}%   极大亏损: {report['max_loss']:.2f}%    --
+历史最大回撤  {report['max_drawdown']:.2f}%       --    --
+综合交易胜率  {report['win_rate']:.2f}%           --    --
+总计开仓次数  {report['total_trades']} 次         --    --
+单笔极端极端极大盈利: +{report['max_win']:.2f}%   极大亏损: {report['max_loss']:.2f}%   --
 
 策略历史开平仓动作明细 (Trade Logs)        
 | 动作序列 | 交易日期 | 执行价格 | 核心触发原因 | 本笔损益表现 |
@@ -340,7 +340,7 @@ class VP_QuantRunner(VP_QuantRunner_BaseModel):
         # 第二阶段：提取这一年历史数据的个性化阈值，注入空间防护并开启精准回测
         custom_params = self.customize_thresholds(initial_metrics)    
         if custom_params:
-            print(f"\n[安全中心] 成功提取自适应标准差！空间短线生命线设为：20日均线，中线底仓生命线设为：60日均线。")
+            print(f"\n[安全中心] 成功提取自适应标准差！空间短线生命线设为：20日均线。")
             optimized_runner = VP_QuantRunner(p_window=15, v_window=20, ma_short=5, ma_long=20, # 注入双生命线
                                             v_bottom=custom_params["v_bottom"],
                                             v_volume=custom_params["v_volume"],
@@ -356,7 +356,7 @@ if __name__ == "__main__":
     # ---- 🚀 执行标准的两阶段定制化回测工作流 ----
     # 第一阶段：用默认配置获取股票基础特征
         # 指定你的实际股票数据
-    stock_code = "300215"  # 替换为你想分析的股票代码
+    stock_code = "300162"  # 替换为你想分析的股票代码
     #stock_code = sys.argv[1]
     start_date = "2025-01-01" #日线级别最佳数据量：250 天 到 500 天（即 1 到 2 年的历史数据）。
     tdx_datas = tdx.TDXData(stock_code)
@@ -367,4 +367,3 @@ if __name__ == "__main__":
     runner = VP_QuantRunner(p_window=15, v_window=20, ma_short=20, ma_long=60)
     chart_data = runner.split_data(tdx_datas.getTDXStockKDatas(), start_date=start_date)
     runner.run(chart_data)
-    runner.run_pipeline(chart_data)
