@@ -148,9 +148,11 @@ def main(stock_code="300215", start_date="2025-01-01", add_flg=False):
     r2 = a2.VP_QuantRunner()  # 传入 tdx_datas 用于报告显示
     r3 = a3.VP_QuantRunner()
     r4 = a4.VP_QuantRunner()
-    api_model = tdx_http_api.TDX_HTTP_API_BaseModel(start_date=start_date)
-    _snapshot_data = api_model._tdx_get_market_snapshot(stock_code + code_ex)  # 获取市场快照数据
-    chart_data = r1._split_data_add_snapshot_data(tdx_datas.getTDXStockKDatas(), _snapshot_data, start_date=start_date, add_data_flg=add_flg)
+    _snapshot_data = None
+    if add_flg:
+        api_model = tdx_http_api.TDX_HTTP_API_BaseModel(start_date=start_date)
+        _snapshot_data = api_model._tdx_get_market_snapshot(stock_code + code_ex)  # 获取市场快照数据
+    chart_data = r1._split_data_add_snapshot_data(tdx_datas.getTDXStockKDatas(), _snapshot_data, start_date=start_date)
     data_len = len(chart_data["categoryData"])
     r1.info2file(quant_result_info='='*20 + f' 并列输出：{time_str} {stock_code}  {tdx_datas.stock_name}' + '='*20 + '数据量: ' + str(data_len) + '='*10)
     #r1.info2file(quant_result_info= stock_code + ',' + str(chart_data['categoryData'][(data_len -4):]) + ',' + str(chart_data['closes'][(data_len -4):]) + ',' + str(chart_data['volumes_macd'][(data_len -4):]))
@@ -180,7 +182,7 @@ if __name__ == '__main__':
         main(stock_code, start_date)
     '''
     stock_code_list = [
-'002739',
+'601006',
 ]
     for stock_code in stock_code_list:
         main(stock_code, start_date, add_flg)

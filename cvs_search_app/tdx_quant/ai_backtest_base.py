@@ -45,7 +45,7 @@ class VP_QuantRunner_BaseModel:
         dates, prices, volumes = stock_data["categoryData"], stock_data["closes"], stock_data["volumes_macd"]  # 注意这里我们用的是 volumes_macd 来观察成交量和 macd 的关系
         return dates, prices, volumes
     
-    def _split_data_add_snapshot_data(self, data, snapshot_data, start_date=None, add_data_flg=False):
+    def _split_data_add_snapshot_data(self, data, snapshot_data=None, start_date=None):
         time_str = time.strftime('%Y-%m-%d')
         category_data = []
         closes = []
@@ -59,7 +59,7 @@ class VP_QuantRunner_BaseModel:
         #print(f"获取到的市场快照数据: {_snapshot_data}")
         # 将快照数据添加到 values 中，日期使用 "snapshot" 作为标识
         #snapshot_tick = ["snapshot", _snapshot_data["open"], _snapshot_data["close"], _snapshot_data["low"], _snapshot_data["high"], _snapshot_data["volume"]]
-        if time_str > category_data[-1] and add_data_flg:
+        if time_str > category_data[-1] and (_snapshot_data is not None):
             category_data.append(time_str)  # 添加快照日期 
             closes.append(_snapshot_data["close"])  # 添加快照的收盘价
             volumes.append(_snapshot_data["volume"])  # 添加快照的成交量到 macd 数据中
