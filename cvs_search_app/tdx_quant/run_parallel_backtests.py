@@ -6,6 +6,9 @@ import contextlib
 import unicodedata
 import os
 import time
+import pandas as pd
+import numpy as np
+from sklearn.mixture import GaussianMixture # 确保环境中已导入
 
 # 脚本常量
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -126,6 +129,92 @@ def multi_column_print(*texts, col_widths=None, sep=' | '):
         # 用分隔符拼接当前行的所有列并打印
         print(sep.join(row_cells))
 
+#提取近60日 GMM 市场环境 (Regime)， 即当前股票的趋势
+def stock_regime(metrics_dict):
+    """
+    融合 GMM 60日隐状态特征的自适应量价真空区阈值计算函数
+    """     
+    # 提取用于高级趋势判定的 60 日原始量价序列
+    raw_close = metrics_dict.get("Raw_Price", np.array([]))
+    raw_volume = metrics_dict.get("volume", np.array([]))
+
+    p = np.array(raw_close, dtype=float)
+    v = np.array(raw_volume, dtype=float)
+
+    # 防御性边界检查
+    if len(raw_close) < 60: 
+        return None
+
+    # ==============================================================================
+    # 核心高级统计模块：提取近60日 GMM 市场环境 (Regime)
+    # ==============================================================================
+    df_60d = pd.DataFrame({
+        "close": p[-60:], 
+        "volume": v[-60:]
+    })
+    
+    # 动态判定当前 60 日趋势
+    #from sklearn.mixture import GaussianMixture # 确保环境中已导入
+    
+    df_feats = pd.DataFrame(index=df_60d.index)
+    df_feats['log_return'] = np.log(df_60d['close'] / df_60d['close'].shift(1))
+    df_feats['vp_cov'] = df_60d['close'].pct_change().rolling(5).cov(df_60d['volume'].pct_change())
+    df_feats = df_feats.dropna()
+    
+    if len(df_feats) >= 30:
+        X_scaled = (df_feats.values - np.mean(df_feats.values, axis=0)) / (np.std(df_feats.values, axis=0) + 1e-8)
+        gmm = GaussianMixture(n_components=2, covariance_type='full', random_state=42).fit(X_scaled)
+        
+        # 分类多空基因
+        df_feats['state'] = gmm.predict(X_scaled)
+        bull_label = 0 if df_feats[df_feats['state'] == 0]['log_return'].mean() > df_feats[df_feats['state'] == 1]['log_return'].mean() else 1
+        current_state = gmm.predict(X_scaled[-1].reshape(1, -1))[0]
+        
+        # 传统线性斜率辅助
+        y_norm = (df_60d['close'].values - np.mean(df_60d['close'].values)) / (np.std(df_60d['close'].values) + 1e-8)
+        slope = np.polyfit(np.arange(len(y_norm)), y_norm, 1)[0]
+        
+        # 状态判定
+        if current_state == bull_label:
+            regime = "STRUCTURAL_BULL" if slope > 0 else "ACCUMULATION_ZONE"
+        else:
+            regime = "STRUCTURAL_BEAR" if slope < 0 else "DISTRIBUTION_RISK"
+    else:
+        regime = "UNKNOWN"
+
+    # ==============================================================================
+    # 动态控制矩阵（统计学基准校准：根据环境动态调整分位数严格度）
+    # ==============================================================================
+    # 基准参数定义（原代码设定）
+    p_alpha = 1.0     # 价格恐慌底基准分位数 (1.0%)
+    v_alpha = 6.0     # 地量极限基准分位数 (6.0%)
+    vac_alpha = 5.0   # 负向真空区基准分位数 (5.0%)
+    regime_info = ''
+    if regime == "STRUCTURAL_BULL":
+        # 多头行情：不易大跌，放宽价格门槛防止错过黄金坑；卡紧地量确认洗盘
+        p_alpha = 1.5   # 放宽
+        v_alpha = 5.0   # 卡紧地量
+        vac_alpha = 7.0 # 放宽
+        regime_info = '   多头行情：不易大跌，放宽价格门槛防止错过黄金坑；卡紧地量确认洗盘'
+    elif regime in ["STRUCTURAL_BEAR", "DISTRIBUTION_RISK"]:
+        # 熊市或派发高危期：阴跌不止，极限收紧防御边界，防止左侧接飞刀
+        p_alpha = 0.5   # 极端收紧（只买最惨烈的暴跌）
+        v_alpha = 4.0   # 极端收紧（成交量必须彻底冰封）
+        vac_alpha = 2.5 # 极端收紧
+        regime_info = '   熊市或派发高危期：阴跌不止，极限收紧防御边界，防止左侧接飞刀'
+    elif regime == "ACCUMULATION_ZONE":
+        # 主力暗中吸筹期：震荡筑底，维持高度灵敏的基准状态
+        p_alpha = 1.0
+        v_alpha = 6.0
+        vac_alpha = 5.0
+        regime_info = '   主力暗中吸筹期：震荡筑底，维持高度灵敏的基准状态'
+
+
+    print('当前 60 日趋势   ' + regime_info)
+    # 返回包含当前动态市场环境诊断标签和计算阈值的字典
+    return {
+        "detected_regime": regime + regime_info  # 输出环境标签供执行模块打印日志
+    }
 
 
 def main(stock_code="300215", start_date="2025-01-01", add_flg=False):
@@ -154,7 +243,10 @@ def main(stock_code="300215", start_date="2025-01-01", add_flg=False):
         _snapshot_data = api_model._tdx_get_market_snapshot(stock_code + code_ex)  # 获取市场快照数据
     chart_data = r1._split_data_add_snapshot_data(tdx_datas.getTDXStockKDatas(), _snapshot_data, start_date=start_date)
     data_len = len(chart_data["categoryData"])
-    r1.info2file(quant_result_info='='*20 + f' 并列输出：{time_str} {stock_code}  {tdx_datas.stock_name}' + '='*20 + '数据量: ' + str(data_len) + '='*10)
+    data_p_v = {"Raw_Price":chart_data["closes"], "volume":chart_data["volumes_macd"]}
+    stock_info = stock_regime(data_p_v)['detected_regime']
+ 
+    r1.info2file(quant_result_info='='*20 + f' 并列输出：{time_str} {stock_code}  {tdx_datas.stock_name}' + '='*20 + '数据量: ' + str(data_len)   + f'   {stock_info}' + '='*10)
     #r1.info2file(quant_result_info= stock_code + ',' + str(chart_data['categoryData'][(data_len -4):]) + ',' + str(chart_data['closes'][(data_len -4):]) + ',' + str(chart_data['volumes_macd'][(data_len -4):]))
     # 捕获两侧输出
     out1, rep1 = capture_stdout(r1.run, chart_data)
@@ -182,7 +274,7 @@ if __name__ == '__main__':
         main(stock_code, start_date)
     '''
     stock_code_list = [
-'601006',
+'600959',
 ]
     for stock_code in stock_code_list:
         main(stock_code, start_date, add_flg)
