@@ -4,6 +4,8 @@ from typing import List, Union
 import sys
 import requests
 import json
+import time
+from datetime import datetime, timedelta
 
 # 脚本常量
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -91,7 +93,63 @@ class TDX_HTTP_API_BaseModel:
         }  # 返回包含所有获取到的数据的字典
 
   
+class TDX_Tools:
+ 
+    def info2file(quant_result_file = None, quant_result_info = None):
+        if quant_result_file is None:
+            quant_result_file = 'ai_all_quant_today.txt'
 
+        # 打开目标文件，后缀名为CSV
+        target_file = open(quant_result_file, 'a', encoding='utf-8')
+        target_file.write(quant_result_info)
+        target_file.close()
+
+    def get_Today_Str():
+        time_str = time.strftime('%Y-%m-%d %H:%M:%S')
+        return time_str
+
+    def print_trades_log(*reports):
+        """
+        过滤策略结果，如果有当日交易，输出，否则，只打印最大交易次数和每个策略结果
+        打印到控制台（支持 3 列及以上任意多列）
+        
+        :param reports: 变长参数，传入多个策略输出交易
+        :return info 每个股票的交易概略
+                boolean 策略是否命中 true 命中
+        """
+        result = "\n"
+        is_order = False
+        if not reports:
+            return
+        
+        indx = 1
+
+        #总收益
+        total_return = []
+        #总计开仓次数 
+        total_trades = []
+        trades_logs = []
+        for idx, total_info in enumerate(reports):
+            total_return.append(total_info['total_return'])
+            total_trades.append(total_info['total_trades'])
+            trades_logs.append(total_info['trade_logs'])
+
+        result += "最大总收益: " + str(max(total_return)) + "%\n"
+        result += "最大交易次数: " + str(max(total_trades)) +  " 最小交易次数: " + str(min(total_trades)) + "\n"
+        today_str = time.strftime('%Y-%m-%d')
+        date_obj = datetime.strptime(today_str, '%Y-%m-%d')
+        targte_day = date_obj + timedelta(days=-5)
+        for idx, log in enumerate(trades_logs):
+            trades_date = []
+            for date_info in log:
+                trades_date.append( date_info['date'])
+            last_day = datetime.strptime(trades_date[-1], '%Y-%m-%d')
+            found = last_day > targte_day
+            if found:
+                is_order = True
+                result += str(idx) + "\n" + json.dumps(log[-2], ensure_ascii=False) + "\n" + json.dumps(log[-1], ensure_ascii=False) + "\n"
+
+        return result, is_order
 
 if __name__ == "__main__":
 

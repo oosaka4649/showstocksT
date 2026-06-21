@@ -69,8 +69,7 @@ class VP_QuantRunner_BaseModel:
     def info2file(self, quant_result_file = None, quant_result_info = None):
         if quant_result_file is None:
             quant_result_file = 'ai_quant.txt'
-        if quant_result_info is None:
-            return
+
         # 打开目标文件，后缀名为CSV
         target_file = open(quant_result_file, 'a', encoding='utf-8')
         target_file.write('\n')  # 换行

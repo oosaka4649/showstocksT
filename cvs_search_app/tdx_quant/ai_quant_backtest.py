@@ -338,7 +338,8 @@ class VP_QuantRunner(VP_QuantRunner_BaseModel):
         dates, prices, volumes = self.load_stock_data(chart_data)
         initial_metrics = self.model.analyze(prices, volumes)
         # 第二阶段：提取这一年历史数据的个性化阈值，注入空间防护并开启精准回测
-        custom_params = self.customize_thresholds(initial_metrics)    
+        custom_params = self.customize_thresholds(initial_metrics)
+        result = None 
         if custom_params:
             print(f"\n[安全中心] 成功提取自适应标准差！空间短线生命线设为：20日均线。")
             optimized_runner = VP_QuantRunner(p_window=15, v_window=20, ma_short=5, ma_long=20, # 注入双生命线
@@ -348,7 +349,8 @@ class VP_QuantRunner(VP_QuantRunner_BaseModel):
                                             momentum_cos=0.80 # 保持追涨的高协同要求
                                             )
             # 一键输出彻底消灭洗盘假信号后的终极绩效
-            optimized_runner.run_pipeline(chart_data)            
+            result = optimized_runner.run_pipeline(chart_data)
+        return result         
 #==============================================================================
 # 5. 使用流程主入口 (黄金窗口数据量建议：250 - 500 天)
 # ==============================================================================

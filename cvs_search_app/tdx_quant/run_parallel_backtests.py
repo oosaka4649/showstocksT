@@ -195,22 +195,28 @@ def stock_regime(metrics_dict):
         p_alpha = 1.5   # 放宽
         v_alpha = 5.0   # 卡紧地量
         vac_alpha = 7.0 # 放宽
-        regime_info = '   多头行情：不易大跌，放宽价格门槛防止错过黄金坑；卡紧地量确认洗盘'
-    elif regime in ["STRUCTURAL_BEAR", "DISTRIBUTION_RISK"]:
+        regime_info = '  结构性 牛市 多头行情：不易大跌，放宽价格门槛防止错过黄金坑；卡紧地量确认洗盘'
+    elif regime in ["STRUCTURAL_BEAR"]:
         # 熊市或派发高危期：阴跌不止，极限收紧防御边界，防止左侧接飞刀
         p_alpha = 0.5   # 极端收紧（只买最惨烈的暴跌）
         v_alpha = 4.0   # 极端收紧（成交量必须彻底冰封）
         vac_alpha = 2.5 # 极端收紧
-        regime_info = '   熊市或派发高危期：阴跌不止，极限收紧防御边界，防止左侧接飞刀'
+        regime_info = '   结构熊 熊市：阴跌不止，极限收紧防御边界，防止左侧接飞刀'
+    elif regime in ["DISTRIBUTION_RISK"]:
+        # 熊市或派发高危期：阴跌不止，极限收紧防御边界，防止左侧接飞刀
+        p_alpha = 0.5   # 极端收紧（只买最惨烈的暴跌）
+        v_alpha = 4.0   # 极端收紧（成交量必须彻底冰封）
+        vac_alpha = 2.5 # 极端收紧
+        regime_info = '   分发风险 高位派发高危期：极限收紧防御边界，防止左侧接飞刀'        
     elif regime == "ACCUMULATION_ZONE":
         # 主力暗中吸筹期：震荡筑底，维持高度灵敏的基准状态
         p_alpha = 1.0
         v_alpha = 6.0
         vac_alpha = 5.0
-        regime_info = '   主力暗中吸筹期：震荡筑底，维持高度灵敏的基准状态'
+        regime_info = '   积累区 主力暗中吸筹期：震荡筑底，维持高度灵敏的基准状态'
 
 
-    print('当前 60 日趋势   ' + regime_info)
+    #print('当前 60 日趋势   ' + regime_info)
     # 返回包含当前动态市场环境诊断标签和计算阈值的字典
     return {
         "detected_regime": regime + regime_info  # 输出环境标签供执行模块打印日志
@@ -218,7 +224,8 @@ def stock_regime(metrics_dict):
 
 
 def main(stock_code="300215", start_date="2025-01-01", add_flg=False):
-    time_str = time.strftime('%Y-%m-%d %H:%M:%S')
+    out_info = ''
+    time_str = tdx_http_api.TDX_Tools.get_Today_Str()
     code_ex = get_stock_prefix(stock_code)  # 获取股票代码前缀
 
     #if len(sys.argv) < 2:
@@ -245,16 +252,23 @@ def main(stock_code="300215", start_date="2025-01-01", add_flg=False):
     data_len = len(chart_data["categoryData"])
     data_p_v = {"Raw_Price":chart_data["closes"], "volume":chart_data["volumes_macd"]}
     stock_info = stock_regime(data_p_v)['detected_regime']
- 
-    r1.info2file(quant_result_info='='*20 + f' 并列输出：{time_str} {stock_code}  {tdx_datas.stock_name}' + '='*20 + '数据量: ' + str(data_len)   + f'   {stock_info}' + '='*10)
+
+    tdx_http_api.TDX_Tools.info2file(quant_result_info = "\n"*5)
+    out_info = '='*20 + f' 并列输出：{time_str} {stock_code}  {tdx_datas.stock_name}' + '='*20 + '数据量: ' + str(data_len)   + f'   {stock_info}' + '='*10
+    tdx_http_api.TDX_Tools.info2file(quant_result_info = out_info)
+    r1.info2file(quant_result_info = out_info)
     #r1.info2file(quant_result_info= stock_code + ',' + str(chart_data['categoryData'][(data_len -4):]) + ',' + str(chart_data['closes'][(data_len -4):]) + ',' + str(chart_data['volumes_macd'][(data_len -4):]))
     # 捕获两侧输出
     out1, rep1 = capture_stdout(r1.run, chart_data)
     out2, rep2 = capture_stdout(r2.run, chart_data)
     out3, rep3 = capture_stdout(r3.run, chart_data)
-    out4, rep3 = capture_stdout(r4.run, chart_data)
+    out4, rep4 = capture_stdout(r4.run, chart_data)
     r1.multi_column_print(out1, out3, out4, out2)
+
+    order_info, is_order = tdx_http_api.TDX_Tools.print_trades_log(rep1, rep3, rep4)
+    tdx_http_api.TDX_Tools.info2file(quant_result_info=order_info)
     #side_by_side_print(out1, out2)
+    return is_order
 
 
 
@@ -274,7 +288,33 @@ if __name__ == '__main__':
         main(stock_code, start_date)
     '''
     stock_code_list = [
-'600959',
+'300263',
+    '300215', # 电科院
+    '301246', # 宏源药业
+    '300497', # 福祥药业
+    '300251', # 光线传媒
+    '000686', # 东北证券
+    '600526', # 菲达环保
+    '600158', # 中体产业
+    '600959', # 江苏有线
+    '002218', # 拓日新能
+    '600475', # 华光环能
+    '000807', # 云铝股份
+    '600143', # 金发科技
+    '601006', # 大秦铁路
+    '600233', # 圆通速递
+    '600745', # 闻泰科技
+    '002852', # 道道全
+    '002303', # 美盈森
+'300162',
 ]
+    tdx_http_api.TDX_Tools.info2file(quant_result_info = "\n"*10)
+    is_order_info = ""
     for stock_code in stock_code_list:
-        main(stock_code, start_date, add_flg)
+        is_order = main(stock_code, start_date, add_flg)
+        if is_order:
+            is_order_info += '命中: ' + stock_code + '\n'
+    tdx_http_api.TDX_Tools.info2file(quant_result_info = "\n"*3)
+    tdx_http_api.TDX_Tools.info2file(quant_result_info = "当前命中名单：\n" + is_order_info)
+    
+    
