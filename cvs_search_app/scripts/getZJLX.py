@@ -98,7 +98,7 @@ def read_web_page():
                 substrings_to_remove = ["<td class>", "<td class=\"tc\">",
                                         '<span class=\"[^"]+\">',"</span>",
                                         '<span class=\"\">',
-                                        '亿',
+                                        '亿','万',
                                         "<td class=\"tl\">","</td>","<td>","\n"] # 使用正则表达式删除特定子字符串 
                 pattern = "|".join(substrings_to_remove)
 

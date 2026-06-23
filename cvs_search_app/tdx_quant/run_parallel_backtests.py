@@ -253,7 +253,7 @@ def main(stock_code="300215", start_date="2025-01-01", add_flg=False):
     data_p_v = {"Raw_Price":chart_data["closes"], "volume":chart_data["volumes_macd"]}
     stock_info = stock_regime(data_p_v)['detected_regime']
 
-    tdx_http_api.TDX_Tools.info2file(quant_result_info = "\n"*5)
+    tdx_http_api.TDX_Tools.info2file(quant_result_info = "\n"*3)
     out_info = '='*20 + f' 并列输出：{time_str} {stock_code}  {tdx_datas.stock_name}' + '='*20 + '数据量: ' + str(data_len)   + f'   {stock_info}' + '='*10
     tdx_http_api.TDX_Tools.info2file(quant_result_info = out_info)
     r1.info2file(quant_result_info = out_info)
@@ -268,7 +268,7 @@ def main(stock_code="300215", start_date="2025-01-01", add_flg=False):
     order_info, is_order = tdx_http_api.TDX_Tools.print_trades_log(rep1, rep3, rep4)
     tdx_http_api.TDX_Tools.info2file(quant_result_info=order_info)
     #side_by_side_print(out1, out2)
-    return is_order
+    return is_order, tdx_datas.stock_name
 
 
 
@@ -282,38 +282,39 @@ def main(stock_code="300215", start_date="2025-01-01", add_flg=False):
 if __name__ == '__main__':
     stock_code = "300215"
     start_date = "2025-01-01"
-    add_flg = False
+    add_flg = True
     '''可以在这里修改 stock_code 和 start_date 来测试不同的股票和起始日期
     for stock_code in ucfg.my_stocks_min_max_list:
         main(stock_code, start_date)
     '''
     stock_code_list = [
-'300263',
-    '300215', # 电科院
-    '301246', # 宏源药业
-    '300497', # 福祥药业
-    '300251', # 光线传媒
-    '000686', # 东北证券
-    '600526', # 菲达环保
-    '600158', # 中体产业
-    '600959', # 江苏有线
-    '002218', # 拓日新能
-    '600475', # 华光环能
-    '000807', # 云铝股份
-    '600143', # 金发科技
-    '601006', # 大秦铁路
-    '600233', # 圆通速递
-    '600745', # 闻泰科技
-    '002852', # 道道全
-    '002303', # 美盈森
 '300162',
+    '300263', # 电科院
+    '002669', # 宏源药业
+'002386', # 宏源药业
+'002141',
+'002272',
+'002491',
+'002579',
+'002910',
+'300179',
+'300243',
+'300319',
+'300497',
+'300522',
+'300538',
+'300554',
+'300861',
+'301041',
+'603285',
+'688598',
 ]
     tdx_http_api.TDX_Tools.info2file(quant_result_info = "\n"*10)
     is_order_info = ""
     for stock_code in stock_code_list:
-        is_order = main(stock_code, start_date, add_flg)
+        is_order, stock_name = main(stock_code, start_date, add_flg)
         if is_order:
-            is_order_info += '命中: ' + stock_code + '\n'
+            is_order_info += '命中: ' + stock_code + f'  {stock_name}\n'
     tdx_http_api.TDX_Tools.info2file(quant_result_info = "\n"*3)
     tdx_http_api.TDX_Tools.info2file(quant_result_info = "当前命中名单：\n" + is_order_info)
     
