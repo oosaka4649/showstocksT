@@ -250,6 +250,15 @@ def main(stock_code="300215", start_date="2025-01-01", add_flg=False):
         _snapshot_data = api_model._tdx_get_market_snapshot(stock_code + code_ex)  # 获取市场快照数据
     chart_data = r1._split_data_add_snapshot_data(tdx_datas.getTDXStockKDatas(), _snapshot_data, start_date=start_date)
     data_len = len(chart_data["categoryData"])
+
+    #数据量不够，直接退出
+    if data_len < 200:
+        tdx_http_api.TDX_Tools.info2file(quant_result_info = "\n"*3)
+        out_info = '='*20 + f' 并列输出：{time_str} {stock_code}  {tdx_datas.stock_name}' + '='*20 + '数据量: ' + str(data_len)   + '   数据长度不够，不分析，直接退出' + '='*10
+        tdx_http_api.TDX_Tools.info2file(quant_result_info = out_info)
+        r1.info2file(quant_result_info = out_info)
+        return False, tdx_datas.stock_name, None, None
+    
     data_p_v = {"Raw_Price":chart_data["closes"], "volume":chart_data["volumes_macd"]}
     stock_info = stock_regime(data_p_v)['detected_regime']
 
@@ -320,6 +329,35 @@ if __name__ == '__main__':
 '601006',
 
 ]
+    
+    stock_code_list = [
+'002421',
+'002579',
+'002354',
+'001257',
+'301563',
+'002842',
+'301313',
+'301139',
+'301669',
+'002585',
+'301013',
+'000539',
+'301591',
+'002552',
+'002297',
+'001896',
+'301630',
+'002735',
+'301418',
+'002951',
+'002806',
+'002971',
+'002428',
+'002361',
+     ]
+    
+        
     tdx_http_api.TDX_Tools.info2file(quant_result_info = "\n"*10)
     is_order_info = []
     for stock_code in stock_code_list:

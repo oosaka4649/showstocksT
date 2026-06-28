@@ -281,7 +281,7 @@ class VP_SignalGenerator:
 #4. 量化总调度大脑 (Facade 门面类) —— 已接入自适应优化流
 # ==============================================================================
 class VP_QuantRunner(VP_QuantRunner_BaseModel):
-    def __init__(self, p_window=15, v_window=20, v_bottom=-2.0, v_volume=2.5, momentum_cos=0.8, divergence_vol=-1.0, ma_short=20, ma_long=60):
+    def __init__(self, p_window=15, v_window=15, v_bottom=-2.0, v_volume=2.5, momentum_cos=0.8, divergence_vol=-1.0, ma_short=20, ma_long=60):
         self.model = Advanced_VP_KineticModel(p_window=p_window, v_window=v_window, ma_short=ma_short, ma_long=ma_long)
         self.generator = VP_SignalGenerator(v_bottom_threshold=v_bottom, v_volume_threshold=v_volume, momentum_cosine=momentum_cos, divergence_volume=divergence_vol)
 
@@ -342,7 +342,7 @@ class VP_QuantRunner(VP_QuantRunner_BaseModel):
         result = None 
         if custom_params:
             print(f"\n[安全中心] 成功提取自适应标准差！空间短线生命线设为：20日均线。")
-            optimized_runner = VP_QuantRunner(p_window=15, v_window=20, ma_short=5, ma_long=20, # 注入双生命线
+            optimized_runner = VP_QuantRunner(p_window=15, v_window=15, ma_short=5, ma_long=20, # 注入双生命线
                                             v_bottom=custom_params["v_bottom"],
                                             v_volume=custom_params["v_volume"],
                                             divergence_vol=custom_params["divergence_vol"],
@@ -366,6 +366,6 @@ if __name__ == "__main__":
     tdx_datas.creatstocKDataList()
     all_data = tdx_datas.getTDXStockDWMDatas()
 
-    runner = VP_QuantRunner(p_window=15, v_window=20, ma_short=20, ma_long=60)
+    runner = VP_QuantRunner(p_window=15, v_window=15, ma_short=20, ma_long=60)
     chart_data = runner.split_data(tdx_datas.getTDXStockKDatas(), start_date=start_date)
     runner.run(chart_data)
