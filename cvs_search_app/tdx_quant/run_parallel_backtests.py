@@ -265,10 +265,10 @@ def main(stock_code="300215", start_date="2025-01-01", add_flg=False):
     out4, rep4 = capture_stdout(r4.run, chart_data)
     r1.multi_column_print(out1, out3, out4, out2)
 
-    order_info, is_order = tdx_http_api.TDX_Tools.print_trades_log(rep1, rep3, rep4)
+    order_info, is_order, last_trade_log = tdx_http_api.TDX_Tools.print_trades_log(rep1, rep3, rep4)
     tdx_http_api.TDX_Tools.info2file(quant_result_info=order_info)
     #side_by_side_print(out1, out2)
-    return is_order, tdx_datas.stock_name
+    return is_order, tdx_datas.stock_name, last_trade_log, stock_info
 
 
 
@@ -321,12 +321,12 @@ if __name__ == '__main__':
 
 ]
     tdx_http_api.TDX_Tools.info2file(quant_result_info = "\n"*10)
-    is_order_info = ""
+    is_order_info = []
     for stock_code in stock_code_list:
-        is_order, stock_name = main(stock_code, start_date, add_flg)
+        is_order, stock_name, last_trade_log, stock_info = main(stock_code, start_date, add_flg)
         if is_order:
-            is_order_info += '命中: ' + stock_code + f'  {stock_name}\n'
+            is_order_info.append('命中: ' + stock_code + f'  {stock_name}' + f'  {stock_info}\n' + '\n'.join(last_trade_log) + ' \n' )
     tdx_http_api.TDX_Tools.info2file(quant_result_info = "\n"*3)
-    tdx_http_api.TDX_Tools.info2file(quant_result_info = "当前命中名单：\n" + is_order_info)
+    tdx_http_api.TDX_Tools.info2file(quant_result_info = "当前命中名单：\n" + '\n '.join(is_order_info))
     
     

@@ -129,6 +129,7 @@ class TDX_Tools:
         #总计开仓次数 
         total_trades = []
         trades_logs = []
+        last_trades_log = []
         for idx, total_info in enumerate(reports):
             total_return.append(total_info['total_return'])
             total_trades.append(total_info['total_trades'])
@@ -148,8 +149,9 @@ class TDX_Tools:
             if found:
                 is_order = True
                 result += str(idx) + "\n" + json.dumps(log[-2], ensure_ascii=False) + "\n" + json.dumps(log[-1], ensure_ascii=False) + "\n"
+                last_trades_log.append(json.dumps(log[-1], ensure_ascii=False))
 
-        return result, is_order
+        return result, is_order, last_trades_log
 
 if __name__ == "__main__":
 
