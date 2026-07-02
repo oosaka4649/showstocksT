@@ -491,4 +491,9 @@ https://url64.ctfile.com/f/2447364-1450419835-835d28?p=2171
 以交易为生II：卖出的艺术（珍藏版） 2024-01.epub
 https://url64.ctfile.com/f/2447364-1496809084-ebdd4b?p=2171
 
+
+
+有时更换梯子或升级时，工具会更换转发的端口号，导致git hub无法访问，出现“fatal: unable to access '，需要重新设定
+>git config --list
+>git config --global https.proxy http://127.0.0.1:7897
 '''
