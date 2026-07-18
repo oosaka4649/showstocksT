@@ -8,6 +8,8 @@ import os
 import time
 import pandas as pd
 import numpy as np
+import webbrowser
+from datetime import datetime
 from sklearn.mixture import GaussianMixture # 确保环境中已导入
 
 # 脚本常量
@@ -25,7 +27,8 @@ from minitools import user_config as ucfg
 
 
 import ai_quant_backtest as a1
-import ai_quant_backtest_tmp as a2
+#import ai_quant_backtest_tmp as a2
+import ai_quant_backtest_test41 as a2
 import ai_quant_backtest_test as a3
 import ai_quant_backtest_test2 as a4
 
@@ -222,6 +225,186 @@ def stock_regime(metrics_dict):
         "detected_regime": regime + regime_info  # 输出环境标签供执行模块打印日志
     }
 
+def export_html_comparison_report(*reports, output_file_path: str = "quant_comparison_report.html", out_html_info: str = ""):
+    """
+    量化前端工程模块：支持传入大于3个报告横向排列，多次调用时生成独立新行，并在行首标记调用时间。
+    
+    参数:
+    - *reports: 任意数量的 report 字典 (支持 3 个以上)
+    - output_file_path: str, 生成的 HTML 文件路径
+    """
+    if not reports:
+        print("⚠️ 未检测到有效的报告数据，取消导出。")
+        return
+
+    # 检查文件是否存在，以此判断是“首次创建”还是“后续追加”
+    file_exists = os.path.exists(output_file_path)
+
+    # 获取当前调用系统时间，精确到秒
+    current_time_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    # 初始化当前这一行（Row）的 HTML 内容
+    # 顶部增加一个独立的时间戳小标签栏，作为行首标记
+    row_html = f"""
+    <!-- ── 每次调用生成一个独立的行容器 ── -->
+    <div style="margin-bottom: 40px; background: #f8f9fa; border-left: 5px solid #16a085; border-radius: 4px; padding: 15px;">
+        
+        <!-- 行首调用时间标记 -->
+        <div style="font-size: 13px; color: #7f8c8d; font-weight: bold; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+            <span style="display: inline-block; width: 8px; height: 8px; background-color: #16a085; border-radius: 50%;"></span>
+            ⏱️ 回测批次执行时间：<span style="color: #2c3e50; font-family: monospace;">{current_time_str}  {out_html_info}</span>
+        </div>
+
+        <div class="quant-report-row" style="
+            display: flex; 
+            flex-direction: row; 
+            flex-wrap: wrap; 
+            gap: 20px; 
+            align-items: flex-start;
+        ">
+    """
+
+    # 迭代解析当前行中传入的每一个独立 report
+    for r_idx, report in enumerate(reports):
+        alpha_return = report['total_return'] - report['benchmark_return']
+        
+        # 每一个 Report 拥有其独立的卡片式 div 容器
+        row_html += f"""
+        <div class="report-card" style="
+            flex: 1 1 380px;
+            max-width: 550px;
+            min-width: 350px;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            padding: 20px;
+            box-sizing: border-box;
+            border: 1px solid #e9ecef;
+        ">
+            <!-- 策略独立头部标签 -->
+            <div style="border-bottom: 2px solid #34495e; padding-bottom: 8px; margin-bottom: 15px;">
+                <h2 style="margin: 0; color: #2c3e50; font-size: 16px; display: flex; justify-content: space-between;">
+                    <span>📊 策略方案 {r_idx + 1}  {report.get('quant_info', '')}</span>
+                    <span style="font-size: 11px; background: #34495e; color: #fff; padding: 2px 6px; border-radius: 4px; font-weight: normal;">
+                        共 {report['total_trades']} 笔交易
+                    </span>
+                </h2>
+            </div>
+
+            <!-- 核心绩效指标看板 -->
+            <h3 style="color: #7f8c8d; font-size: 12px; margin-bottom: 8px;">核心绩效指标 (Metrics)</h3>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 12px; text-align: left;">
+                <thead>
+                    <tr style="background-color: #f1f3f5; border-bottom: 2px solid #dee2e6;">
+                        <th style="padding: 8px; font-weight: 600; color: #495057;">评估维度</th>
+                        <th style="padding: 8px; font-weight: 600; color: #495057;">策略数值</th>
+                        <th style="padding: 10px; font-weight: 600; color: #495057;">基准对比</th>
+                        <th style="padding: 8px; font-weight: 600; color: #495057;">阿尔法超额</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="border-bottom: 1px solid #dee2e6;">
+                        <td style="padding: 10px; font-weight: bold;">总收益率</td>
+                        <td style="padding: 10px; color: {'#e74c3c' if report['total_return'] >= 0 else '#2ecc71'}; font-weight: bold;">{report['total_return']:.2f}%</td>
+                        <td style="padding: 10px; color: #7f8c8d;">{report['benchmark_return']:.2f}%</td>
+                        <td style="padding: 10px; color: {'#e74c3c' if alpha_return >= 0 else '#2ecc71'}; font-weight: bold;">{'+' if alpha_return >= 0 else ''}{alpha_return:.2f}%</td>
+                    </tr>                
+                    <tr style="border-bottom: 1px solid #dee2e6;">
+                        <td style="padding: 8px; font-weight: bold;">最大回撤</td>
+                        <td style="padding: 8px; color: #e74c3c; font-weight: bold;">{report['max_drawdown']:.2f}%</td>
+                        <td style="padding: 8px; color: #7f8c8d;">--</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #dee2e6;">
+                        <td style="padding: 8px; font-weight: bold;">交易胜率</td>
+                        <td style="padding: 8px; font-weight: bold;">{report['win_rate']:.2f}%</td>
+                        <td style="padding: 8px; color: #7f8c8d;">--</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #dee2e6;">
+                        <td style="padding: 8px; font-weight: bold;">极端损益</td>
+                        <td style="padding: 8px;" colspan="2">
+                            <span style="color: #e74c3c; font-weight: bold; margin-right: 10px;">+{report['max_win']:.2f}%</span> / 
+                            <span style="color: #2ecc71; font-weight: bold;">{report['max_loss']:.2f}%</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- 交易日志明细表格 -->
+            <h3 style="color: #7f8c8d; font-size: 12px; margin-bottom: 8px;">交易动作明细 (Trade Logs)</h3>
+            <div class="table-scroll-container" style="max-height: 250px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 4px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left;">
+                    <thead style="position: sticky; top: 0; background-color: #f8f9fa; box-shadow: 0 1px 0 #dee2e6; z-index: 10;">
+                        <tr>
+                            <th style="padding: 6px; font-weight: 600; color: #495057; width: 30px;">Seq</th>
+                            <th style="padding: 6px; font-weight: 600; color: #495057;">日期</th>
+                            <th style="padding: 6px; font-weight: 600; color: #495057;">价格</th>
+                            <th style="padding: 6px; font-weight: 600; color: #495057;">触发原因</th>
+                            <th style="padding: 6px; font-weight: 600; color: #495057;">损益</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        """
+
+        # 动态渲染交易日志
+        for idx, log in enumerate(report["trade_logs"]):
+            if log['type'] != 'BUY':
+                color_style = "color: #e74c3c; font-weight: bold;" if log['return'] > 0 else "color: #2ecc71; font-weight: bold;"
+                color_prefix = "+" if log['return'] > 0 else ""
+                ret_str = f"{color_prefix}{log['return']:.2f}%"
+            else:
+                color_style = "color: #7f8c8d;"
+                ret_str = "--"
+
+            row_html += f"""
+                        <tr style="border-bottom: 1px solid #eee; background-color: {'#ffffff' if idx % 2 == 0 else '#fdfdfd'};">
+                            <td style="padding: 6px; color: #888;">{idx + 1}</td>
+                            <td style="padding: 6px; white-space: nowrap;">{log['date']}</td>
+                            <td style="padding: 6px; font-family: monospace;">{log['price']:.2f}</td>
+                            <td style="padding: 8px; color: #34495e;">{log['reason']}</td>
+                            <td style="padding: 6px; {color_style}">{ret_str}</td>
+                        </tr>
+            """
+
+        # 闭合当前独立报告卡片
+        row_html += """
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        """
+
+    # 闭合内部 Flex 行容器与外层时间戳容器
+    row_html += "</div></div>\n"
+
+    # 3. 持久化追加写入逻辑
+    if not file_exists:
+        with open(output_file_path, "w", encoding="utf-8") as f:
+            f.write(f"""
+            <div id="global-quant-dashboard" style="
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+                background-color: #f1f3f6; 
+                padding: 30px; 
+                min-height: 100vh;
+                box-sizing: border-box;
+            ">
+                <h1 style="color: #2c3e50; font-size: 22px; margin-bottom: 30px; border-left: 8px solid #16a085; padding-left: 15px;">
+                    📈 工业级量化策略多维度对照看板矩阵 (Matrix Analysis)
+                </h1>
+                {row_html}
+            """)
+    else:
+        with open(output_file_path, "a", encoding="utf-8") as f:
+            f.write(row_html)
+
+    print(f"🎉 包含时序标记 [{current_time_str}] 的 {len(reports)} 组看板已追加到新行。")
+
+    # 4. 触发浏览器自动热重载弹窗
+    try:
+        absolute_path = os.path.abspath(output_file_path)
+        webbrowser.open(f"file://{absolute_path}", new=2)
+    except Exception as e:
+        print(f"❌ 自动触发弹窗失败: {e}")
+
 
 def main(stock_code="300215", start_date="2025-01-01", add_flg=False):
     out_info = ''
@@ -264,6 +447,7 @@ def main(stock_code="300215", start_date="2025-01-01", add_flg=False):
 
     tdx_http_api.TDX_Tools.info2file(quant_result_info = "\n"*3)
     out_info = '='*20 + f' 并列输出：{time_str} {stock_code}  {tdx_datas.stock_name}' + '='*20 + '数据量: ' + str(data_len)   + f'   {stock_info}' + '='*10
+    out_html_info = f' 并列输出：{stock_code}  {tdx_datas.stock_name}' + '='*20 + '数据量: ' + str(data_len)   + f'   {stock_info}'
     tdx_http_api.TDX_Tools.info2file(quant_result_info = out_info)
     r1.info2file(quant_result_info = out_info)
     #r1.info2file(quant_result_info= stock_code + ',' + str(chart_data['categoryData'][(data_len -4):]) + ',' + str(chart_data['closes'][(data_len -4):]) + ',' + str(chart_data['volumes_macd'][(data_len -4):]))
@@ -273,7 +457,7 @@ def main(stock_code="300215", start_date="2025-01-01", add_flg=False):
     out3, rep3 = capture_stdout(r3.run, chart_data)
     out4, rep4 = capture_stdout(r4.run, chart_data)
     r1.multi_column_print(out1, out3, out4, out2)
-
+    export_html_comparison_report(rep1, rep2, rep3, rep4, out_html_info=out_html_info)
     order_info, is_order, last_trade_log = tdx_http_api.TDX_Tools.print_trades_log(rep1, rep3, rep4)
     tdx_http_api.TDX_Tools.info2file(quant_result_info=order_info)
     #side_by_side_print(out1, out2)
@@ -296,6 +480,7 @@ if __name__ == '__main__':
     for stock_code in ucfg.my_stocks_min_max_list:
         main(stock_code, start_date)
     '''
+    '''   
     stock_code_list = [
 '300227',
 '300162',
@@ -330,33 +515,14 @@ if __name__ == '__main__':
 
 ]
     
+    '''
+
     stock_code_list = [
-'002421',
-'002579',
-'002354',
-'001257',
-'301563',
-'002842',
-'301313',
-'301139',
-'301669',
-'002585',
-'301013',
-'000539',
-'301591',
-'002552',
-'002297',
-'001896',
-'301630',
-'002735',
-'301418',
-'002951',
-'002806',
-'002971',
-'002428',
-'002361',
+'002386',
+'001337',
+'301246',
      ]
-    
+
         
     tdx_http_api.TDX_Tools.info2file(quant_result_info = "\n"*10)
     is_order_info = []

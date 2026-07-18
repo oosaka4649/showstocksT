@@ -289,6 +289,8 @@ class VP_QuantRunner(VP_QuantRunner_BaseModel):
         trade_signals = self.generator.generate_signals(metrics)
         # Step 4: 回测绩效评估
         report = VP_BacktestEngine.evaluate(prices, dates, trade_signals["Signals"], trade_signals["Labels"])
+
+        report['quant_info'] = f"backtest test， 左侧交易为主，效果中规中矩，结合了量价动能、余弦夹角"
         # Step 5: 打印格式化的 Markdown 绩效看板
         self._print_markdown_report(report)
         return report
