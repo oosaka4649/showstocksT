@@ -152,6 +152,45 @@ class TDX_Tools:
                 last_trades_log.append(json.dumps(log[-1], ensure_ascii=False))
 
         return result, is_order, last_trades_log
+    
+
+    def print_folder_trades_log(*reports):
+        """
+由于扫描全部文件夹里面文件，而且是极端策略，本来内容不多，所以将所有策略的交易日志都打印出来，方便分析。
+        
+        :param reports: 变长参数，传入多个策略输出交易
+        :return info 每个股票的交易概略
+                boolean 策略是否命中 true 命中
+        """
+        result = "\n"
+        is_order = False
+        if not reports:
+            return
+        
+        indx = 1
+
+        #总收益
+        total_return = []
+        #总计开仓次数 
+        total_trades = []
+        trades_logs = []
+        last_trades_log = []
+        for idx, total_info in enumerate(reports):
+            total_return.append(total_info['total_return'])
+            total_trades.append(total_info['total_trades'])
+            trades_logs.append(total_info['trade_logs'])
+
+        result += "最大总收益: " + str(max(total_return)) + "%\n"
+        result += "最大交易次数: " + str(max(total_trades)) +  " 最小交易次数: " + str(min(total_trades)) + "\n"
+        for idx, log in enumerate(trades_logs):
+            trades_date = []
+            for date_info in log:
+                trades_date.append( date_info['date'])
+            if len(trades_date) > 0:
+                is_order = True
+                last_trades_log = log
+
+        return result, is_order, last_trades_log    
 
 if __name__ == "__main__":
 

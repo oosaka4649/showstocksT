@@ -32,6 +32,8 @@ import ai_quant_backtest_test41 as a2
 import ai_quant_backtest_test as a3
 import ai_quant_backtest_test2 as a4
 
+import ai_quant_backtest_test42 as a5
+
 import ai_tdx_get_data as tdx_http_api
 
 STOCK_CODE_NUM = {'6':'.SH','3':'.SZ','0':'.SZ','4':'.BJ','8':'.BJ','9':'.BJ'}  # 股票代码前缀
@@ -400,10 +402,11 @@ def export_html_comparison_report(*reports, output_file_path: str = "quant_compa
 
     # 4. 触发浏览器自动热重载弹窗
     try:
-        absolute_path = os.path.abspath(output_file_path)
-        webbrowser.open(f"file://{absolute_path}", new=2)
+        row_html_path = os.path.abspath(output_file_path)
     except Exception as e:
         print(f"❌ 自动触发弹窗失败: {e}")
+    
+    return row_html_path  # 返回当前行的 HTML 内容，便于后续调试或日志记录
 
 
 def main(stock_code="300215", start_date="2025-01-01", add_flg=False):
@@ -427,6 +430,7 @@ def main(stock_code="300215", start_date="2025-01-01", add_flg=False):
     r2 = a2.VP_QuantRunner()  # 传入 tdx_datas 用于报告显示
     r3 = a3.VP_QuantRunner()
     r4 = a4.VP_QuantRunner()
+    r5 = a5.VP_QuantRunner()
     _snapshot_data = None
     if add_flg:
         api_model = tdx_http_api.TDX_HTTP_API_BaseModel(start_date=start_date)
@@ -456,12 +460,13 @@ def main(stock_code="300215", start_date="2025-01-01", add_flg=False):
     out2, rep2 = capture_stdout(r2.run, chart_data)
     out3, rep3 = capture_stdout(r3.run, chart_data)
     out4, rep4 = capture_stdout(r4.run, chart_data)
+    out5, rep5 = capture_stdout(r5.run, chart_data)
     r1.multi_column_print(out1, out3, out4, out2)
-    export_html_comparison_report(rep1, rep2, rep3, rep4, out_html_info=out_html_info)
+    row_html_path =export_html_comparison_report(rep1, rep2, rep3, rep4, rep5, out_html_info=out_html_info)
     order_info, is_order, last_trade_log = tdx_http_api.TDX_Tools.print_trades_log(rep1, rep3, rep4)
     tdx_http_api.TDX_Tools.info2file(quant_result_info=order_info)
     #side_by_side_print(out1, out2)
-    return is_order, tdx_datas.stock_name, last_trade_log, stock_info
+    return is_order, tdx_datas.stock_name, last_trade_log, stock_info, row_html_path
 
 
 
@@ -480,7 +485,7 @@ if __name__ == '__main__':
     for stock_code in ucfg.my_stocks_min_max_list:
         main(stock_code, start_date)
     '''
-    '''   
+ 
     stock_code_list = [
 '300227',
 '300162',
@@ -518,19 +523,28 @@ if __name__ == '__main__':
     '''
 
     stock_code_list = [
-'002386',
-'001337',
-'301246',
+'999999',
+'600526',
+'600158',
+'600233',
+'300251',
+'002159',
      ]
-
+    '''  
         
     tdx_http_api.TDX_Tools.info2file(quant_result_info = "\n"*10)
     is_order_info = []
+    row_html_path = None
     for stock_code in stock_code_list:
-        is_order, stock_name, last_trade_log, stock_info = main(stock_code, start_date, add_flg)
+        is_order, stock_name, last_trade_log, stock_info, row_html_path = main(stock_code, start_date, add_flg)
         if is_order:
             is_order_info.append('命中: ' + stock_code + f'  {stock_name}' + f'  {stock_info}\n' + '\n'.join(last_trade_log) + ' \n' )
     tdx_http_api.TDX_Tools.info2file(quant_result_info = "\n"*3)
     tdx_http_api.TDX_Tools.info2file(quant_result_info = "当前命中名单：\n" + '\n '.join(is_order_info))
+    # 4. 触发浏览器自动热重载弹窗
+    try:
+        webbrowser.open(f"file://{row_html_path}", new=2)
+    except Exception as e:
+        print(f"❌ 自动触发弹窗失败: {e}")    
     
     
