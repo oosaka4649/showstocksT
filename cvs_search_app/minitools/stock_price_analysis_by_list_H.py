@@ -9,6 +9,7 @@ import numpy as np
 from datetime import datetime
 import os
 import sys
+import webbrowser
 
 # 脚本常量
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -264,8 +265,16 @@ def main():
     
     page_simple_layout(page, start_date, stock_chart_list, x_axis_list)
 
+    show_templates_html = f'{show_templates_html_path}/{start_date}_price_analysis-list_H.html'
     # 保存图表
-    page.render(f'{show_templates_html_path}/{start_date}_price_analysis-list_H.html')
+    page.render(show_templates_html)
+
+    # 4. 触发浏览器自动热重载弹窗
+    try:
+        absolute_path = os.path.abspath(show_templates_html)
+        webbrowser.open(f"file://{absolute_path}", new=2)
+    except Exception as e:
+        print(f"❌ 自动触发弹窗失败: {e}")    
 
 if __name__ == "__main__":
     main()
