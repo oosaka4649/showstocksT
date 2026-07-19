@@ -146,7 +146,7 @@ def main(stock_code="300215", start_date="2025-01-01"):
     data_len = len(chart_data["categoryData"])
 
     #数据量不够，直接退出
-    if data_len < 200:
+    if data_len < 100:
         tdx_http_api.TDX_Tools.info2file(quant_result_file=result_file_path, quant_result_info = "\n"*3)
         out_info = '='*20 + f' 并列输出：{time_str} {stock_code}  {tdx_datas.stock_name}' + '='*20 + '数据量: ' + str(data_len)   + '   数据长度不够，不分析，直接退出' + '='*10
         tdx_http_api.TDX_Tools.info2file(quant_result_file=result_file_path, quant_result_info = out_info)
@@ -160,19 +160,23 @@ def main(stock_code="300215", start_date="2025-01-01"):
     out1, rep1 = capture_stdout(r1.run, chart_data)
 
     order_info, is_order, last_trade_log = tdx_http_api.TDX_Tools.print_folder_trades_log(rep1)
-    tdx_http_api.TDX_Tools.info2file(quant_result_file=result_file_path, quant_result_info=order_info)
+    if len(last_trade_log) > 0:
+        tdx_http_api.TDX_Tools.info2file(quant_result_file=result_file_path, quant_result_info=order_info)
     return is_order, tdx_datas.stock_name, last_trade_log
 
 
 if __name__ == '__main__':
     # 策略开始日期
-    start_date = "2025-01-01"
+    start_date = "2026-01-01"
 
     TARGET_DIR_SH = "C:\\zd_zsone\\vipdoc\\sh\\lday"
     
     # 过滤规则配置
     PREFIX_REGEX_SH = r"^(sh)"          # 清洗：【抹去】开头的 temp_ 或 test_
-    BLACK_LIST_SH = ["important_config.json"]    # 内存剔除名单，保留这个，后续可以删除一些不需要的
+    BLACK_LIST_SH = [
+        "600200",
+        "603388",
+        ]    # 内存剔除名单，保留这个，后续可以删除一些不需要的
     KEEP_ONLY_REGEX_SH = r"^(68|60)"  # 只保留以 68 或 60 开头的文件名  588开头是基金 881开头是板块
     
     # 执行过滤
@@ -188,14 +192,7 @@ if __name__ == '__main__':
     print(f"总计: {len(result_list)} 个文件名符合条件。")
 
     stock_code_list = [
-'301246',
-'000686',
-'600745',
-'688981',
-'002218',
-'300215',
-'300006',
-'600526',
+'605339',
 
 ]
     
@@ -208,5 +205,5 @@ if __name__ == '__main__':
         if is_order:
             is_order_info.append('命中: ' + stock_code + f'  {stock_name}' + "\n" + json.dumps(last_trade_log, ensure_ascii=False) + ' \n' )
     tdx_http_api.TDX_Tools.info2file(quant_result_file=result_file_path, quant_result_info = "\n"*3)
-    tdx_http_api.TDX_Tools.info2file(quant_result_file=result_file_path, quant_result_info = "当前命中名单 test3：\n" + '\n '.join(is_order_info))
+    tdx_http_api.TDX_Tools.info2file(quant_result_file=result_file_path, quant_result_info = "当前命中名单 test：\n" + '\n '.join(is_order_info))
 

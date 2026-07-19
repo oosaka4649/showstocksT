@@ -266,6 +266,9 @@ class VP_SignalGenerator:
             elif quadrant[i] == 4 and price_z[i] > 2.0 and v_z[i] < -1.0:
                 combined_signals[i] = -1
                 signal_labels[i] = "🛑🛑减仓：高位缩量滞涨诱多，防范假突破"
+            elif combined_signals[i - 1] == 1:
+                combined_signals[i] = -1
+                signal_labels[i] = "⚠️⚠️为了显示多个买入信号，强制后一日卖出"
 
         # 初始化热身期锁死
         combined_signals[:low_zone_window] = 0
@@ -299,8 +302,8 @@ class VP_QuantRunner(VP_QuantRunner_BaseModel):
         # Step 4: 回测绩效评估
         report = VP_BacktestEngine.evaluate(prices, dates, trade_signals["Signals"], trade_signals["Labels"])
 
-        report['quant_info'] = f"backtest test 4-2， 蓄势右侧突破策略：低位长期盘整 + 突然放量上涨破局"
-        report["quant_notes"] = "该策略专注于识别低位长期盘整后的突然放量上涨突破信号，以捕捉潜在的上涨机会。成交回数极低，成功概率特别高，适合市场极度低迷时使用，也没有出场信号。"
+        report['quant_info'] = f"backtest test 42，蓄势右侧突破策略：低位长期盘整，突然放量上涨破局，下降趋势要谨慎。"
+        report["quant_notes"] = "该策略专注于识别低位长期盘整后的突然放量上涨突破信号，以捕捉潜在的上涨机会。成交回数极低，前期横盘或下降趋势且没有上翘时，要观察macd是否低背离，适合市场极度低迷时使用，也没有出场信号。"
         # Step 5: 打印格式化的 Markdown 绩效看板
         self._print_markdown_report(report)
         return report

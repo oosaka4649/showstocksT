@@ -368,9 +368,10 @@ def export_html_comparison_report(*reports, output_file_path: str = "quant_compa
             """
 
         # 闭合当前独立报告卡片
-        row_html += """
+        row_html += f"""
                     </tbody>
                 </table>
+                <h3 style="color: #7f8c8d; font-size: 12px; margin-bottom: 8px;">{report.get('quant_notes', '')}</h3>
             </div>
         </div>
         """
@@ -485,7 +486,7 @@ if __name__ == '__main__':
     for stock_code in ucfg.my_stocks_min_max_list:
         main(stock_code, start_date)
     '''
- 
+    ''' 
     stock_code_list = [
 '300227',
 '300162',
@@ -523,14 +524,10 @@ if __name__ == '__main__':
     '''
 
     stock_code_list = [
-'999999',
-'600526',
-'600158',
-'600233',
-'300251',
-'002159',
+'600713',
+
      ]
-    '''  
+ 
         
     tdx_http_api.TDX_Tools.info2file(quant_result_info = "\n"*10)
     is_order_info = []
