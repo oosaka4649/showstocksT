@@ -246,8 +246,7 @@ def generate_multi_stock_report(stock_data_dict: dict, output_filename: str = "m
                         <span style="background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px;">买入 (BUY)</span>
                         <div style="font-size: 13px;">{b_reason}</div>
                     </div>
-                    <div style="font-family: monospace; font-size: 12px; color: #64748b; margin-top: 6px;">日期: {b_date}</div>
-                    <div style="font-family: monospace; font-weight: bold; color: #0f172a; margin-top: 4px;">价格: ¥{b_price}</div>
+                    <div style="font-family: monospace; font-size: 12px; color: #64748b; margin-top: 6px;">日期: {b_date}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="font-family: monospace; font-size: 14px; font-weight: bold;color: #0f172a;">价格: ¥{b_price}</span></div>
                 </td>
                 
                 <!-- 平仓/卖出侧 -->
@@ -257,8 +256,7 @@ def generate_multi_stock_report(stock_data_dict: dict, output_filename: str = "m
                         <div style="font-size: 13px;">{c_reason}</div>
                         <div style="font-size: 13px;">实现收益: {return_badge}</div>
                     </div>
-                    <div style="font-family: monospace; font-size: 12px; color: #64748b; margin-top: 6px;">日期: {c_date}</div>
-                    <div style="font-family: monospace; font-weight: bold; color: #0f172a; margin-top: 4px;">价格: ¥{c_price}</div>
+                    <div style="font-family: monospace; font-size: 12px; color: #64748b; margin-top: 6px;">日期: {c_date}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="font-family: monospace; font-size: 14px; font-weight: bold;color: #0f172a;">价格: ¥{c_price}</span></div>
                 </td>
             </tr>
             """
@@ -332,18 +330,19 @@ if __name__ == '__main__':
     start_date = "2026-01-01"
 
     TARGET_DIR_SH = "C:\\zd_zsone\\vipdoc\\sh\\lday"
-    
+    TARGET_DIR_SZ = "C:\\zd_zsone\\vipdoc\\sz\\lday"
+    TARGET_DIR = TARGET_DIR_SH
     # 过滤规则配置
-    PREFIX_REGEX_SH = r"^(sh)"          # 清洗：【抹去】开头的 temp_ 或 test_
+    PREFIX_REGEX_SH = r"^(sh|sz)"          # 清洗：【抹去】开头的 temp_ 或 test_
     BLACK_LIST_SH = [
         "600200",
         "603388",
         ]    # 内存剔除名单，保留这个，后续可以删除一些不需要的
-    KEEP_ONLY_REGEX_SH = r"^(68|60)"  # 只保留以 68 或 60 开头的文件名  588开头是基金 881开头是板块
+    KEEP_ONLY_REGEX_SH = r"^(68|60|00|30)"  # 只保留以 68 或 60 开头的文件名  588开头是基金 881开头是板块 399是指数
     
     # 执行过滤
     result_list = get_and_filter_filenames(
-        folder_path=TARGET_DIR_SH,
+        folder_path=TARGET_DIR,
         ignore_prefix_pattern=PREFIX_REGEX_SH,    # 清洗：【抹去】开头的 temp_ 或 test_
         exclude_exact_names=BLACK_LIST_SH, # 减法：精确去掉黑名单
         keep_only_prefix_pattern=KEEP_ONLY_REGEX_SH       # 加法：【只保留】以 backtest_ 开头的文件
@@ -360,7 +359,7 @@ if __name__ == '__main__':
 '600050',
 ]
     
-    stock_code_list = result_list
+    #stock_code_list = result_list
         
     tdx_http_api.TDX_Tools.info2file(quant_result_file=result_file_path, quant_result_info = "\n"*10)
     is_order_info = {} #[]
