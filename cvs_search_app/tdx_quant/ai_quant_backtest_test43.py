@@ -593,6 +593,9 @@ def generate_signals_with_geometry(metrics_dict: dict, window: int = 20) -> dict
             if quadrant[i] == 4 and price_z[i] > 2.0 and v_z[i] < -1.0:
                 combined_signals[i] = -1
                 signal_labels[i] = "🛑🛑减仓：高位缩量滞涨诱多，防范假突破"
+            elif combined_signals[i - 1] == 1:
+                combined_signals[i] = -1
+                signal_labels[i] = "⚠️⚠️为了显示多个买入信号，强制后一日卖出"
 
         # 初始化热身期锁死
         combined_signals[:low_zone_window] = 0
