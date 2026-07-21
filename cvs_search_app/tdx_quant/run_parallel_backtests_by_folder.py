@@ -35,7 +35,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from minitools import tdxcomm as tdx
 from minitools import user_config as ucfg
 
-import ai_quant_backtest_test42 as a1
+import ai_quant_backtest_test43 as a1
 
 import ai_tdx_get_data as tdx_http_api
 
@@ -147,12 +147,12 @@ def main(stock_code="300215", start_date="2025-01-01"):
 
     #数据量不够，直接退出
     if data_len < 100:
-        tdx_http_api.TDX_Tools.info2file(quant_result_file=result_file_path, quant_result_info = "\n"*3)
+        tdx_http_api.TDX_Tools.info2file(quant_result_file=result_file_path, quant_result_info = "\n"*2)
         out_info = '='*20 + f' 并列输出：{time_str} {stock_code}  {tdx_datas.stock_name}' + '='*20 + '数据量: ' + str(data_len)   + '   数据长度不够，不分析，直接退出' + '='*10
         tdx_http_api.TDX_Tools.info2file(quant_result_file=result_file_path, quant_result_info = out_info)
         return False, tdx_datas.stock_name, None
     
-    tdx_http_api.TDX_Tools.info2file(quant_result_file=result_file_path, quant_result_info = "\n"*3)
+    tdx_http_api.TDX_Tools.info2file(quant_result_file=result_file_path, quant_result_info = "\n"*1)
     out_info = '='*20 + f' 并列输出：{time_str} {stock_code}  {tdx_datas.stock_name}' + '='*20 + '数据量: ' + str(data_len)   + '='*10
     tdx_http_api.TDX_Tools.info2file(quant_result_file=result_file_path, quant_result_info = out_info)
 
@@ -160,11 +160,173 @@ def main(stock_code="300215", start_date="2025-01-01"):
     out1, rep1 = capture_stdout(r1.run, chart_data)
 
     order_info, is_order, last_trade_log = tdx_http_api.TDX_Tools.print_folder_trades_log(rep1)
-    if len(last_trade_log) > 0:
-        tdx_http_api.TDX_Tools.info2file(quant_result_file=result_file_path, quant_result_info=order_info)
+    #if len(last_trade_log) > 0:  由于是全市信息，量非常大，缩短输出的长度，不打印收益信息
+    #    tdx_http_api.TDX_Tools.info2file(quant_result_file=result_file_path, quant_result_info=order_info)
     return is_order, tdx_datas.stock_name, last_trade_log
 
 
+def generate_multi_stock_report(stock_data_dict: dict, output_filename: str = "multi_stock_report.html"):
+    """
+    Python 架构师多组股票定制版：
+    1. 保持无统计看板的精简风格
+    2. 支持传入任意多组股票数据，每只股票独立分块
+    3. 核心布局依然是买入与卖出/平仓横向成对合一
+    4. 100% 纯静态内联 CSS，零联网、零 JS、断网双击秒开
+    """
+    if not stock_data_dict:
+        print("⚠️ 警告：传入的股票数据字典为空，未生成报告。")
+        return
+
+    # 全局块结构拼接
+    all_stocks_sections_html = ""
+
+    # 遍历每只股票的数据
+    for stock_info, trade_list in stock_data_dict.items():
+        
+        # 1. 架构级内部数据重组：将当前股票零散的明细智能匹配成完整的交易对
+        paired_trades = []
+        current_buy = None
+
+        for trade in trade_list:
+            t_type = str(trade.get("type", "")).upper()
+            if "BUY" in t_type:
+                if current_buy:
+                    paired_trades.append({"buy": current_buy, "close": None})
+                current_buy = trade
+            elif "CLOSE" in t_type or "SELL" in t_type:
+                if current_buy:
+                    paired_trades.append({"buy": current_buy, "close": trade})
+                    current_buy = None
+                else:
+                    paired_trades.append({"buy": None, "close": trade})
+                    
+        if current_buy:
+            paired_trades.append({"buy": current_buy, "close": None})
+
+        # 2. 循环拼接当前股票内部的成对表格行
+        table_rows_html = ""
+        for idx, pair in enumerate(paired_trades, 1):
+            buy_data = pair["buy"]
+            close_data = pair["close"]
+
+            # 格式化买入侧数据
+            if buy_data:
+                b_date = str(buy_data.get("date", "-"))
+                b_price = f"{float(buy_data.get('price', 0.0)):.2f}"
+                b_reason = str(buy_data.get("reason", "-"))
+            else:
+                b_date = b_price = b_reason = '<span style="color:#cbd5e1;">-</span>'
+
+            # 格式化平仓侧数据
+            if close_data:
+                c_type = str(close_data.get("type", ""))
+                c_label = "平仓 (CLOSE)" if "CLOSE" in c_type else "卖出 (SELL)"
+                c_date = str(close_data.get("date", "-"))
+                c_price = f"{float(close_data.get('price', 0.0)):.2f}"
+                c_return_val = float(close_data.get("return", 0.0))
+                c_reason = str(close_data.get("reason", "-"))
+
+                if c_return_val > 0:
+                    return_badge = f'<span style="color: #10b981; font-weight: bold; font-family: monospace;">+{c_return_val:.2f}%</span>'
+                elif c_return_val < 0:
+                    return_badge = f'<span style="color: #ef4444; font-weight: bold; font-family: monospace;">{c_return_val:.2f}%</span>'
+                else:
+                    return_badge = '<span style="color: #94a3b8; font-family: monospace;">0.00%</span>'
+            else:
+                c_label = c_date = c_price = return_badge = c_reason = '<span style="color:#cbd5e1;">-</span>'
+
+            # 组装单行
+            table_rows_html += f"""
+            <tr style="border-bottom: 2px solid #f1f5f9;">
+                <td style="padding: 16px 12px; text-align: center; font-weight: bold; color: #94a3b8; font-family: monospace;">#{idx}</td>
+                
+                <!-- 买入侧 -->
+                <td style="padding: 16px 16px; background-color: #fbfdfc; border-right: 1px dashed #e2e8f0;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <span style="background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px;">买入 (BUY)</span>
+                        <div style="font-size: 13px;">{b_reason}</div>
+                    </div>
+                    <div style="font-family: monospace; font-size: 12px; color: #64748b; margin-top: 6px;">日期: {b_date}</div>
+                    <div style="font-family: monospace; font-weight: bold; color: #0f172a; margin-top: 4px;">价格: ¥{b_price}</div>
+                </td>
+                
+                <!-- 平仓/卖出侧 -->
+                <td style="padding: 16px 16px; background-color: #fcfcfd;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        {"".join([f'<span style="background-color: #fffbeb; color: #b45309; border: 1px solid #fde68a; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 11px;">{c_label}</span>' if close_data else ''])}
+                        <div style="font-size: 13px;">{c_reason}</div>
+                        <div style="font-size: 13px;">实现收益: {return_badge}</div>
+                    </div>
+                    <div style="font-family: monospace; font-size: 12px; color: #64748b; margin-top: 6px;">日期: {c_date}</div>
+                    <div style="font-family: monospace; font-weight: bold; color: #0f172a; margin-top: 4px;">价格: ¥{c_price}</div>
+                </td>
+            </tr>
+            """
+
+        # 3. 将当前股票包装为一个独立的高颜值表格区块
+        all_stocks_sections_html += f"""
+        <!-- 股票小区块 -->
+        <div style="margin-bottom: 40px;">
+            <!-- 股票标签头 -->
+            <div style="background-color: #1e293b; color: #ffffff; padding: 12px 20px; border-radius: 8px 8px 0 0; font-size: 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center;">
+                <span>📈 标的资产：{stock_info}</span>
+                <span style="font-size: 11px; background-color: rgba(255,255,255,0.15); padding: 2px 8px; border-radius: 4px; font-weight: normal; font-family: monospace;">波段流水 count: {len(paired_trades)}</span>
+            </div>
+            
+            <!-- 成对明细表格 -->
+            <div style="background-color: #ffffff; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; table-layout: fixed;">
+                    <thead style="background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; color: #64748b; font-size: 12px; font-weight: 600; text-transform: uppercase;">
+                        <tr>
+                            <th style="padding: 12px; text-align: center; width: 60px;">波段</th>
+                            <th style="padding: 12px 16px; width: 47%;">🟢 开仓入场明细 (BUY SIDE)</th>
+                            <th style="padding: 12px 16px; width: 47%;">🔴 出场平仓明细 (EXIT SIDE)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {table_rows_html}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        """
+
+    # 4. 基础全内联纯静态网页整体骨架
+    html_template = f"""<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多标的量化交易对明细报告</title>
+</head>
+<body style="background-color: #f8fafc; color: #334155; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 30px 15px;">
+    
+    <div style="max-w: 1100px; margin: 0 auto; width: 100%;">
+        
+        <!-- 精简主标题 -->
+        <header style="border-bottom: 1px solid #e2e8f0; padding-bottom: 16px; margin-bottom: 32px;">
+            <h1 style="color: #0f172a; margin: 0; font-size: 22px; font-weight: 800;">📊 策略交易对开平仓轨迹明细 (多组别)</h1>
+            <p style="color: #94a3b8; font-size: 12px; margin: 4px 0 0 0;">多标的横向对齐账单 · 100% 纯本地离线完美兼容</p>
+        </header>
+
+        <!-- 注入所有股票的分块数据 -->
+        {all_stocks_sections_html}
+
+        <!-- 精简页脚 -->
+        <footer style="margin-top: 40px; text-align: center; font-size: 11px; color: #cbd5e1;">
+            🔒 Multi-Asset Data Pipeline Output · End of Report
+        </footer>
+    </div>
+</body>
+</html>"""
+
+    # 5. 文件安全写出
+    with open(output_filename, 'w', encoding='utf-8') as f:
+        f.write(html_template)
+        
+    print(f"✅ [多组股票成对对齐版] 报表已无依赖成功生成: {os.path.abspath(output_filename)}")
+
+        
 if __name__ == '__main__':
     # 策略开始日期
     start_date = "2026-01-01"
@@ -192,18 +354,20 @@ if __name__ == '__main__':
     print(f"总计: {len(result_list)} 个文件名符合条件。")
 
     stock_code_list = [
-'605339',
+'600007',
 
+'600059',
+'600050',
 ]
     
     stock_code_list = result_list
         
     tdx_http_api.TDX_Tools.info2file(quant_result_file=result_file_path, quant_result_info = "\n"*10)
-    is_order_info = []
+    is_order_info = {} #[]
     for stock_code in stock_code_list:
         is_order, stock_name, last_trade_log = main(stock_code, start_date)
         if is_order:
-            is_order_info.append('命中: ' + stock_code + f'  {stock_name}' + "\n" + json.dumps(last_trade_log, ensure_ascii=False) + ' \n' )
-    tdx_http_api.TDX_Tools.info2file(quant_result_file=result_file_path, quant_result_info = "\n"*3)
-    tdx_http_api.TDX_Tools.info2file(quant_result_file=result_file_path, quant_result_info = "当前命中名单 test：\n" + '\n '.join(is_order_info))
+            key_info = f'{stock_code}-{stock_name}'
+            is_order_info[key_info] = last_trade_log
+    generate_multi_stock_report(is_order_info)
 
