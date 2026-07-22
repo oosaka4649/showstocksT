@@ -16,7 +16,7 @@
 import sys
 import io
 import contextlib
-import unicodedata
+import webbrowser
 import os
 import json
 import pandas as pd
@@ -142,8 +142,10 @@ def main(stock_code="300215", start_date="2025-01-01"):
     r1 = a1.VP_QuantRunner()  # 传入 tdx_datas 用于报告显示
 
     _snapshot_data = None
-    chart_data = r1._split_data_add_snapshot_data(tdx_datas.getTDXStockKDatas(), _snapshot_data, start_date=start_date)
-    data_len = len(chart_data["categoryData"])
+    data_len = 0
+    if len(tdx_datas.stock_name) > 1 and len(tdx_datas.getTDXStockKDatas()) > 1:
+        chart_data = r1._split_data_add_snapshot_data(tdx_datas.getTDXStockKDatas(), _snapshot_data, start_date=start_date)
+        data_len = len(chart_data["categoryData"])
 
     #数据量不够，直接退出
     if data_len < 100:
@@ -318,34 +320,41 @@ def generate_multi_stock_report(stock_data_dict: dict, output_filename: str = "m
 </body>
 </html>"""
 
+    row_html_path = ''
     # 5. 文件安全写出
     with open(output_filename, 'w', encoding='utf-8') as f:
         f.write(html_template)
-        
+        row_html_path = os.path.abspath(output_filename)
     print(f"✅ [多组股票成对对齐版] 报表已无依赖成功生成: {os.path.abspath(output_filename)}")
+
+    return row_html_path
 
         
 if __name__ == '__main__':
     # 策略开始日期
     start_date = "2026-01-01"
+    target_dir = {'SH':"C:\\zd_zsone\\vipdoc\\sh\\lday",
+                  'SZ':"C:\\zd_zsone\\vipdoc\\sz\\lday"}
 
-    TARGET_DIR_SH = "C:\\zd_zsone\\vipdoc\\sh\\lday"
-    TARGET_DIR_SZ = "C:\\zd_zsone\\vipdoc\\sz\\lday"
-    TARGET_DIR = TARGET_DIR_SH
+    target_keep = {'SH': r"^(68|60)", # 只保留以 68 或 60 开头的文件名  588开头是基金 881开头是板块 399是指数
+                   'SZ': r"^(00|30)"}
     # 过滤规则配置
-    PREFIX_REGEX_SH = r"^(sh|sz)"          # 清洗：【抹去】开头的 temp_ 或 test_
-    BLACK_LIST_SH = [
+    PREFIX_REGEX = r"^(sh|sz)"          # 清洗：【抹去】开头的 temp_ 或 test_
+    BLACK_LIST = [
         "600200",
         "603388",
         ]    # 内存剔除名单，保留这个，后续可以删除一些不需要的
-    KEEP_ONLY_REGEX_SH = r"^(68|60|00|30)"  # 只保留以 68 或 60 开头的文件名  588开头是基金 881开头是板块 399是指数
     
+    TARGET_DIR = target_dir['SZ']
+    KEEP_ONLY_REGEX = target_keep['SZ']
+
+
     # 执行过滤
     result_list = get_and_filter_filenames(
         folder_path=TARGET_DIR,
-        ignore_prefix_pattern=PREFIX_REGEX_SH,    # 清洗：【抹去】开头的 temp_ 或 test_
-        exclude_exact_names=BLACK_LIST_SH, # 减法：精确去掉黑名单
-        keep_only_prefix_pattern=KEEP_ONLY_REGEX_SH       # 加法：【只保留】以 backtest_ 开头的文件
+        ignore_prefix_pattern=PREFIX_REGEX,    # 清洗：【抹去】开头的 temp_ 或 test_
+        exclude_exact_names=BLACK_LIST, # 减法：精确去掉黑名单
+        keep_only_prefix_pattern=KEEP_ONLY_REGEX      # 加法：【只保留】以 backtest_ 开头的文件
     )
     
     print("📋 内存中安全生成的最终文件名列表:")
@@ -359,7 +368,7 @@ if __name__ == '__main__':
 '600050',
 ]
     
-    #stock_code_list = result_list
+    stock_code_list = result_list
         
     tdx_http_api.TDX_Tools.info2file(quant_result_file=result_file_path, quant_result_info = "\n"*10)
     is_order_info = {} #[]
@@ -368,5 +377,10 @@ if __name__ == '__main__':
         if is_order:
             key_info = f'{stock_code}-{stock_name}'
             is_order_info[key_info] = last_trade_log
-    generate_multi_stock_report(is_order_info)
+    row_html_path = generate_multi_stock_report(is_order_info)
+    # 4. 触发浏览器自动热重载弹窗
+    try:
+        webbrowser.open(f"file://{row_html_path}", new=2)
+    except Exception as e:
+        print(f"❌ 自动触发弹窗失败: {e}")        
 
