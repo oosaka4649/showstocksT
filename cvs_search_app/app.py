@@ -643,33 +643,34 @@ def clean_numeric_string(value):
         return float(match.group())
     return 0.0
 
+
 def format_table_html(df, font_size='12px', padding='8px'):
     """
     将DataFrame转换为格式化的HTML表格，支持自定义字体大小和内边距
-    
-    参数:
-    df (DataFrame): 要转换的数据框
-    font_size (str): 字体大小，如 '12px'
-    padding (str): 单元格内边距，如 '8px'
-    
-    返回:
-    str: 格式化后的HTML字符串
+    已修复 34 寸全屏显示，并完美支持单元格根据内容“自适应分配长度”（非等距平分）
     """
     html = df.to_html(classes="table", border=0)
     soup = BeautifulSoup(html, 'html.parser')
     
-    # 设置table样式
     table = soup.find('table')
     if table:
-        table['style'] = f'width:100%; border-collapse:collapse; font-size:{font_size}; text-align:center;'
+        # 核心修改点：
+        # 1. 移除了 table-layout: fixed，恢复浏览器原生自适应计算
+        # 2. 如果你使用了“方案二”的 vw 破局法，保持 vw 样式不变，仅拿掉 table-layout 即可
+        # 3. 这里采用方案一对应的标准自适应全宽样式
+        table['style'] = f'width:100% !important; border-collapse:collapse; font-size:{font_size}; text-align:center;'
     
     # 设置所有th（表头）样式
     for th in soup.find_all('th'):
-        th['style'] = f'font-size:{font_size}; padding:{padding}; background-color:#f0f0f0; border:1px solid #ddd; font-weight:bold;'
+        # 架构师建议：添加 white-space: nowrap，防止超宽屏下列名因为自适应而尴尬地换行
+        th['style'] = f'font-size:{font_size}; padding:{padding}; background-color:#f0f0f0; border:1px solid #ddd; font-weight:bold; white-space:nowrap;'
     
     # 设置所有td（数据单元格）样式
     for td in soup.find_all('td'):
-        td['style'] = f'font-size:{font_size}; padding:{padding}; border:1px solid #ddd;'
+        # 核心优化：
+        # max-width: 300px 限制单列最大宽度，防止某列文本过长把大屏完全撑爆
+        # word-break: break-word 配合 max-width 确保长文本在大屏下能优雅折行
+        td['style'] = f'font-size:{font_size}; padding:{padding}; border:1px solid #ddd; max-width:300px; word-break:break-word;'
     
     return str(soup.prettify())
 

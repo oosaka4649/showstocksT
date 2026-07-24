@@ -20,7 +20,7 @@
     </style>
 </head>
 <body>
-    <div class="container mt-3">
+    <div class="container-fluid mt-5" style="width: 100% !important; max-width: none !important;">
         <div>
             <h1>游资进入场详细</h1>
             <a href="/help">帮助</a>
@@ -32,7 +32,7 @@
             {% endif %}
         </div>
     </div>
-    <div class="container mt-5">
+    <div class="container-fluid mt-5" style="width: 100% !important; max-width: none !important;">
         <form action="{{ url_for('sortbydateandcode') }}" method="POST">
             <input type="text" id="search_key" name="search_key" value={{ search_key }}>
             <button type="submit">查看个股进场详细</button>
