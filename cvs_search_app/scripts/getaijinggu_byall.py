@@ -175,6 +175,7 @@ def read_web_page(i, j):
             st7 = subtr[7].text.strip()
             if st7 is None or st7 == '':
                 st7 = '-'
+            st7 = '-'  #20260727 网站把说明栏里添加了内容，感觉没有意义，而且添加了内容导致了和原来不一致了，就直接不要说明内容了
             tm_txt = str(subtr[0]) + ',' + str(subtr[1]) + ','+ str(subtr[2]) + ','+ str(subtr[3]) + ','+ str(subtr[4]).replace(",", "") + ','+ str(subtr[5]).replace(",", "") + ','+ str(subtr[6]).replace(",", "") + ','+ str(st7).replace(",", "") + ','+ str(t_name[j])
             
             check_txt = str(subtr[0]) + ',' + str(subtr[1]) + ','+ str(subtr[2]) + ','+ str(subtr[4]).replace(",", "") + ','+ str(subtr[5]).replace(",", "") + ','+ str(subtr[6]).replace(",", "") + ','+ str(st7).replace(",", "") + ','+ str(t_name[j])
