@@ -1,0 +1,90 @@
+冷门股，不要做短线。高位股，不要做长线
+热门股，不要做长线。低位股，不要做短线
+
+
+==========================================通达信 公式 1 ==================================================================
+用于在主图叠加，显示 N日前K线，对比当前K 相对于 N日前K线的位置，来 推断 当前股价是否处于强势？？
+{ 参数设置：N (1, 250, 20) }
+{ 画线方法：主图叠加 }
+{ 1. 绘制当前N日均线 }
+MA_CURRENT:MA(CLOSE,N),COLORWHITE,LINETHICK2;
+{ 2. 提取N日前的K线数据 }
+N开:=REF(OPEN,N);
+N高:=REF(HIGH,N);
+N低:=REF(LOW,N);
+N收:=REF(CLOSE,N);
+IS_YANG:=N收>=N开;
+{ 3. 核心修改：在当前K线位置，用【虚线】重绘N日前的K线形态 }
+{ 最后一个参数设为 -1，代表画虚线空心柱 }
+STICKLINE(IS_YANG, N高, N低, 0, -1),COLOR0000FF;
+{ 历史阳线虚线上盘影线 }
+STICKLINE(NOT(IS_YANG), N高, N低, 0, -1),COLOR00FF00;
+{ 历史阴线虚线上盘影线 }
+STICKLINE(IS_YANG, N收, N开, 3, -1),COLOR0000CC;
+{ 历史阳线虚线实体框 }
+STICKLINE(NOT(IS_YANG), N收, N开, 3, -1),COLOR00CC00;
+{ 历史阴线虚线实体框 }
+{ 4. 绘制从【N天前真实K线】到【今日虚拟框】的专属连线 }
+ISCURRENT:=ISLASTBAR;
+ISHISTORY:=REFX(ISCURRENT, N);
+跨时空连线:DRAWLINE(ISHISTORY, CLOSE, ISCURRENT, N收, 0),COLORYELLOW,DOTLINE;
+{ 5. 在历史K线和当前K线两端做视觉高亮标记 }
+DRAWICON(ISHISTORY, LOW*0.99, 1);
+{ 历史K线下方标三角形 }
+DRAWICON(ISCURRENT, MIN(N低, LOW)*0.99, 2);
+{ 今日K线下方标指针 }
+{ 6. 在连线终点自动计算并显示差值与涨跌幅 }
+差值:=CLOSE-N收;
+涨跌幅:=(CLOSE-N收)/N收*100;
+{ 拼接显示文本 }
+文本内容:=VARCAT(VARCAT(VARCAT(VARCAT('对比',CON2STR(N,0)),'日前差值:'),CON2STR(差值,2)),VARCAT(' (',VARCAT(CON2STR(涨跌幅,2),'%)')));
+{ 动态打印文本：正数红，负数绿 }
+DRAWTEXT(ISCURRENT AND 差值>=0, HIGH*1.02, 文本内容),COLORRED;
+DRAWTEXT(ISCURRENT AND 差值<0, HIGH*1.02, 文本内容),COLORGREEN;
+{ 7. 辅助虚线框（上下边界保持点状线形式） }
+框顶:MAX(N高, N低),COLORGRAY,DOTLINE;
+框底:MIN(N高, N低),COLORGRAY,DOTLINE;
+
+
+这是上面的优化，将 实体框 改成了两个横线，画面更干净
+{ 参数设置：N (1, 250, 20) }
+{ 画线方法：主图叠加 }
+{ 1. 绘制当前N日均线 }
+MA_CURRENT:MA(CLOSE,N),COLORWHITE,LINETHICK2;
+{ 2. 提取N日前的K线数据 }
+N开:=REF(OPEN,N);
+N高:=REF(HIGH,N);
+N低:=REF(LOW,N);
+N收:=REF(CLOSE,N);
+IS_YANG:=N收>=N开;
+{ 3. 核心修改：去掉矩形框，仅在开盘和收盘位置绘制水平虚横线 }
+{ 宽度设为3，参数设为-1（虚线），形成两个精准的水平价格刻度 }
+STICKLINE(IS_YANG, N开, N开, 3, -1),COLOR0000FF;
+{ 历史阳线开盘：红色横虚线 }
+STICKLINE(IS_YANG, N收, N收, 3, -1),COLOR0000FF;
+{ 历史阳线收盘：红色横虚线 }
+STICKLINE(NOT(IS_YANG), N开, N开, 3, -1),COLOR00FF00;
+{ 历史阴线开盘：绿色横虚线 }
+STICKLINE(NOT(IS_YANG), N收, N收, 3, -1),COLOR00FF00;
+{ 历史阴线收盘：绿色横虚线 }
+{ 4. 绘制从【N天前真实K线】到【今日虚拟位置】的专属连线 }
+ISCURRENT:=ISLASTBAR;
+ISHISTORY:=REFX(ISCURRENT, N);
+跨时空连线:DRAWLINE(ISHISTORY, CLOSE, ISCURRENT, N收, 0),COLORYELLOW,DOTLINE;
+{ 5. 在历史K线和当前K线两端做视觉高亮标记 }
+DRAWICON(ISHISTORY, LOW*0.99, 1);
+{ 历史K线下方标三角形 }
+DRAWICON(ISCURRENT, MIN(N低, LOW)*0.99, 2);
+{ 今日K线下方标指针 }
+{ 6. 在连线终点自动计算并显示差值与涨跌幅 }
+差值:=CLOSE-N收;
+涨跌幅:=(CLOSE-N收)/N收*100;
+{ 拼接显示文本 }
+文本内容:=VARCAT(VARCAT(VARCAT(VARCAT('对比',CON2STR(N,0)),'日前差值:'),CON2STR(差值,2)),VARCAT(' (',VARCAT(CON2STR(涨跌幅,2),'%)')));
+{ 动态打印文本：正数红，负数绿 }
+DRAWTEXT(ISCURRENT AND 差值>=0, HIGH*1.02, 文本内容),COLORRED;
+DRAWTEXT(ISCURRENT AND 差值<0, HIGH*1.02, 文本内容),COLORGREEN;
+{ 7. 辅助最高/最低点虚线（如果您不需要最高最低点的边界，可以把下面两行删掉） }
+框顶:MAX(N高, N低),COLORGRAY,DOTLINE;
+框底:MIN(N高, N低),COLORGRAY,DOTLINE;
+==========================================通达信 公式 1 ==================================================================
