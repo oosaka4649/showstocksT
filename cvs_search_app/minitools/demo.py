@@ -497,6 +497,10 @@ https://tvexplorer.live/
 51看黄片
 https://51khp.cc
 
+
+魔色365
+https://madou365.cc
+
 ======================================================== 工具 =========================================================
 
 LKY_OfficeTools： https://github.com/OdysseusYuan/LKY_OfficeTools  一键自动化 下载、安装、激活 Office 的利器。绿色、开源、安全、无毒。
