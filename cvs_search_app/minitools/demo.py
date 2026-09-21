@@ -254,6 +254,30 @@ python
 你现在的数据源里，是否包含了一些特定的列（如“日期”、“同比增速”）是默认占位符显示不出来的？我可以帮你写对应的 JsCode 逻辑。
 
 
+
+======================================================== git hub 操作 =========================================================
+C:\Users\bob>git config --list
+diff.astextplain.textconv=astextplain
+filter.lfs.clean=git-lfs clean -- %f
+filter.lfs.smudge=git-lfs smudge -- %f
+filter.lfs.process=git-lfs filter-process
+filter.lfs.required=true
+http.sslbackend=schannel
+core.autocrlf=true
+core.fscache=true
+core.symlinks=false
+pull.rebase=false
+credential.helper=manager
+credential.https://dev.azure.com.usehttppath=true
+init.defaultbranch=master
+http.proxy=http://127.0.0.1:7897
+https.proxy=http://127.0.0.1:7897
+user.name=oosaka4649
+user.email=wubo_goha@163.com
+
+https://docs.github.com/zh/repositories/creating-and-managing-repositories/quickstart-for-repositories
+
+
 ======================================================== 股票 =========================================================
 如果您去这些网站检索，使用日本本土的行业术语能帮你找到更地道的内容：システムトレード (Sys-Trade)：系统化交易 / 机械交易。アルゴリズム取引：算法交易。
 
