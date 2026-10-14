@@ -521,6 +521,11 @@ https://tvexplorer.live/
 51看黄片
 https://51khp.cc
 
+https://xanimu.one/zh-CN/
+成人动漫色情影片
+
+https://myporn.club/
+情色资源磁力下载站
 
 魔色365
 https://madou365.cc
